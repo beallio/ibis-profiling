@@ -1,27 +1,36 @@
 import json
 import pandas as pd
+import os
+import time
 from ydata_profiling import ProfileReport
 
 
 def main():
-    path = "loan_data_1M.parquet"
-    df = pd.read_parquet(path)
+    data_path = os.getenv("LOAN_DATA_1M_PATH", "/tmp/ibis-profiling/loan_data_1M.parquet")
+    output_dir = os.getenv("IBIS_PROFILING_TMP", "/tmp/ibis-profiling")
 
-    # Run minimal profile to get the core stats
+    if not os.path.exists(data_path):
+        print(f"Error: {data_path} not found.")
+        return
+
+    df = pd.read_parquet(data_path)
+
+    start = time.time()
     profile = ProfileReport(df, minimal=True)
     stats = profile.get_description()
+    duration = time.time() - start
 
-    # Extract only the serializable part of the description
-    # ydata stats object is complex, we just need table and variables
-    out = {"table": stats.table, "variables": stats.variables}
+    print(f"ydata 1M Profile completed in {duration:.4f} seconds.")
 
-    # Convert types for JSON
+    # Extract serializable part
+    out = {"duration": duration, "table": stats.table, "variables": stats.variables}
+
     def clean_dict(d):
         if isinstance(d, dict):
             return {str(k): clean_dict(v) for k, v in d.items()}
         elif isinstance(d, (list, tuple)):
             return [clean_dict(x) for x in d]
-        elif hasattr(d, "item") and not hasattr(d, "shape"):  # Scalar numpy/pandas
+        elif hasattr(d, "item") and not hasattr(d, "shape"):
             try:
                 return d.item()
             except Exception:
@@ -33,9 +42,10 @@ def main():
         else:
             return str(d)
 
-    with open("ydata_1M_full.json", "w") as f:
+    out_path = os.path.join(output_dir, "ydata_1M_full.json")
+    with open(out_path, "w") as f:
         json.dump(clean_dict(out), f, indent=2)
-    print("Full ydata stats saved to ydata_1M_full.json")
+    print(f"ydata stats saved to {out_path}")
 
 
 if __name__ == "__main__":

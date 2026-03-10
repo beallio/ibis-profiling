@@ -1,4 +1,5 @@
 import json
+import os
 
 
 def format_val(v):
@@ -8,10 +9,22 @@ def format_val(v):
 
 
 def main():
-    with open("ibis_1M_full.json") as f:
-        ibis = json.load(f)
-    with open("ydata_1M_full.json") as f:
-        ydata = json.load(f)
+    output_dir = os.getenv("IBIS_PROFILING_TMP", "/tmp/ibis-profiling")
+    ibis_path = os.path.join(output_dir, "ibis_1M_full.json")
+    ydata_path = os.path.join(output_dir, "ydata_1M_full.json")
+
+    if not os.path.exists(ibis_path) or not os.path.exists(ydata_path):
+        print(f"Error: Missing benchmark results in {output_dir}")
+        print("Please run benchmark_ibis_1M.py and benchmark_ydata_1M.py first.")
+        return
+
+    with open(ibis_path) as f:
+        ibis_res = json.load(f)
+    with open(ydata_path) as f:
+        ydata_res = json.load(f)
+
+    ibis = ibis_res["report"]
+    ydata = ydata_res
 
     print("# Full Parity Report (1 Million Records)")
     print("\n## Dataset Statistics")
@@ -62,11 +75,9 @@ def main():
             parity = iv == yv
         elif isinstance(iv, (int, float, str)) and isinstance(yv, (int, float, str)):
             try:
-                if isinstance(iv, str):
-                    iv = float(iv)
-                if isinstance(yv, str):
-                    yv = float(yv)
-                parity = abs(iv - yv) < 1e-2  # Looser tolerance for engine precision
+                iv_f = float(iv)
+                yv_f = float(yv)
+                parity = abs(iv_f - yv_f) < 1e-2
             except Exception:
                 parity = str(iv) == str(yv)
         else:
@@ -83,9 +94,9 @@ def main():
         )
 
     print("\n## Performance Summary")
-    print("- **Ibis-Native:** ~0.39 seconds (1M rows)")
-    print("- **ydata-profiling:** ~10.15 seconds (1M rows)")
-    print("- **Speedup:** **~26x**")
+    print(f"- **Ibis-Native:** {ibis_res['duration']:.4f} seconds")
+    print(f"- **ydata-profiling:** {ydata_res['duration']:.4f} seconds")
+    print(f"- **Speedup:** **{ydata_res['duration'] / ibis_res['duration']:.1f}x**")
 
 
 if __name__ == "__main__":
