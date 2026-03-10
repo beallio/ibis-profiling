@@ -63,8 +63,18 @@ class ProfileReport:
                 if stats.get("mean") and stats["mean"] != 0:
                     stats["cv"] = stats["std"] / stats["mean"]
 
-            if n > 0 and "unique" in stats:
-                stats["distinct_perc"] = stats["unique"] / n
+            if n > 0 and "n_distinct" in stats:
+                stats["distinct_perc"] = stats["n_distinct"] / n
+
+    def add_metric(self, col_name: str, metric_name: str, value: any):
+        """Manually adds a metric result to the report."""
+        val = self._to_json_serializable(value)
+        if col_name == "_dataset":
+            self.dataset_stats[metric_name] = val
+        else:
+            if col_name not in self.column_stats:
+                self.column_stats[col_name] = {}
+            self.column_stats[col_name][metric_name] = val
 
     def to_dict(self):
         return {"dataset": self.dataset_stats, "columns": self.column_stats}
@@ -88,7 +98,7 @@ class ProfileReport:
 
         html.append("</table><h2>Column Statistics</h2>")
         html.append(
-            "<table><tr><th>Column</th><th>Type</th><th>Missing</th><th>Unique</th><th>Mean</th><th>Min</th><th>P25</th><th>Median</th><th>P75</th><th>Max</th></tr>"
+            "<table><tr><th>Column</th><th>Type</th><th>Missing</th><th>Distinct</th><th>Unique (Singletons)</th><th>Mean</th><th>Min</th><th>Median</th><th>Max</th></tr>"
         )
 
         for col, stats in self.column_stats.items():
@@ -96,12 +106,11 @@ class ProfileReport:
             html.append(f"<td>{col}</td>")
             html.append(f"<td>{stats.get('type', '')}</td>")
             html.append(f"<td>{stats.get('missing', '')}</td>")
-            html.append(f"<td>{stats.get('unique', '')}</td>")
+            html.append(f"<td>{stats.get('n_distinct', '')}</td>")
+            html.append(f"<td>{stats.get('n_unique', '')}</td>")
             html.append(f"<td>{stats.get('mean', '')}</td>")
             html.append(f"<td>{stats.get('min', '')}</td>")
-            html.append(f"<td>{stats.get('p25', '')}</td>")
             html.append(f"<td>{stats.get('median', '')}</td>")
-            html.append(f"<td>{stats.get('p75', '')}</td>")
             html.append(f"<td>{stats.get('max', '')}</td>")
             html.append("</tr>")
 

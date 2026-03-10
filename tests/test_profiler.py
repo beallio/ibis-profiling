@@ -43,14 +43,16 @@ def test_complex_profile():
     # Integer column
     int_stats = report["columns"]["int_col"]
     assert int_stats["missing"] == 1
-    assert int_stats["unique"] == 3
+    assert int_stats["n_distinct"] == 3
+    assert int_stats["n_unique"] == 3  # All are singletons in this sample [1, 2, 3]
     assert int_stats["min"] == 1
     assert int_stats["max"] == 3
     assert int_stats["mean"] == 2.0
 
     # String column
     str_stats = report["columns"]["str_col"]
-    assert str_stats["unique"] == 3
+    assert str_stats["n_distinct"] == 3
+    assert str_stats["n_unique"] == 2  # 'a' is not a singleton
     assert "mean" not in str_stats  # Should not have mean for string
 
     # Date column

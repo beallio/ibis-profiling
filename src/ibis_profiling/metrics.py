@@ -48,15 +48,29 @@ registry.register(
 )
 registry.register(Metric("std", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.std()))
 registry.register(Metric("missing", MetricCategory.COLUMN, None, lambda col: col.isnull().sum()))
-registry.register(Metric("unique", MetricCategory.COLUMN, None, lambda col: col.nunique()))
+registry.register(Metric("n_distinct", MetricCategory.COLUMN, None, lambda col: col.nunique()))
 registry.register(
     Metric("zeros", MetricCategory.COLUMN, [dt.Numeric], lambda col: (col == 0).sum())
+)
+# n_unique (singletons) is added as a COLUMN metric, but note it might require special handling in the planner
+registry.register(
+    Metric(
+        "n_unique",
+        MetricCategory.COLUMN,
+        None,
+        lambda col: (
+            col.value_counts()
+            .filter(lambda t: (t[f"{col.get_name()}_count"] == 1) & (t[col.get_name()].notnull()))
+            .count()
+        ),
+    )
 )
 registry.register(
     Metric(
         "infinite", MetricCategory.COLUMN, [dt.Float64, dt.Float32], lambda col: col.isinf().sum()
     )
 )
+
 registry.register(Metric("sum", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.sum()))
 registry.register(Metric("median", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.median()))
 registry.register(Metric("p5", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.05)))
