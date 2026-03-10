@@ -49,3 +49,6 @@ registry.register(
 registry.register(Metric("std", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.std()))
 registry.register(Metric("missing", MetricCategory.COLUMN, None, lambda col: col.isnull().sum()))
 registry.register(Metric("unique", MetricCategory.COLUMN, None, lambda col: col.nunique()))
+registry.register(
+    Metric("zeros", MetricCategory.COLUMN, [dt.Numeric], lambda col: (col == 0).sum())
+)

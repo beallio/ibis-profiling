@@ -8,45 +8,50 @@
       "mean": 9999999.5,
       "min": 0,
       "max": 19999999,
-      "std": 5773502.8362338655,
+      "std": 5773502.836233837,
       "missing": 0,
-      "unique": 20000000
+      "unique": 20000000,
+      "zeros": 1
     },
     "customer_id": {
       "type": "int32",
       "mean": 549948.6240935,
       "min": 100000,
       "max": 999998,
-      "std": 259802.08142886247,
+      "std": 259802.08142885906,
       "missing": 0,
-      "unique": 899999
+      "unique": 899999,
+      "zeros": 0
     },
     "loan_amount": {
       "type": "float32",
       "mean": 25026.783099996348,
       "min": 1000.0,
       "max": 77841.890625,
-      "std": 9924.353047925302,
+      "std": 9924.353047925237,
       "missing": 0,
-      "unique": 12007608
+      "unique": 12007608,
+      "zeros": 0
     },
     "interest_rate": {
       "type": "float32",
-      "mean": 0.08570249741171361,
+      "mean": 0.08570249741171358,
       "min": 2.7526632038643584e-05,
       "max": 0.2945172190666199,
-      "std": 0.0479171090422285,
+      "std": 0.04791710904222857,
       "missing": 0,
-      "unique": 13465964
+      "unique": 13465964,
+      "zeros": 0
     },
     "term_months": {
       "type": "int32",
       "mean": 47.9990808,
       "min": 12,
       "max": 84,
-      "std": 24.00053127654358,
+      "std": 24.000531276543583,
       "missing": 0,
-      "unique": 7
+      "unique": 7,
+      "zeros": 0
     },
     "credit_score": {
       "type": "int32",
@@ -55,34 +60,38 @@
       "max": 849,
       "std": 116.06540075377715,
       "missing": 0,
-      "unique": 550
+      "unique": 550,
+      "zeros": 0
     },
     "annual_income": {
       "type": "float32",
       "mean": 67856.35721071878,
       "min": 3217.72900390625,
       "max": 942661.125,
-      "std": 36168.05450712178,
+      "std": 36168.05450712186,
       "missing": 0,
-      "unique": 13120382
+      "unique": 13120382,
+      "zeros": 0
     },
     "dti_ratio": {
       "type": "float32",
       "mean": 0.19992127335407187,
       "min": 1.4250314961827826e-05,
       "max": 1.0,
-      "std": 0.14105283012318187,
+      "std": 0.14105283012318262,
       "missing": 0,
-      "unique": 14921677
+      "unique": 14921677,
+      "zeros": 0
     },
     "number_of_dependents": {
       "type": "int32",
       "mean": 1.49984685,
       "min": 0,
       "max": 10,
-      "std": 1.2246674452828443,
+      "std": 1.2246674452828348,
       "missing": 0,
-      "unique": 11
+      "unique": 11,
+      "zeros": 4463969
     },
     "is_secured": {
       "type": "boolean",
@@ -109,9 +118,10 @@
       "mean": 838.7446269550957,
       "min": 11.914910316467285,
       "max": 6720.30126953125,
-      "std": 761.866197776369,
+      "std": 761.8661977763702,
       "missing": 0,
-      "unique": 14783483
+      "unique": 14783483,
+      "zeros": 0
     },
     "application_date": {
       "type": "timestamp(6)",

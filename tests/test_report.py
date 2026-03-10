@@ -1,10 +1,10 @@
-import pandas as pd
+import polars as pl
 import ibis.expr.datatypes as dt
 from ibis_profiling.report import ProfileReport
 
 
 def test_report_building():
-    raw_results = pd.DataFrame([{"a__mean": 10.0, "_dataset__row_count": 5}])
+    raw_results = pl.DataFrame([{"a__mean": 10.0, "_dataset__row_count": 5}])
     schema = {"a": dt.Int64()}
 
     report = ProfileReport(raw_results, schema)

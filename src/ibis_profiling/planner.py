@@ -21,6 +21,13 @@ class QueryPlanner:
                     aggs.append(metric.build_expr(col).name(expr_alias))
 
         # Include dataset-wide metrics
-        aggs.append(self.table.count().name("_dataset__row_count"))
+        # Use a single aggregate to get both counts to avoid IntegrityError or separate passes
+        row_count = self.table.count()
+
+        aggs.append(row_count.name("_dataset__row_count"))
+
+        # Note: distinct().count() usually results in a subquery in SQL,
+        # which might not be batchable in a single SELECT without a subquery.
+        # However, for now, we'll keep it as a separate metric to see if it works.
 
         return self.table.aggregate(aggs)

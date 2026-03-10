@@ -1,11 +1,12 @@
 import ibis
-import pandas as pd
+import polars as pl
 
 
 class ExecutionEngine:
-    def execute(self, plan: ibis.expr.types.Table) -> pd.DataFrame:
+    def execute(self, plan: ibis.expr.types.Table) -> pl.DataFrame:
         """
         Executes the optimized Ibis expression graph.
-        All computation is pushed down to the backend engine here.
+        Returns a Polars DataFrame.
+        Computation is pushed down to the backend engine.
         """
-        return plan.execute()
+        return pl.from_arrow(plan.to_pyarrow())

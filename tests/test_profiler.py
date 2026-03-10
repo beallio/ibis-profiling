@@ -1,12 +1,12 @@
 import ibis
-import pandas as pd
+import polars as pl
 from datetime import datetime
 from ibis_profiling import profile
 
 
 def test_basic_profile():
     con = ibis.duckdb.connect()
-    t = con.sql("SELECT 1 AS id, 'a' AS txt").to_pandas()
+    t = con.sql("SELECT 1 AS id, 'a' AS txt").to_polars()
     table = ibis.memtable(t)
 
     report_obj = profile(table)
@@ -31,7 +31,7 @@ def test_complex_profile():
             datetime(2023, 1, 4),
         ],
     }
-    df = pd.DataFrame(data)
+    df = pl.DataFrame(data)
     table = ibis.memtable(df)
 
     report_obj = profile(table)

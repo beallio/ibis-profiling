@@ -1,6 +1,5 @@
 import json
-import pandas as pd
-import numpy as np
+import polars as pl
 import pytest
 import ibis.expr.datatypes as dt
 from ibis_profiling.report import ProfileReport
@@ -8,12 +7,14 @@ from ibis_profiling.report import ProfileReport
 
 def test_json_serialization_handles_complex_types():
     # Test all problematic types together
-    raw_results = pd.DataFrame(
+    from datetime import datetime
+
+    raw_results = pl.DataFrame(
         [
             {
-                "a__min": pd.Timestamp("2023-01-01"),
-                "b__mean": np.float64(10.5),
-                "_dataset__row_count": np.int64(20000000),
+                "a__min": datetime(2023, 1, 1),
+                "b__mean": 10.5,
+                "_dataset__row_count": 20000000,
             }
         ]
     )

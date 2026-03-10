@@ -1,8 +1,9 @@
-import pandas as pd
+import polars as pl
+from datetime import datetime, date
 
 
 class ProfileReport:
-    def __init__(self, raw_results: pd.DataFrame, schema: dict):
+    def __init__(self, raw_results: pl.DataFrame, schema: dict):
         self.raw_results = raw_results
         self.schema = schema
         self.dataset_stats = {}
@@ -10,20 +11,17 @@ class ProfileReport:
         self._build()
 
     def _to_json_serializable(self, val):
-        """Converts NumPy/Pandas types to standard Python types for JSON serialization."""
-        if hasattr(val, "item"):
-            return val.item()
-        if hasattr(val, "to_pydatetime"):
-            return val.to_pydatetime().isoformat()
-        if hasattr(val, "isoformat"):
+        """Converts Polars/Temporal types to standard Python types for JSON serialization."""
+        if isinstance(val, (datetime, date)):
             return val.isoformat()
         return val
 
     def _build(self):
-        if self.raw_results.empty:
+        if self.raw_results.is_empty():
             return
 
-        row = self.raw_results.iloc[0]  # Single row containing all aggregates
+        # Get the first row as a dictionary
+        row = self.raw_results.row(0, named=True)
 
         for col_name, dtype in self.schema.items():
             self.column_stats[col_name] = {"type": str(dtype)}
@@ -60,7 +58,7 @@ class ProfileReport:
 
         html.append("</table><h2>Column Statistics</h2>")
         html.append(
-            "<table><tr><th>Column</th><th>Type</th><th>Missing</th><th>Unique</th><th>Min</th><th>Max</th><th>Mean</th></tr>"
+            "<table><tr><th>Column</th><th>Type</th><th>Missing</th><th>Unique</th><th>Zeros</th><th>Min</th><th>Max</th><th>Mean</th></tr>"
         )
 
         for col, stats in self.column_stats.items():
@@ -69,6 +67,7 @@ class ProfileReport:
             html.append(f"<td>{stats.get('type', '')}</td>")
             html.append(f"<td>{stats.get('missing', '')}</td>")
             html.append(f"<td>{stats.get('unique', '')}</td>")
+            html.append(f"<td>{stats.get('zeros', '')}</td>")
             html.append(f"<td>{stats.get('min', '')}</td>")
             html.append(f"<td>{stats.get('max', '')}</td>")
             html.append(f"<td>{stats.get('mean', '')}</td>")
