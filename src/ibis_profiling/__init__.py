@@ -6,9 +6,9 @@ from .engine import ExecutionEngine
 from .report import ProfileReport
 
 
-def profile(table: ibis.Table) -> dict:
+def profile(table: ibis.Table) -> ProfileReport:
     """
-    Main entry point for profiling an Ibis table.
+    Main entrypoint for profiling an Ibis table.
 
     This function:
     1. Inspects the table schema.
@@ -29,7 +29,7 @@ def profile(table: ibis.Table) -> dict:
     # Interpret the results
     report = ProfileReport(raw_results, inspector.get_column_types())
 
-    return report.to_dict()
+    return report
 
 
 __all__ = ["profile", "registry"]

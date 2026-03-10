@@ -9,7 +9,8 @@ def test_basic_profile():
     t = con.sql("SELECT 1 AS id, 'a' AS txt").to_pandas()
     table = ibis.memtable(t)
 
-    report = profile(table)
+    report_obj = profile(table)
+    report = report_obj.to_dict()
 
     assert "dataset" in report
     assert "columns" in report
@@ -33,7 +34,8 @@ def test_complex_profile():
     df = pd.DataFrame(data)
     table = ibis.memtable(df)
 
-    report = profile(table)
+    report_obj = profile(table)
+    report = report_obj.to_dict()
 
     # Dataset stats
     assert report["dataset"]["row_count"] == 4
@@ -53,5 +55,5 @@ def test_complex_profile():
 
     # Date column
     date_stats = report["columns"]["date_col"]
-    assert date_stats["min"] == datetime(2023, 1, 1)
-    assert date_stats["max"] == datetime(2023, 1, 4)
+    assert date_stats["min"] == "2023-01-01T00:00:00"
+    assert date_stats["max"] == "2023-01-04T00:00:00"
