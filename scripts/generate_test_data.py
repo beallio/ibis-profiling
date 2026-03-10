@@ -65,13 +65,53 @@ def generate_population_data(fake, n_rows):
     return pl.DataFrame(data)
 
 
+def generate_legacy_loan_data(fake, n_rows):
+    """Mimics the exact schema of loan_data_20M.parquet"""
+    data = []
+    for i in range(n_rows):
+        loan_amount = float(fake.random_int(min=5000, max=50000))
+        interest_rate = random.uniform(0.05, 0.25)
+        term_months = random.choice([12, 24, 36, 48, 60, 72, 84])
+
+        data.append(
+            {
+                "loan_id": i,
+                "customer_id": fake.random_int(min=100000, max=999999),
+                "loan_amount": loan_amount,
+                "interest_rate": interest_rate,
+                "term_months": term_months,
+                "credit_score": fake.random_int(min=300, max=850),
+                "annual_income": float(fake.random_int(min=30000, max=200000)),
+                "dti_ratio": random.uniform(0.1, 0.5),
+                "number_of_dependents": random.randint(0, 5),
+                "is_secured": fake.boolean(),
+                "has_cosigner": fake.boolean(),
+                "piti_coverage": fake.boolean(),
+                "autopay_enabled": fake.boolean(),
+                "monthly_payment": (loan_amount * (1 + interest_rate)) / term_months,
+                "application_date": fake.date_time_between(start_date="-3y", end_date="now"),
+                "loan_status": random.choice(
+                    ["Current", "Fully Paid", "Late", "Default", "Grace Period"]
+                ),
+                "home_ownership": random.choice(["RENT", "MORTGAGE", "OWN", "ANY", "NONE"]),
+                "region": random.choice(["West", "Midwest", "South", "Northeast"]),
+                "grade": random.choice(["A", "B", "C", "D", "E", "F", "G"]),
+                "full_name": fake.name(),
+                "city": fake.city(),
+                "address": fake.address().replace("\n", ", "),
+                "employer_name": fake.company(),
+            }
+        )
+    return pl.DataFrame(data)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate fake datasets for profiling benchmarks.")
     parser.add_argument(
         "--type",
         type=str,
         default="loan",
-        choices=["loan", "bank", "population"],
+        choices=["loan", "bank", "population", "legacy_loan"],
         help="Type of data to generate",
     )
     parser.add_argument("--rows", type=int, default=100000, help="Number of rows to generate")
@@ -93,8 +133,10 @@ def main():
         df = generate_loan_data(fake, args.rows)
     elif args.type == "bank":
         df = generate_bank_data(fake, args.rows)
-    else:
+    elif args.type == "population":
         df = generate_population_data(fake, args.rows)
+    else:
+        df = generate_legacy_loan_data(fake, args.rows)
 
     print(f"Saving to {args.output}...")
     df.write_parquet(args.output)
