@@ -105,13 +105,30 @@ def generate_legacy_loan_data(fake, n_rows):
     return pl.DataFrame(data)
 
 
+def generate_mortgage_data(fake, n_rows):
+    data = []
+    for i in range(n_rows):
+        data.append(
+            {
+                "mortgage_id": fake.uuid4(),
+                "property_value": float(fake.random_int(min=100000, max=2000000)),
+                "loan_amount": float(fake.random_int(min=80000, max=1800000)),
+                "interest_rate": random.uniform(0.02, 0.08),
+                "zip_code": fake.zipcode(),
+                "is_refinance": fake.boolean(),
+                "occupancy_type": random.choice(["Primary", "Secondary", "Investment"]),
+            }
+        )
+    return pl.DataFrame(data)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate fake datasets for profiling benchmarks.")
     parser.add_argument(
         "--type",
         type=str,
         default="loan",
-        choices=["loan", "bank", "population", "legacy_loan"],
+        choices=["loan", "bank", "population", "legacy_loan", "mortgage"],
         help="Type of data to generate",
     )
     parser.add_argument("--rows", type=int, default=100000, help="Number of rows to generate")
@@ -135,8 +152,10 @@ def main():
         df = generate_bank_data(fake, args.rows)
     elif args.type == "population":
         df = generate_population_data(fake, args.rows)
-    else:
+    elif args.type == "legacy_loan":
         df = generate_legacy_loan_data(fake, args.rows)
+    else:
+        df = generate_mortgage_data(fake, args.rows)
 
     print(f"Saving to {args.output}...")
     df.write_parquet(args.output)

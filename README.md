@@ -104,6 +104,9 @@ Generate high-volume test data using the included CLI/Script.
 ```bash
 # Generate 1 million rows of fake loan data for testing
 uv run scripts/generate_test_data.py --type loan --rows 1000000 --output /tmp/test_data.parquet
+
+# Generate data that mimics the 20M row legacy dataset schema
+uv run scripts/generate_test_data.py --type legacy_loan --rows 5000000 --output /tmp/legacy_mimic.parquet
 ```
 
 ## Supported Metrics
