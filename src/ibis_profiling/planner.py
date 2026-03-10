@@ -39,9 +39,22 @@ class QueryPlanner:
 
         for col_name, dtype in schema.items():
             col = self.table[col_name]
-            # Currently only n_unique is complex
+            # 1. n_unique (singletons)
             metric = self.registry.metrics.get("n_unique")
             if metric and metric.supports(dtype):
                 plans.append((col_name, metric.name, metric.build_expr(col)))
+
+            # 2. Histograms for numeric columns
+            if dtype.is_numeric():
+                # We calculate a 10-bin histogram
+                # Note: We use a subquery to get min/max for scaling if not already known
+                # but for simplicity in this pass, we'll use ibis.histogram
+                # which is supported by DuckDB and others.
+                hist_expr = (
+                    col.value_counts().order_by(col_name).limit(20)
+                )  # Top 20 for categorical/small numeric
+                # For true numeric histograms, we'll add a specialized method later.
+                # For now, let's treat top-values as the "distribution" for the UI.
+                plans.append((col_name, "top_values", hist_expr))
 
         return plans

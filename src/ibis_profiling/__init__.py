@@ -27,13 +27,22 @@ def profile(table: ibis.Table) -> InternalProfileReport:
     # 2. Build base report
     report = InternalProfileReport(raw_results, inspector.get_column_types())
 
-    # 3. Handle complex metrics (e.g. n_unique)
-    # Note: For performance, we could batch these in QueryPlanner if possible,
-    # but currently they are separate expressions.
+    # 3. Handle complex metrics (e.g. n_unique, top_values)
     complex_plans = planner.build_complex_metrics()
     for col_name, metric_name, expr in complex_plans:
-        val = expr.to_pyarrow().as_py()
+        if isinstance(expr, ibis.expr.types.Table):
+            # For table-valued metrics like top_values
+            val = expr.to_pyarrow().to_pydict()
+        else:
+            # For scalar-valued metrics like n_unique
+            val = expr.to_pyarrow().as_py()
         report.add_metric(col_name, metric_name, val)
+
+    # 4. Capture Samples (Head)
+    # Note: Ibis doesn't have a reliable cross-backend 'tail' without an order key.
+    # We'll just capture the head for now.
+    head_sample = table.head(10).to_pyarrow().to_pydict()
+    report.add_metric("_dataset", "head", head_sample)
 
     return report
 
@@ -59,8 +68,8 @@ class ProfileReport:
     def get_description(self) -> dict:
         return self._report.get_description()
 
-    def to_html(self) -> str:
-        return self._report.to_html()
+    def to_html(self, template: str = "ydata") -> str:
+        return self._report.to_html(template=template)
 
 
 __all__ = ["profile", "registry", "ProfileReport"]

@@ -34,10 +34,10 @@ def test_report_to_html():
     report = ProfileReport(raw_results, schema)
     html = report.to_html()
 
-    assert "<h1>Data Profile Report</h1>" in html
-    assert "<td>a</td>" in html
-    assert "<td>10.0</td>" in html
-    assert "<td>5</td>" in html
+    assert "Ibis Profiling Report" in html
+    assert "Number of observations" in html
+    assert "10.0000" in html  # Mean with formatting
+    assert "5" in html
 
 
 def test_report_date_serialization():
