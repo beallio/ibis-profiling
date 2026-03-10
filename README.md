@@ -13,7 +13,7 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 - **Backend Pushdown:** 100% of the heavy lifting is done by the database engine.
 - **Minimal Round-trips:** Batches all simple aggregations (mean, std, min, max, quantiles) into a single SQL pass.
 - **Constant Memory Footprint:** Python only handles the final aggregated results (typically ~1 row of data), regardless of the input dataset size.
-- **Semantic Parity:** Metrics and naming conventions (e.g., `n_distinct` vs `n_unique`) are aligned with industry standards and spiritual predecessors.
+- **ydata-profiling Drop-in API:** Includes a `ProfileReport` class that mimics the standard ydata API for easy migration.
 - **Modern Tech Stack:** Built on **Polars**, **PyArrow**, and **Ibis** for maximum internal performance and compatibility.
 
 ## Performance Benchmarks
@@ -34,30 +34,77 @@ Benchmarks were conducted using a financial loan dataset on a standard Linux env
 uv add ibis-profiling
 ```
 
-## Quick Start
+## Quick Start (ydata-style)
 
 ```python
 import ibis
-from ibis_profiling import profile
+from ibis_profiling import ProfileReport
 
 # 1. Connect to any Ibis-supported backend
 con = ibis.duckdb.connect()
 table = con.read_parquet("large_dataset.parquet")
 
 # 2. Generate the profile (Zero-memory overhead)
-report = profile(table)
+report = ProfileReport(table)
 
-# 3. Access results
-print(report.to_dict()) # JSON-serializable dictionary
-# report.to_html() returns the HTML string for visualization
+# 3. Access or export results
+report.to_file("report.html")
+report.to_file("report.json")
+stats = report.get_description()
 ```
 
-## Use Cases
+## Use Cases & Examples
 
-1. **Warehouse Profiling:** Profile data directly in Snowflake or BigQuery without egressing data to local Python environments.
-2. **CI/CD Data Validation:** Run lightweight profiling in automated pipelines to detect schema drift or statistical anomalies in new data partitions.
-3. **Massive Parquet/CSV Analysis:** Leverage DuckDB's parallel execution to profile multi-gigabyte local files in seconds.
-4. **Interactive Data Exploration:** Generate instant statistical summaries in Jupyter notebooks without waiting for row-iterative loops.
+### 1. Warehouse Profiling (BigQuery / Snowflake)
+Profile data directly in your cloud warehouse without egressing rows to your local machine.
+
+```python
+import ibis
+from ibis_profiling import ProfileReport
+
+# Connect to Snowflake
+con = ibis.snowflake.connect(...)
+table = con.table("massive_events_table")
+
+# Computation happens remotely in Snowflake
+report = ProfileReport(table)
+report.to_file("snowflake_profile.html")
+```
+
+### 2. CI/CD Data Validation
+Detect schema drift or statistical anomalies in automated pipelines.
+
+```python
+def test_data_quality():
+    table = ibis.read_parquet("new_partition.parquet")
+    report = ProfileReport(table).to_dict()
+    
+    # Assert no missing values in critical columns
+    assert report["columns"]["user_id"]["missing"] == 0
+    # Assert mean transaction value is within normal bounds
+    assert 10 < report["columns"]["amount"]["mean"] < 500
+```
+
+### 3. Massive Local File Analysis
+Leverage DuckDB's parallel engine to profile multi-gigabyte local files.
+
+```python
+import ibis
+from ibis_profiling import ProfileReport
+
+# DuckDB handles the heavy lifting
+table = ibis.read_parquet("20GB_data.parquet")
+report = ProfileReport(table)
+print(f"Total Rows: {report.to_dict()['dataset']['row_count']}")
+```
+
+### 4. Synthetic Data Generation
+Generate high-volume test data using the included CLI/Script.
+
+```bash
+# Generate 1 million rows of fake loan data for testing
+uv run scripts/generate_test_data.py --type loan --rows 1000000 --output /tmp/test_data.parquet
+```
 
 ## Supported Metrics
 
@@ -84,19 +131,3 @@ The system is decoupled into five core modules:
 3. **Query Planner:** The "compiler" that batches compatible expressions into minimal plans.
 4. **Execution Engine:** Dispatches compiled Ibis ASTs to the backend using PyArrow transport.
 5. **Report Builder:** Aggregates and formats raw backend results into structured JSON/HTML.
-
-## Custom Metrics
-
-You can extend the profiler by registering your own Ibis-based metrics:
-
-```python
-from ibis_profiling.metrics import registry, Metric, MetricCategory
-import ibis.expr.datatypes as dt
-
-registry.register(Metric(
-    name="my_custom_metric",
-    category=MetricCategory.COLUMN,
-    applies_to=[dt.Numeric],
-    build_expr=lambda col: col.approx_nunique() # Use backend-specific features
-))
-```

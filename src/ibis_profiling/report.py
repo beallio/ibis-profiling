@@ -79,6 +79,27 @@ class ProfileReport:
     def to_dict(self):
         return {"dataset": self.dataset_stats, "columns": self.column_stats}
 
+    def get_description(self) -> dict:
+        """Alias for to_dict() to match ydata-profiling API."""
+        return self.to_dict()
+
+    def to_json(self) -> str:
+        """Returns the report as a JSON string."""
+        import json
+
+        return json.dumps(self.to_dict(), indent=2)
+
+    def to_file(self, output_file: str):
+        """Writes the report to a file (HTML or JSON)."""
+        content = ""
+        if output_file.endswith(".json"):
+            content = self.to_json()
+        else:
+            content = self.to_html()
+
+        with open(output_file, "w") as f:
+            f.write(content)
+
     def to_html(self) -> str:
         """Generates a simple HTML report for the profile."""
         html = [

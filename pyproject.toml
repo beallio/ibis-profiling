@@ -28,6 +28,7 @@ data_file = "/tmp/ibis-profiling/.coverage"
 
 [dependency-groups]
 dev = [
+    "faker>=40.8.0",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
 ]

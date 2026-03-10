@@ -59,3 +59,36 @@ def test_complex_profile():
     date_stats = report["columns"]["date_col"]
     assert date_stats["min"] == "2023-01-01T00:00:00"
     assert date_stats["max"] == "2023-01-04T00:00:00"
+
+
+def test_profilereport_wrapper():
+    con = ibis.duckdb.connect()
+    t = con.sql("SELECT 1 AS id, 'a' AS txt").to_polars()
+    table = ibis.memtable(t)
+
+    from ibis_profiling import ProfileReport
+
+    report = ProfileReport(table)
+
+    # Test ydata-style API
+    assert isinstance(report.to_dict(), dict)
+    assert isinstance(report.get_description(), dict)
+    assert "id" in report.get_description()["columns"]
+
+    # Test file export (minimal check)
+    import os
+
+    output_html = "/tmp/ibis-profiling/test_export.html"
+    output_json = "/tmp/ibis-profiling/test_export.json"
+
+    # Cleanup if exists
+    if os.path.exists(output_html):
+        os.remove(output_html)
+    if os.path.exists(output_json):
+        os.remove(output_json)
+
+    report.to_file(output_html)
+    assert os.path.exists(output_html)
+
+    report.to_file(output_json)
+    assert os.path.exists(output_json)
