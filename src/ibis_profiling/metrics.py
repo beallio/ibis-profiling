@@ -52,3 +52,21 @@ registry.register(Metric("unique", MetricCategory.COLUMN, None, lambda col: col.
 registry.register(
     Metric("zeros", MetricCategory.COLUMN, [dt.Numeric], lambda col: (col == 0).sum())
 )
+registry.register(
+    Metric(
+        "infinite", MetricCategory.COLUMN, [dt.Float64, dt.Float32], lambda col: col.isinf().sum()
+    )
+)
+registry.register(Metric("sum", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.sum()))
+registry.register(Metric("median", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.median()))
+registry.register(Metric("p5", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.05)))
+registry.register(
+    Metric("p25", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.25))
+)
+registry.register(
+    Metric("p75", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.75))
+)
+registry.register(
+    Metric("p95", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.95))
+)
+# kurtosis and skewness might have backend specific issues in Ibis, omitting for now for stability
