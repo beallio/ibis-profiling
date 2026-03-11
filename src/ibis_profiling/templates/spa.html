@@ -112,6 +112,8 @@
                       <tr><th>Number of observations</th><td class='metric-value'>${t.n.toLocaleString()}</td></tr>
                       <tr><th>Missing cells</th><td class='metric-value'>${t.n_cells_missing.toLocaleString()}</td></tr>
                       <tr><th>Missing cells (%)</th><td class='metric-value'>${(t.p_cells_missing*100).toFixed(1)}%</td></tr>
+                      <tr><th>Duplicate rows</th><td class='metric-value'>${t.n_duplicates.toLocaleString()}</td></tr>
+                      <tr><th>Duplicate rows (%)</th><td class='metric-value'>${(t.p_duplicates*100).toFixed(1)}%</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -300,22 +302,46 @@
     function renderMissing(container) {
       container.innerHTML = `<div class='section-header'><h1 class='section-name'>Missing Values</h1></div>`;
       const m = data.missing || {};
-      if (m.bar && m.bar.counts) {
+      
+      // Render Bar Chart
+      if (m.bar && m.bar.matrix && m.bar.matrix.counts) {
         const div = document.createElement("div");
         div.className = "row item";
         const chartId = "missing-bar";
-        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header'>Missing Values (Count)</p><div id='${chartId}' style='height: 400px;'></div></div>`;
+        div.innerHTML = `
+          <div class='col-sm-12'>
+            <p class='h4 item-header'>${m.bar.name}</p>
+            <div id='${chartId}' style='height: 400px;'></div>
+            <p class='text-muted small mt-2'>${m.bar.caption}</p>
+          </div>
+        `;
         container.appendChild(div);
 
         setTimeout(() => {
           Plotly.newPlot(chartId, [{
-            x: m.bar.columns, y: m.bar.counts, type: 'bar', marker: {color: '#6c757d'}
+            x: m.bar.matrix.columns, y: m.bar.matrix.counts, type: 'bar', marker: {color: '#6c757d'}
           }], {
             margin: { t: 10, b: 100, l: 50, r: 10 },
             height: 400
           });
         }, 50);
       }
+      
+      // Render Placeholders for Matrix/Heatmap
+      ['matrix', 'heatmap'].forEach(type => {
+        if(m[type] && (!m[type].matrix || Object.keys(m[type].matrix).length === 0)) {
+           const div = document.createElement("div");
+           div.className = "row item";
+           div.innerHTML = `
+             <div class='col-sm-12'>
+               <p class='h4 item-header'>${m[type].name}</p>
+               <div class='alert alert-light border text-center py-4'>Analysis for ${m[type].name} coming soon.</div>
+               <p class='text-muted small'>${m[type].caption}</p>
+             </div>
+           `;
+           container.appendChild(div);
+        }
+      });
     }
 
     function renderSample(container) {

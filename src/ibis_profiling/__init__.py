@@ -27,7 +27,15 @@ def profile(table: ibis.Table) -> InternalProfileReport:
     # 2. Build base report
     report = InternalProfileReport(raw_results, inspector.get_column_types())
 
-    # 3. Handle advanced moments (Skewness, MAD) in a second pass if possible
+    # 3. Handle dataset-wide distinct count (Duplicates)
+    # We do this separately to avoid IntegrityErrors in the global batch
+    n_distinct_rows = table.distinct().count().execute()
+    report.table["n_distinct_rows"] = n_distinct_rows
+    n_total = report.table.get("n", 0)
+    report.table["n_duplicates"] = n_total - n_distinct_rows
+    report.table["p_duplicates"] = (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
+
+    # 4. Handle advanced moments (Skewness, MAD) in a second pass if possible
     # We use mean/std from pass 1 to avoid nesting issues
     second_pass_aggs = []
     numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]

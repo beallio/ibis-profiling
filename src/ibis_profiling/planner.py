@@ -27,6 +27,9 @@ class QueryPlanner:
         # Include dataset-wide metrics
         aggs.append(self.table.count().name("_dataset__row_count"))
 
+        # We'll omit distinct count from this global batch to avoid IntegrityErrors
+        # and handle it in __init__.py as a separate pass.
+
         return self.table.aggregate(aggs)
 
     def build_complex_metrics(self) -> list[tuple[str, str, ibis.expr.types.Value]]:

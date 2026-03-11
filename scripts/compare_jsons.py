@@ -1,7 +1,6 @@
 import sys
 import ibis
 import os
-from ibis_profiling import ProfileReport as IbisProfile
 from ydata_profiling import ProfileReport as YDataProfile
 from generate_test_data import generate_fast_loan_data
 
@@ -13,19 +12,22 @@ def main():
     df_pandas = df_polars.to_pandas()
 
     # 1. Run Ibis Profiling
-    print("Running Ibis Profiling...")
-    con = ibis.duckdb.connect()
-    table = con.from_polars(df_polars)
-    ibis_report = IbisProfile(table)
+    print("Running Ibis Profiling (Full)...")
+    table = ibis.memtable(df_polars)
+    # Ensure we use the profile function which handles the 2-pass logic
+    from ibis_profiling import profile
+
+    ibis_report = profile(table)
     ibis_json_path = "/tmp/ibis-profiling/ibis_comparison.json"
     ibis_report.to_file(ibis_json_path)
 
     # 2. Run YData Profiling
-    print("Running YData Profiling...")
-    ydata_report = YDataProfile(df_pandas, explorative=True, sensitive=True)
+    print("Running YData Profiling (Full)...")
+    ydata_report = YDataProfile(
+        df_pandas, explorative=True, interactions=None
+    )  # interactions=None means all
     ydata_json_path = "/tmp/ibis-profiling/ydata_comparison.json"
     ydata_report.to_file(ydata_json_path)
-
     print("\nReports saved to:")
     print(f"Ibis:  {ibis_json_path}")
     print(f"YData: {ydata_json_path}")

@@ -21,14 +21,14 @@ def test_correlation_and_missing_model():
 
     # Check missing model
     assert "bar" in report.missing
-    assert report.missing["bar"]["counts"] == [2, 5]
+    assert report.missing["bar"]["matrix"]["counts"] == [2, 5]
 
     # Add correlations
     report.correlations["pearson"] = {"columns": ["a", "b"], "matrix": [[1.0, 0.5], [0.5, 1.0]]}
 
     result = report.to_dict()
     assert len(result["correlations"]["pearson"]["matrix"]) == 2
-    assert result["missing"]["bar"]["counts"] == [2, 5]
+    assert result["missing"]["bar"]["matrix"]["counts"] == [2, 5]
 
 
 def test_categorical_histogram_mapping():

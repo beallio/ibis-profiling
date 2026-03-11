@@ -10,9 +10,12 @@ class CorrelationEngine:
         """Calculates all supported correlation matrices."""
         numeric_cols = [c for c, s in variables.items() if s.get("type") == "Numeric"]
 
+        pearson = CorrelationEngine._compute_pearson(table, numeric_cols)
+
         return {
-            "pearson": CorrelationEngine._compute_pearson(table, numeric_cols),
-            # placeholders for others to match ydata spec
+            "auto": pearson,  # ydata often uses 'auto'
+            "pearson": pearson,
+            # placeholders for others
             "spearman": {"columns": [], "matrix": []},
             "kendall": {"columns": [], "matrix": []},
             "phi_k": {"columns": [], "matrix": []},
