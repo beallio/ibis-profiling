@@ -346,28 +346,29 @@
         const firstCol = mat.values.find(v => v && v.length > 0);
         if (firstCol) {
           const nRows = firstCol.length;
-          const labelHeight = 100;
-          const cellW = Math.max(60, 800/nCols);
+          const labelHeight = 120;
+          const cellW = Math.max(50, 800/nCols);
           const cellH = 2; 
+          const svgW = nCols * cellW + 60;
+          const svgH = nRows * cellH + labelHeight + 20;
           
-          let svg = `<svg width="${nCols * cellW + 50}" height="${nRows * cellH + labelHeight + 20}" style="display: block;">`;
+          let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" height="${svgH}" preserveAspectRatio="xMinYMin meet" style="display: block; font-family: sans-serif;">`;
           
           // Column Labels (Top)
           mat.columns.forEach((col, i) => {
-             svg += `<text x="${i*cellW + (cellW/2)}" y="${labelHeight - 5}" font-size="11" font-weight="600" text-anchor="start" transform="rotate(-45, ${i*cellW + (cellW/2)}, ${labelHeight - 5})">${col}</text>`;
+             svg += `<text x="${i*cellW + (cellW/2)}" y="${labelHeight - 10}" font-size="12" font-weight="600" text-anchor="start" transform="rotate(-45, ${i*cellW + (cellW/2)}, ${labelHeight - 10})">${col}</text>`;
              
              if (mat.values[i]) {
                mat.values[i].forEach((isNull, j) => {
                  const y = labelHeight + (j * cellH);
-                 // YData style: grey/white for missing, dark for present
                  svg += `<rect x="${i*cellW}" y="${y}" width="${cellW-1}" height="${cellH}" fill="${isNull ? '#eee' : '#444'}" />`;
                });
              }
           });
           
-          // Row markers (0 and N)
-          svg += `<text x="${nCols * cellW + 5}" y="${labelHeight + 10}" font-size="10" fill="#999">0</text>`;
-          svg += `<text x="${nCols * cellW + 5}" y="${labelHeight + (nRows * cellH)}" font-size="10" fill="#999">${nRows}</text>`;
+          // Row markers
+          svg += `<text x="${nCols * cellW + 10}" y="${labelHeight + 10}" font-size="11" fill="#666">0</text>`;
+          svg += `<text x="${nCols * cellW + 10}" y="${labelHeight + (nRows * cellH)}" font-size="11" fill="#666">${nRows}</text>`;
           
           svg += `</svg>`;
           document.getElementById(matrixId).innerHTML = svg;

@@ -38,11 +38,10 @@ class MissingEngine:
         sample_df = table.projection(sample_masks).limit(sample_size).execute()
 
         # Convert to list of lists for JSON
-        matrix_values = sample_df.to_dict()
-        # We want a list of columns for the matrix visualization
+        # We explicitly convert each column to a list to ensure pure JSON arrays
         matrix_data = {
             "columns": columns,
-            "values": [matrix_values[c] for c in columns],
+            "values": [sample_df[c].to_list() for c in columns],
         }
 
         return {
