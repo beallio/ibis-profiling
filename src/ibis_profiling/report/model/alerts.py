@@ -23,6 +23,16 @@ class AlertEngine:
                     {"type": "MISSING", "fields": [col], "value": p_missing, "level": "info"}
                 )
 
+            # Unique Values
+            n_distinct = stats.get("n_distinct", 0)
+            if n > 0 and n_distinct == n:
+                alerts.append({"type": "UNIQUE", "fields": [col], "level": "warning"})
+
+            # Zeros
+            zeros = stats.get("zeros", 0)
+            if n > 0 and (zeros / n) > 0.1:
+                alerts.append({"type": "ZEROS", "fields": [col], "value": zeros, "level": "info"})
+
             # Skewness (to be implemented)
 
             # High Cardinality
