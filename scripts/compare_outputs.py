@@ -44,6 +44,7 @@ def main():
         "n_duplicates",
         "n_vars_with_missing",
         "n_vars_all_missing",
+        "memory_size",
     ]
 
     print("\n[Global Table Statistics]")
@@ -51,7 +52,12 @@ def main():
         iv = ibis_table.get(stat)
         yv = ydata_table.get(stat)
         match = compare_metrics(iv, yv)
-        print(f"{stat:20} | Ibis: {iv:10} | ydata: {yv:10} | Match: {match}")
+        if stat == "memory_size":
+            print(
+                f"{stat:20} | Ibis: {str(iv):10} | ydata: {str(yv):10} | Present: {iv is not None}"
+            )
+        else:
+            print(f"{stat:20} | Ibis: {str(iv):10} | ydata: {str(yv):10} | Match: {match}")
 
     # 2. Variable Stats
     ibis_vars = ibis_data.get("variables", {})
@@ -70,6 +76,10 @@ def main():
         "n_distinct",
         "n_infinite",
         "n_zeros",
+        "monotonic_increasing",
+        "monotonic_decreasing",
+        "extreme_values_smallest",
+        "extreme_values_largest",
     ]
 
     print("\n[Variable-Level Statistics (Sample)]")
@@ -86,8 +96,16 @@ def main():
             iv = iv_data.get(metric)
             yv = yv_data.get(metric)
             if iv is not None or yv is not None:
-                match = compare_metrics(iv, yv)
-                print(f"  {metric:15} | Ibis: {str(iv):10} | ydata: {str(yv):10} | Match: {match}")
+                if isinstance(iv, list) or isinstance(yv, list):
+                    # For extreme values, just check presence and count
+                    print(
+                        f"  {metric:15} | Ibis List: {len(iv) if iv else 0} | ydata List: {len(yv) if yv else 0}"
+                    )
+                else:
+                    match = compare_metrics(iv, yv)
+                    print(
+                        f"  {metric:15} | Ibis: {str(iv):10} | ydata: {str(yv):10} | Match: {match}"
+                    )
 
     # 3. Alerts
     ibis_alerts = ibis_data.get("alerts", [])

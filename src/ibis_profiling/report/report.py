@@ -57,6 +57,8 @@ class ProfileReport:
 
     def _build(self):
         # 1. Variables Summary
+        # Temporarily store _dataset if it exists in schema
+        dataset_meta = self.schema.pop("_dataset", {})
         self.variables = SummaryEngine.process_variables(self.raw_results, self.schema)
 
         # 2. Table Summary
@@ -68,6 +70,8 @@ class ProfileReport:
             self.table = {
                 "n": n,
                 "n_var": len(self.schema),
+                "memory_size": self._to_json_serializable(dataset_meta.get("memory_size", 0)),
+                "record_size": self._to_json_serializable(dataset_meta.get("record_size", 0)),
                 "n_cells_missing": 0,
                 "n_vars_with_missing": 0,
                 "n_vars_all_missing": 0,
@@ -157,6 +161,19 @@ class ProfileReport:
                 counts = list(value.get(f"{col_name}_count", []))
                 labels = [str(x) for x in value.get(col_name, [])]
                 self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
+            elif metric_name == "length_histogram":
+                # Value is a dict with two columns: the length and the count
+                keys = list(value.keys())
+                # First key is length, second is count
+                labels = [str(x) for x in value.get(keys[0], [])]
+                counts = list(value.get(keys[1], []))
+                self.variables[col_name]["length_histogram"] = {"bins": labels, "counts": counts}
+            elif metric_name.startswith("extreme_values_"):
+                # Value is a dict like {col_name: [v1, v2, ...]}
+                vals = value.get(col_name, [])
+                self.variables[col_name][metric_name] = [
+                    self._to_json_serializable(x) for x in vals
+                ]
             else:
                 self.variables[col_name][metric_name] = self._to_json_serializable(value)
 
@@ -166,7 +183,7 @@ class ProfileReport:
         if "pearson" in corrs and "auto" not in corrs:
             corrs["auto"] = corrs["pearson"]
 
-        return {
+        d = {
             "analysis": self.analysis,
             "table": self.table,
             "variables": self.variables,
@@ -177,6 +194,34 @@ class ProfileReport:
             "sample": self.samples,
             "package": {"name": "ibis-profiling", "version": "0.1.0"},
         }
+        # Standardize matrices to list-of-dicts for ydata compatibility
+        d = self._format_matrices(d)
+        return self._clean_dict(d)
+
+    def _format_matrices(self, obj: Any) -> Any:
+        """Recursively transforms {columns, matrix} objects to list-of-dicts."""
+        if isinstance(obj, dict):
+            if "columns" in obj and "matrix" in obj and isinstance(obj["matrix"], list):
+                cols = obj["columns"]
+                matrix = obj["matrix"]
+                if matrix and isinstance(matrix[0], list):
+                    return [dict(zip(cols, row)) for row in matrix]
+            return {k: self._format_matrices(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._format_matrices(v) for v in obj]
+        return obj
+
+    def _clean_dict(self, obj: Any) -> Any:
+        """Recursively replaces NaN/Inf with None for JSON compatibility."""
+        if isinstance(obj, dict):
+            return {k: self._clean_dict(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._clean_dict(v) for v in obj]
+        elif isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return None
+            return obj
+        return obj
 
     def get_structure(self) -> Any:
         """Returns the logical structure of the report."""

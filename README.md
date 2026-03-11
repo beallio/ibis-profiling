@@ -40,21 +40,26 @@ Benchmarks were conducted using a synthetic dataset with 20 columns (mix of nume
 
 | Dataset Size | Ibis (Min) | Ibis (Full) | ydata (Min) | ydata (Full) | Mem Ibis (Min) | Mem ydata (Min) | Mem Ibis (Full) | Mem ydata (Full) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **10k Rows** | 0.90s | 0.88s | 9.92s | 28.00s | ~3.6 MB | ~74 MB | ~3.2 MB | ~107 MB |
-| **50k Rows** | 1.16s | 1.15s | 17.53s | 38.23s | ~3.6 MB | ~293 MB | ~3.2 MB | ~329 MB |
-| **500k Rows** | 2.16s | 2.50s | 85.92s | ~2.5m (est) | ~3.6 MB | ~2.5 GB | ~3.6 MB | ~2.8 GB (est) |
-| **1M Rows** | 3.15s | 3.52s | 147.24s | ~5m (est) | ~3.2 MB | ~4.8 GB | ~3.2 MB | ~5.2 GB (est) |
-| **5M Rows** | 12.23s | 12.38s | ~15m (est) | ~40m (est) | ~3.2 MB | >20 GB (est) | ~3.2 MB | >25 GB (est) |
-| **10M Rows** | 27.27s | 24.53s | ~35m (est) | ~1.5h (est) | ~3.6 MB | >40 GB (est) | ~3.2 MB | >50 GB (est) |
-| **20M Rows** | 49.17s | 32.15s* | >1h (est) | >3h (est) | ~3.6 MB | >80 GB (est) | ~1.8 MB* | >100 GB (est) |
+| **10k Rows** | 0.89s | 1.40s | 9.94s | 28.38s | ~2.4 MB | ~74 MB | ~4.5 MB | ~107 MB |
+| **25k Rows** | 1.03s | 1.57s | 12.20s | 30.47s | ~2.1 MB | ~154 MB | ~4.4 MB | ~188 MB |
+| **50k Rows** | 1.22s | 1.82s | 16.63s | 35.10s | ~2.0 MB | ~284 MB | ~4.4 MB | ~324 MB |
+| **500k Rows** | 2.29s | 3.56s | 91.93s | ~3m (est) | ~2.0 MB | ~2.5 GB | ~4.4 MB | ~2.8 GB (est) |
+| **1M Rows** | 3.14s | 5.44s | 166.31s | ~6m (est) | ~2.1 MB | ~4.9 GB | ~4.4 MB | ~5.3 GB (est) |
+| **5M Rows** | 10.69s | 17.88s | ~14m (est) | ~45m (est) | ~2.0 MB | >20 GB (est) | ~4.4 MB | >25 GB (est) |
+| **10M Rows** | 20.64s | 21.29s* | ~28m (est) | ~1.5h (est) | ~2.4 MB | >40 GB (est) | ~2.6 MB* | >50 GB (est) |
+| **20M Rows** | 43.98s | 8.77s** | >1h (est) | >3h (est) | ~2.4 MB | >80 GB (est) | ~1.0 MB** | >100 GB (est) |
 
-*Note: 20M Full result (32.15s) was run with 10 columns to avoid OOM. All other benchmarks use 20 columns. ydata-profiling was run in "minimal" mode for larger datasets to avoid OOM errors. Ibis memory usage is nearly constant (< 1MB difference) between Minimal and Full modes.*
+*Notes:
+- 10M Full (21.29s) used 10 columns.
+- 20M Full (8.77s) used 5 columns.
+- All other benchmarks use 20 columns.
+- Ibis memory usage is nearly constant and extremely low compared to ydata-profiling due to database-native pushdown.*
 
 ### 🔍 Estimation Methodology
 Projections for `ydata-profiling` on larger datasets are derived from observed scaling trends:
-- **Time (Minimal):** Scaled linearly based on the jump from 500k (85s) to 1M (147s) rows.
+- **Time (Minimal):** Scaled linearly based on the jump from 500k (92s) to 1M (166s) rows.
 - **Time (Full):** Scaled with a factor of ~2.5x - 3x over Minimal mode, consistent with small-sample ratios.
-- **Memory:** Scaled linearly based on observed peak usage (~2.5 GB at 500k, ~4.8 GB at 1M), reflecting the overhead of loading the full dataset into Pandas DataFrames.
+- **Memory:** Scaled linearly based on observed peak usage (~2.5 GB at 500k, ~4.9 GB at 1M), reflecting the overhead of loading the full dataset into Pandas DataFrames.
 
 ---
 
@@ -106,11 +111,23 @@ The `ProfileReport` supports a `minimal` flag (default `False`) to toggle betwee
 | Feature | Minimal Mode (`minimal=True`) | Full Mode (`minimal=False`) |
 | :--- | :--- | :--- |
 | **Core Stats** | Count, Mean, Std, Min/Max, Zeros, Nullity. | All Minimal stats. |
+| **Table Metadata** | Estimated Memory/Record Size. | Same as Minimal. |
 | **Advanced Moments** | Skipped. | Skewness, Kurtosis, MAD. |
-| **Correlations** | Skipped. | Full Pearson pairwise matrix. |
-| **Missing Values** | Count and percentage only. | Nullity Matrix (SVG) and Heatmap. |
+| **Correlations** | Skipped. | Pearson and Spearman matrices. |
+| **Advanced Analysis** | Skipped. | Extreme Values, Monotonicity, Text Lengths. |
+| **Visualizations** | Summary only. | Nullity Matrix (SVG) and Heatmap. |
 | **Duplicates** | Skipped. | Dataset-wide duplicate row count. |
 | **Performance** | **Ultra-Fast.** Recommended for datasets > 50M rows. | **Detailed.** Recommended for deep data quality audits. |
+
+## Feature Gaps & Roadmap
+
+`ibis-profiling` is designed for scale, prioritizing metrics that can be pushed down to SQL engines. As a result, some "linguistic" or high-complexity features from `ydata-profiling` are currently missing or implemented as approximations:
+
+1.  **Linguistic Analysis:** Unicode script detection and character-level distributions are missing (require complex UDFs).
+2.  **Advanced Correlations:** `phi_k`, `kendall`, and `cramers_v` are currently placeholders (higher computational complexity).
+3.  **Interactions:** Pairwise scatter plot data is not yet generated.
+4.  **Memory Footprint:** While Ibis uses backend-specific commands (like DuckDB's `PRAGMA storage_info`) where possible, it falls back to schema-based estimation for others.
+5.  **Tail Sample:** Ibis does not provide a reliable `tail()` without an explicit ordering key; only `head()` is captured.
 
 ---
 

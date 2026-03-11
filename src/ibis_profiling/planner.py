@@ -54,4 +54,31 @@ class QueryPlanner:
             hist_expr = col.value_counts().order_by(ibis.desc(f"{col_name}_count")).limit(20)
             plans.append((col_name, "top_values", hist_expr))
 
+            # 3. Extreme Values (Smallest/Largest)
+            if not isinstance(
+                dtype,
+                (ibis.expr.datatypes.Array, ibis.expr.datatypes.Map, ibis.expr.datatypes.Struct),
+            ):
+                # Smallest
+                small_expr = (
+                    self.table.select(col_name).filter(col.notnull()).order_by(col).limit(5)
+                )
+                plans.append((col_name, "extreme_values_smallest", small_expr))
+
+                # Largest
+                large_expr = (
+                    self.table.select(col_name)
+                    .filter(col.notnull())
+                    .order_by(ibis.desc(col))
+                    .limit(5)
+                )
+                plans.append((col_name, "extreme_values_largest", large_expr))
+
+            # 4. String Length Histogram
+            if isinstance(dtype, ibis.expr.datatypes.String):
+                # value_counts() returns a table with columns [col_name, f"{col_name}_count"]
+                # For lengths, the col_name will be 'StringLength(s)' or similar
+                len_hist = col.length().value_counts().limit(10)
+                plans.append((col_name, "length_histogram", len_hist))
+
         return plans

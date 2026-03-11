@@ -30,7 +30,9 @@ def test_correlation_and_missing_model():
     report.correlations["pearson"] = {"columns": ["a", "b"], "matrix": [[1.0, 0.5], [0.5, 1.0]]}
 
     result = report.to_dict()
-    assert len(result["correlations"]["pearson"]["matrix"]) == 2
+    # pearson is now a list of dicts
+    assert len(result["correlations"]["pearson"]) == 2
+    assert result["correlations"]["pearson"][0]["a"] == 1.0
     assert result["missing"]["bar"]["matrix"]["counts"] == [2, 5]
 
 

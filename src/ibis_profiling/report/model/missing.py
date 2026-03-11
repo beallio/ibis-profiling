@@ -18,7 +18,11 @@ class MissingEngine:
 
         if len(cols_with_missing) >= 2:
             # Create nullity masks (1 if null, 0 if not)
-            nullity_masks = [table[c].isnull().cast("int8").name(c) for c in cols_with_missing]
+            from ...metrics import safe_col
+
+            nullity_masks = [
+                safe_col(table[c]).isnull().cast("int8").name(c) for c in cols_with_missing
+            ]
             mask_table = table.projection(nullity_masks)
 
             # Use CorrelationEngine's logic for Pearson on the masks
@@ -32,7 +36,9 @@ class MissingEngine:
         sample_size = min(250, n_rows)
 
         # Project nullity masks for the sample
-        sample_masks = [table[c].isnull().name(c) for c in columns]
+        from ...metrics import safe_col
+
+        sample_masks = [safe_col(table[c]).isnull().name(c) for c in columns]
         # We use limit() for deterministic matrix or sample() for random
         # execute() returns a polars dataframe in our current setup
         sample_df = table.projection(sample_masks).limit(sample_size).execute()

@@ -1,8 +1,12 @@
 import sys
-import ibis
-import os
-from ydata_profiling import ProfileReport as YDataProfile
-from generate_test_data import generate_fast_loan_data
+from unittest.mock import MagicMock
+
+sys.modules["pkg_resources"] = MagicMock()
+
+import ibis  # noqa: E402
+import os  # noqa: E402
+from ydata_profiling import ProfileReport as YDataProfile  # noqa: E402
+from generate_test_data import generate_fast_loan_data  # noqa: E402
 
 
 def main():

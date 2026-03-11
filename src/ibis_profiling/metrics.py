@@ -59,8 +59,12 @@ registry.register(
 registry.register(
     Metric("std", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).std(how="sample"))
 )
-registry.register(Metric("missing", MetricCategory.COLUMN, None, lambda col: col.isnull().sum()))
-registry.register(Metric("n_distinct", MetricCategory.COLUMN, None, lambda col: col.nunique()))
+registry.register(
+    Metric("missing", MetricCategory.COLUMN, None, lambda col: safe_col(col).isnull().sum())
+)
+registry.register(
+    Metric("n_distinct", MetricCategory.COLUMN, None, lambda col: safe_col(col).nunique())
+)
 registry.register(
     Metric("zeros", MetricCategory.COLUMN, [dt.Numeric], lambda col: (col == 0).sum())
 )
@@ -111,4 +115,15 @@ registry.register(
 
 registry.register(
     Metric("kurtosis", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).kurtosis())
+)
+
+# Text Metrics
+registry.register(
+    Metric("mean_length", MetricCategory.COLUMN, [dt.String], lambda col: col.length().mean())
+)
+registry.register(
+    Metric("min_length", MetricCategory.COLUMN, [dt.String], lambda col: col.length().min())
+)
+registry.register(
+    Metric("max_length", MetricCategory.COLUMN, [dt.String], lambda col: col.length().max())
 )

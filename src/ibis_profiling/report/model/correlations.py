@@ -11,16 +11,48 @@ class CorrelationEngine:
         numeric_cols = [c for c, s in variables.items() if s.get("type") == "Numeric"]
 
         pearson = CorrelationEngine._compute_pearson(table, numeric_cols)
+        spearman = CorrelationEngine._compute_spearman(table, numeric_cols)
 
         return {
             "auto": pearson,  # ydata often uses 'auto'
             "pearson": pearson,
+            "spearman": spearman,
             # placeholders for others
-            "spearman": {"columns": [], "matrix": []},
             "kendall": {"columns": [], "matrix": []},
             "phi_k": {"columns": [], "matrix": []},
             "cramers": {"columns": [], "matrix": []},
         }
+
+    @staticmethod
+    def _compute_spearman(table: ibis.Table, cols: List[str]) -> Dict[str, Any]:
+        if len(cols) < 2:
+            return {"columns": cols, "matrix": []}
+
+        # We cannot nest RANK() inside COVAR_POP() in DuckDB.
+        # We must return expressions that represent the ranks.
+        # The caller will create a CTE/temp table with these ranks.
+
+        ranks = {}
+        for c in cols:
+            # We must use a window for rank()
+            # If no order is provided, it ranks based on the column itself
+            ranks[c] = table[c].rank()
+
+        # To maintain the same structure as _compute_pearson, we return a matrix
+        # but the items are now placeholders that the caller will handle
+        # by executing on a RANK-transformed table.
+        matrix = []
+        for i, c1 in enumerate(cols):
+            row = []
+            for j, c2 in enumerate(cols):
+                if i == j:
+                    row.append(1.0)
+                else:
+                    # Placeholder for the rank-based Pearson
+                    row.append(f"spearman_{i}_{j}")
+            matrix.append(row)
+
+        return {"columns": cols, "matrix": matrix, "rank_exprs": ranks}
 
     @staticmethod
     def _compute_pearson(table: ibis.Table, cols: List[str]) -> Dict[str, Any]:

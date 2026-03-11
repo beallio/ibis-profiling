@@ -98,8 +98,10 @@ def main():
         if not os.path.exists(data_path):
             print(f"Generating data for {size:,} rows x {args.cols} cols...")
             # For 20M, we need to make sure we don't OOM during generation too
+            import sys
+
             os.system(
-                f"python3 scripts/generate_bench_data.py --rows {size} --cols {args.cols} --output {data_path}"
+                f"{sys.executable} scripts/generate_bench_data.py --rows {size} --cols {args.cols} --output {data_path}"
             )
 
         if not os.path.exists(data_path):
