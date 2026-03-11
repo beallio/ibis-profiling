@@ -1,3 +1,10 @@
+# /// script
+# dependencies = [
+#   "polars",
+#   "faker",
+#   "pyarrow",
+# ]
+# ///
 import polars as pl
 from faker import Faker
 import argparse

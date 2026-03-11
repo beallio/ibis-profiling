@@ -1,3 +1,9 @@
+# /// script
+# dependencies = [
+#   "ibis-framework",
+#   "duckdb",
+# ]
+# ///
 import ibis
 import json
 import os

@@ -1,3 +1,6 @@
+# /// script
+# dependencies = []
+# ///
 import json
 import os
 

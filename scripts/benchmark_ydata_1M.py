@@ -1,3 +1,10 @@
+# /// script
+# dependencies = [
+#   "ydata-profiling",
+#   "pandas<3.0",
+#   "pyarrow",
+# ]
+# ///
 import json
 import pandas as pd
 import os
