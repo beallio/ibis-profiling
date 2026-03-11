@@ -66,15 +66,8 @@ uv add ibis-profiling
 
 ---
 
-## 📖 Technical Documentation
-
-For in-depth details on calculation logic and rules, see:
-- [**Detailed Calculation Reference (METRICS.md)**](docs/METRICS.md): How every mean, variance, skewness, and alert threshold is computed.
-- [**Unique Count Discrepancy (unique_count_discrepancy.md)**](docs/unique_count_discrepancy.md): Why Ibis's `n_unique` (singletons) differs from standard counts.
-
----
-
 ## 💻 Usage
+
 
 ### Quick Start (ydata-style API)
 
@@ -119,23 +112,72 @@ The system is decoupled into five core modules:
 
 ---
 
-## 🧪 Alert Engine
-
-The built-in alert engine automatically flags data quality issues:
-- **CONSTANT:** Columns with only one value.
-- **UNIQUE:** Primary key candidates.
-- **HIGH_CARDINALITY:** Non-unique columns with high distinct ratios.
-- **MISSING:** Columns with >5% nullity.
-- **ZEROS:** Numeric columns with high zero-count ratios.
-- **SKEWED:** Highly asymmetrical distributions.
-
----
-
 ## 📊 Missing Values Analysis
 
 Move beyond simple counts with advanced pattern detection:
 - **Matrix:** A vertical sparkline grid (SVG) visualizing the location of missing values across rows.
 - **Heatmap:** Pearson correlation of "nullity" between variables, revealing structural dependencies.
+
+---
+
+## 📏 Metrics & Calculation Reference
+
+This section provides a detailed breakdown of how metrics are calculated and how the alert engine identifies potential data quality issues.
+
+### 1. Variable Calculations
+
+The profiler uses a multi-pass execution engine to compute statistics efficiently across massive datasets while remaining compatible with SQL-based backends (like DuckDB).
+
+#### Core Statistics (Pass 1)
+These are computed in a single global aggregation pass using Ibis primitives.
+
+| Metric | Calculation | Type |
+| :--- | :--- | :--- |
+| `n` | Total number of observations (rows) in the table. | All |
+| `n_missing` | Count of `NULL` or `NaN` values. | All |
+| `p_missing` | `n_missing / n` | All |
+| `n_distinct` | Count of unique values (excluding `NULL`). | All |
+| `p_distinct` | `n_distinct / n` | All |
+| `count` | `n - n_missing` (Total non-missing values) | All |
+| `mean` | `sum(x) / count` (NaNs treated as NULL) | Numeric |
+| `std` | Sample standard deviation (Bessel's correction). | Numeric |
+| `variance` | `std^2` | Numeric |
+| `min` / `max` | Minimum and maximum values. | Numeric, DateTime |
+| `zeros` | Count of values exactly equal to `0`. | Numeric |
+| `n_negative` | Count of values `< 0`. | Numeric |
+| `infinite` | Count of `+/- inf` values (Float only). | Numeric |
+
+#### Advanced Statistics (Pass 2)
+To avoid "Nested Aggregation" errors in SQL backends, these are computed using values from Pass 1 as constants.
+
+| Metric | Calculation | Logic |
+| :--- | :--- | :--- |
+| `skewness` | `mean( ((x - μ) / σ)^3 )` | Standardized 3rd moment. |
+| `mad` | `mean( abs(x - μ) )` | Mean Absolute Deviation. |
+| `duplicates` | `n - count(distinct_rows)` | Dataset-wide duplicate row count. |
+
+#### Quantiles
+Calculated via `col.quantile(p)`.
+- `5%`, `25%` (Q1), `50%` (Median), `75%` (Q3), `95%`.
+
+---
+
+### 2. Alert Engine Logic
+
+The built-in alert engine scans the calculated metrics and triggers warnings based on industry-standard thresholds (aligned with `ydata-profiling`).
+
+| Alert Type | Logic / Threshold | Severity |
+| :--- | :--- | :--- |
+| **CONSTANT** | `n_distinct == 1` | warning |
+| **UNIQUE** | `n_distinct == n` | warning |
+| **HIGH_CARDINALITY** | `p_distinct > 0.5` (and not `UNIQUE`, Categorical only) | warning |
+| **MISSING** | `p_missing > 0.05` | info |
+| **ZEROS** | `p_zeros > 0.10` | info |
+| **SKEWED** | `abs(skewness) > 20` | info |
+
+**Suppression Rules:**
+1. If a column is **CONSTANT**, all other alerts for that column are suppressed.
+2. If a column is **UNIQUE**, the **HIGH_CARDINALITY** alert is suppressed.
 
 ---
 
