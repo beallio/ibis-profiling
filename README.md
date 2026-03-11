@@ -8,33 +8,51 @@ Unlike traditional profiling tools (e.g., `ydata-profiling`) that iterate over c
 
 It compiles dozens of statistical metrics into a **minimal set of optimized SQL queries** that execute directly in your remote backend (DuckDB, BigQuery, Snowflake, ClickHouse, etc.). This ensures that computation happens where the data lives, enabling the profiling of multi-billion row datasets in seconds rather than hours.
 
-## Features
+---
+
+## 🚀 Key Features
 
 - **Backend Pushdown:** 100% of the heavy lifting is done by the database engine.
-- **Minimal Round-trips:** Batches all simple aggregations (mean, std, min, max, quantiles) into a single SQL pass.
-- **Constant Memory Footprint:** Python only handles the final aggregated results (typically ~1 row of data), regardless of the input dataset size.
-- **ydata-profiling Drop-in API:** Includes a `ProfileReport` class that mimics the standard ydata API for easy migration.
-- **Modern Tech Stack:** Built on **Polars**, **PyArrow**, and **Ibis** for maximum internal performance and compatibility.
+- **Multi-Pass Execution:** Intelligently splits computation into optimized passes to handle complex moments (Skewness, MAD) without backend "nested aggregation" errors.
+- **JSON Schema Parity:** Achieves full structural and statistical parity with `ydata-profiling`, allowing drop-in replacement for downstream automated pipelines.
+- **High-Fidelity SPA:** Generates a modern Single Page Application (SPA) report with interactive Plotly charts, SVG-based nullity matrices, and alert badges.
+- **Scalability:** Profile **5 million rows in < 8 seconds** and **20 million rows in < 30 seconds** (including correlations and histograms).
 
-## Performance Benchmarks
+---
 
-Benchmarks were conducted using a financial loan dataset on a standard Linux environment using the **DuckDB** backend.
+## 📈 Performance Benchmarks
 
-| Dataset Size | Ibis-Native Profiler | ydata-profiling (Minimal) | Speedup |
+Benchmarks were conducted using a standard financial loan dataset on a standard Linux environment using the **DuckDB** backend.
+
+| Dataset Size | Ibis Profiler | ydata-profiling (Minimal) | Speedup |
 | :--- | :--- | :--- | :--- |
 | **1 Million Rows** | **0.39 seconds** | **10.15 seconds** | **~26x Faster** |
-| **5 Million Rows** | **6.66 seconds** | **40.80 seconds** | **~6x Faster** |
-| **20 Million Rows** | **30.00 seconds** | **~10+ minutes (est)** | **~20x Faster** |
+| **5 Million Rows** | **7.33 seconds** | **40.80 seconds** | **~6x Faster** |
+| **20 Million Rows** | **28.40 seconds** | **~10+ minutes (est)** | **~20x Faster** |
 
-*Note: Ibis Profiler results include full statistics (all quantiles), while ydata-profiling was run in "minimal" mode.*
+*Note: Ibis Profiler results include full statistics (all quantiles, correlations, and skewness), while ydata-profiling was run in "minimal" mode.*
 
-## Installation
+---
+
+## 🛠 Installation
 
 ```bash
 uv add ibis-profiling
 ```
 
-## Quick Start (ydata-style)
+---
+
+## 📖 Technical Documentation
+
+For in-depth details on calculation logic and rules, see:
+- [**Detailed Calculation Reference (METRICS.md)**](docs/METRICS.md): How every mean, variance, skewness, and alert threshold is computed.
+- [**Unique Count Discrepancy (unique_count_discrepancy.md)**](docs/unique_count_discrepancy.md): Why Ibis's `n_unique` (singletons) differs from standard counts.
+
+---
+
+## 💻 Usage
+
+### Quick Start (ydata-style API)
 
 ```python
 import ibis
@@ -47,90 +65,56 @@ table = con.read_parquet("large_dataset.parquet")
 # 2. Generate the profile (Zero-memory overhead)
 report = ProfileReport(table)
 
-# 3. Access or export results
+# 3. Export results
 report.to_file("report.html")
 report.to_file("report.json")
-stats = report.get_description()
 ```
 
-## Use Cases & Examples
-
-### 1. Warehouse Profiling (BigQuery / Snowflake)
-Profile data directly in your cloud warehouse without egressing rows to your local machine.
+### Advanced Usage
 
 ```python
-import ibis
-from ibis_profiling import ProfileReport
+from ibis_profiling import profile
 
-# Connect to Snowflake
-con = ibis.snowflake.connect(...)
-table = con.table("massive_events_table")
+# Get the raw description dictionary
+report = profile(table)
+stats = report.to_dict()
 
-# Computation happens remotely in Snowflake
-report = ProfileReport(table)
-report.to_file("snowflake_profile.html")
+print(f"Dataset Skewness: {stats['variables']['income']['skewness']}")
 ```
 
-### 2. CI/CD Data Validation
-Detect schema drift or statistical anomalies in automated pipelines.
+---
 
-```python
-def test_data_quality():
-    table = ibis.read_parquet("new_partition.parquet")
-    report = ProfileReport(table).to_dict()
-    
-    # Assert no missing values in critical columns
-    assert report["columns"]["user_id"]["missing"] == 0
-    # Assert mean transaction value is within normal bounds
-    assert 10 < report["columns"]["amount"]["mean"] < 500
-```
-
-### 3. Massive Local File Analysis
-Leverage DuckDB's parallel engine to profile multi-gigabyte local files.
-
-```python
-import ibis
-from ibis_profiling import ProfileReport
-
-# DuckDB handles the heavy lifting
-table = ibis.read_parquet("20GB_data.parquet")
-report = ProfileReport(table)
-print(f"Total Rows: {report.to_dict()['dataset']['row_count']}")
-```
-
-### 4. Synthetic Data Generation
-Generate high-volume test data using the included CLI/Script.
-
-```bash
-# Generate 1 million rows of fake loan data for testing
-uv run scripts/generate_test_data.py --type loan --rows 1000000 --output /tmp/test_data.parquet
-
-# Generate data that mimics the 20M row legacy dataset schema
-uv run scripts/generate_test_data.py --type legacy_loan --rows 5000000 --output /tmp/legacy_mimic.parquet
-```
-
-## Supported Metrics
-
-### Dataset Metrics
-- `row_count`: Total number of records.
-- `n_var`: Total number of columns.
-- `n_cells`: Total number of data points (n * n_var).
-- `missing_cells`: Total count of nulls across all columns.
-
-### Column Metrics (Numerical & Temporal)
-- **Descriptive:** `mean`, `std`, `sum`, `variance`, `cv` (coefficient of variation).
-- **Extrema:** `min`, `max`, `range`.
-- **Quantiles:** `p5`, `p25`, `median` (p50), `p75`, `p95`.
-- **Counts:** `missing`, `zeros`, `infinite`.
-- **Uniqueness:** 
-  - `n_distinct`: Number of distinct values (SQL `COUNT(DISTINCT)`).
-  - `n_unique`: Number of **Singletons** (values appearing exactly once).
-
-## Architecture
+## 🏗 Architecture
 
 The system is decoupled into five core modules:
 1. **Dataset Inspector:** Zero-execution schema analysis.
 2. **Metric Registry:** Declarative metric definitions as Ibis expressions.
-3. **Query Planner:** The "compiler" that batches compatible expressions into minimal plans.
-4. **Execution Engine:** Dispatches compiled Ibis ASTs to the backend using PyArrow transport.
-5. **Report Builder:** Aggregates and formats raw backend results into structured JSON/HTML.
+3. **Query Planner:** The "compiler" that batches compatible expressions into minimal execution plans.
+4. **Execution Engine:** Multi-pass dispatcher that handles simple vs. complex aggregations.
+5. **Report Builder:** Aggregates and formats raw backend results into high-fidelity JSON/HTML following the canonical YData schema.
+
+---
+
+## 🧪 Alert Engine
+
+The built-in alert engine automatically flags data quality issues:
+- **CONSTANT:** Columns with only one value.
+- **UNIQUE:** Primary key candidates.
+- **HIGH_CARDINALITY:** Non-unique columns with high distinct ratios.
+- **MISSING:** Columns with >5% nullity.
+- **ZEROS:** Numeric columns with high zero-count ratios.
+- **SKEWED:** Highly asymmetrical distributions.
+
+---
+
+## 📊 Missing Values Analysis
+
+Move beyond simple counts with advanced pattern detection:
+- **Matrix:** A vertical sparkline grid (SVG) visualizing the location of missing values across rows.
+- **Heatmap:** Pearson correlation of "nullity" between variables, revealing structural dependencies.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please ensure all pull requests pass the `uv run pytest` suite and adhere to the TDD principles defined in our `.protocol`.
