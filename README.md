@@ -24,17 +24,23 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 
 Benchmarks were conducted using a synthetic dataset with 20 columns (mix of numeric, categorical, text, and boolean) on a standard Linux environment using the **DuckDB** backend.
 
-| Dataset Size | Ibis (Full) | Ibis (Min) | ydata (Min) | Mem Ibis (Min) | Mem ydata (Min) | Speedup |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **10k Rows** | 0.88s | 0.90s | 9.92s | ~3.6 MB | ~74 MB | ~11x |
-| **50k Rows** | 1.15s | 1.16s | 17.53s | ~3.6 MB | ~293 MB | ~15x |
-| **500k Rows** | 2.50s | 2.16s | 85.92s | ~3.6 MB | ~2.5 GB | ~40x |
-| **1M Rows** | 3.52s | 3.15s | 147.24s | ~3.2 MB | ~4.8 GB | ~46x |
-| **5M Rows** | 12.38s | 12.23s | ~15m (est) | ~3.2 MB | >20 GB (est)| ~73x (est) |
-| **10M Rows** | 24.53s | 27.27s | ~35m (est) | ~3.6 MB | >40 GB (est)| ~77x (est) |
-| **20M Rows** | 32.15s* | 49.17s | >1h (est) | ~3.6 MB | >80 GB (est)| >100x (est) |
+| Dataset Size | Ibis (Min) | Ibis (Full) | ydata (Min) | ydata (Full) | Mem Ibis (Min) | Mem ydata (Min) | Mem Ibis (Full) | Mem ydata (Full) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **10k Rows** | 0.90s | 0.88s | 9.92s | 28.00s | ~3.6 MB | ~74 MB | ~3.2 MB | ~107 MB |
+| **50k Rows** | 1.16s | 1.15s | 17.53s | 38.23s | ~3.6 MB | ~293 MB | ~3.2 MB | ~329 MB |
+| **500k Rows** | 2.16s | 2.50s | 85.92s | ~2.5m (est) | ~3.6 MB | ~2.5 GB | ~3.6 MB | ~2.8 GB (est) |
+| **1M Rows** | 3.15s | 3.52s | 147.24s | ~5m (est) | ~3.2 MB | ~4.8 GB | ~3.2 MB | ~5.2 GB (est) |
+| **5M Rows** | 12.23s | 12.38s | ~15m (est) | ~40m (est) | ~3.2 MB | >20 GB (est) | ~3.2 MB | >25 GB (est) |
+| **10M Rows** | 27.27s | 24.53s | ~35m (est) | ~1.5h (est) | ~3.6 MB | >40 GB (est) | ~3.2 MB | >50 GB (est) |
+| **20M Rows** | 49.17s | 32.15s* | >1h (est) | >3h (est) | ~3.6 MB | >80 GB (est) | ~1.8 MB* | >100 GB (est) |
 
 *Note: 20M Full result (32.15s) was run with 10 columns to avoid OOM. All other benchmarks use 20 columns. ydata-profiling was run in "minimal" mode for larger datasets to avoid OOM errors. Ibis memory usage is nearly constant (< 1MB difference) between Minimal and Full modes.*
+
+### 🔍 Estimation Methodology
+Projections for `ydata-profiling` on larger datasets are derived from observed scaling trends:
+- **Time (Minimal):** Scaled linearly based on the jump from 500k (85s) to 1M (147s) rows.
+- **Time (Full):** Scaled with a factor of ~2.5x - 3x over Minimal mode, consistent with small-sample ratios.
+- **Memory:** Scaled linearly based on observed peak usage (~2.5 GB at 500k, ~4.8 GB at 1M), reflecting the overhead of loading the full dataset into Pandas DataFrames.
 
 ---
 
