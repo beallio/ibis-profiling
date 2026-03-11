@@ -17,19 +17,19 @@ class AlertEngine:
 
             # 1. Constant (High Priority)
             if n_distinct == 1:
-                alerts.append({"type": "CONSTANT", "fields": [col], "level": "warning"})
+                alerts.append({"alert_type": "CONSTANT", "fields": [col], "level": "warning"})
                 continue  # Skip other alerts for constant columns
 
             # 2. Unique
             if n > 0 and n_distinct == n:
-                alerts.append({"type": "UNIQUE", "fields": [col], "level": "warning"})
+                alerts.append({"alert_type": "UNIQUE", "fields": [col], "level": "warning"})
                 # We still allow MISSING/ZEROS for unique columns (e.g. PKs)
 
             # 3. High Cardinality (only if not unique)
             elif n > 0 and (n_distinct / n) > 0.5 and v_type == "Categorical":
                 alerts.append(
                     {
-                        "type": "HIGH_CARDINALITY",
+                        "alert_type": "HIGH_CARDINALITY",
                         "fields": [col],
                         "value": n_distinct,
                         "level": "warning",
@@ -39,16 +39,20 @@ class AlertEngine:
             # 4. Missing Values
             if p_missing > 0.05:
                 alerts.append(
-                    {"type": "MISSING", "fields": [col], "value": p_missing, "level": "info"}
+                    {"alert_type": "MISSING", "fields": [col], "value": p_missing, "level": "info"}
                 )
 
             # 5. Zeros
             if n > 0 and (zeros / n) > 0.1:
-                alerts.append({"type": "ZEROS", "fields": [col], "value": zeros, "level": "info"})
+                alerts.append(
+                    {"alert_type": "ZEROS", "fields": [col], "value": zeros, "level": "info"}
+                )
 
             # 6. Skewness
             skew = stats.get("skewness")
             if skew is not None and abs(skew) > 20:
-                alerts.append({"type": "SKEWED", "fields": [col], "value": skew, "level": "info"})
+                alerts.append(
+                    {"alert_type": "SKEWED", "fields": [col], "value": skew, "level": "info"}
+                )
 
         return alerts

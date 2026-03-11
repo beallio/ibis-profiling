@@ -20,7 +20,7 @@ def test_alert_detection():
     }
 
     alerts = AlertEngine.get_alerts(table_stats, variables)
-    alert_types = [a["type"] for a in alerts]
+    alert_types = [a["alert_type"] for a in alerts]
 
     assert "CONSTANT" in alert_types
     assert "UNIQUE" in alert_types
@@ -29,5 +29,5 @@ def test_alert_detection():
     assert "HIGH_CARDINALITY" in alert_types
 
     # Specific check for fields
-    constant_alert = [a for a in alerts if a["type"] == "CONSTANT"][0]
+    constant_alert = [a for a in alerts if a["alert_type"] == "CONSTANT"][0]
     assert constant_alert["fields"] == ["constant"]

@@ -22,15 +22,19 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 
 ## 📈 Performance Benchmarks
 
-Benchmarks were conducted using a standard financial loan dataset on a standard Linux environment using the **DuckDB** backend.
+Benchmarks were conducted using a synthetic dataset with 20 columns (mix of numeric, categorical, text, and boolean) on a standard Linux environment using the **DuckDB** backend.
 
-| Dataset Size | Ibis Profiler | ydata-profiling (Minimal) | Speedup |
-| :--- | :--- | :--- | :--- |
-| **1 Million Rows** | **0.39 seconds** | **10.15 seconds** | **~26x Faster** |
-| **5 Million Rows** | **7.33 seconds** | **40.80 seconds** | **~6x Faster** |
-| **20 Million Rows** | **28.40 seconds** | **~10+ minutes (est)** | **~20x Faster** |
+| Dataset Size | Ibis Profiler (Full) | Ibis Profiler (Minimal) | ydata-profiling (Minimal) | Speedup (Minimal) |
+| :--- | :--- | :--- | :--- | :--- |
+| **10k Rows** | 0.88s | 0.90s | 9.92s | ~11x |
+| **50k Rows** | 1.15s | 1.16s | 17.53s | ~15x |
+| **500k Rows** | - | 2.16s | 85.92s | ~40x |
+| **1M Rows** | - | 3.15s | 147.24s | ~46x |
+| **5M Rows** | - | 12.23s | >5m (est) | - |
+| **10M Rows** | - | 27.27s | >10m (est) | - |
+| **20M Rows** | - | 49.17s | >20m (est) | - |
 
-*Note: Ibis Profiler results include full statistics (all quantiles, correlations, and skewness), while ydata-profiling was run in "minimal" mode.*
+*Note: Ibis Profiler Full mode includes correlations and complex moments. ydata-profiling was run in "minimal" mode for larger datasets to avoid OOM errors.*
 
 ---
 

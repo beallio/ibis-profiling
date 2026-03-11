@@ -28,7 +28,9 @@ class CorrelationEngine:
             return {"columns": cols, "matrix": []}
 
         # For 20M rows, we compute the matrix efficiently
-        # Ibis doesn't have a native 'corr_matrix', so we build expressions
+        # We manually compute pearson to avoid DuckDB NaN -> OutOfRange error in corr()
+        from ...metrics import safe_col
+
         matrix = []
         for i, c1 in enumerate(cols):
             row = []
@@ -36,11 +38,12 @@ class CorrelationEngine:
                 if i == j:
                     row.append(1.0)
                 else:
-                    # Pearson Correlation Expression
-                    expr = table[c1].corr(table[c2], how="pop")
+                    # Pearson Correlation Expression (Manual to handle NaNs)
+                    # corr(x, y) = cov(x, y) / (std(x) * std(y))
+                    s1 = safe_col(table[c1])
+                    s2 = safe_col(table[c2])
+                    expr = s1.cov(s2, how="pop") / (s1.std(how="pop") * s2.std(how="pop"))
                     row.append(expr)
             matrix.append(row)
 
-        # Execution is handled by the main engine to batch these,
-        # but for this logic, we return the structure.
         return {"columns": cols, "matrix": matrix}

@@ -1,0 +1,29 @@
+{
+  "date": "2026-03-11",
+  "objective": "Run comprehensive benchmarks for ibis-profiling and ydata-profiling, optimizing for speed and memory usage, and ensuring statistical parity.",
+  "files_modified": [
+    "scripts/generate_bench_data.py",
+    "scripts/run_benchmarks.py",
+    "scripts/compare_outputs.py",
+    "src/ibis_profiling/metrics.py",
+    "src/ibis_profiling/report/model/correlations.py",
+    "src/ibis_profiling/report/model/alerts.py",
+    "README.md"
+  ],
+  "tests_added": [
+    "tests/reproduce_stddev_error.py"
+  ],
+  "design_decisions": [
+    "Optimized benchmarking strategy: Full+Minimal for <500k rows, Minimal only for >=500k rows.",
+    "Implemented aggressive memory cleanup (gc.collect, del) and disk cleanup (rm parquet) in benchmark runner.",
+    "Handled DuckDB OutOfRange errors by treating NaNs as NULLs in statistical aggregations.",
+    "Manual Pearson correlation calculation to bypass DuckDB NaN handling issues.",
+    "Standardized alert schema to use 'alert_type' for parity with ydata-profiling JSON."
+  ],
+  "results": {
+    "10k_speedup": "~11x",
+    "1M_speedup": "~46x",
+    "20M_performance": "49.17s (Ibis Minimal)",
+    "statistical_parity": "Verified on 50k dataset with minor discrepancies noted in skewness and missing cell counts (Ibis treats NaNs as NULLs differently than Pandas)."
+  }
+}

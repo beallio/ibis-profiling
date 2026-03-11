@@ -38,15 +38,27 @@ class MetricRegistry:
 
 registry = MetricRegistry()
 
+
+def safe_col(col: ir.Column) -> ir.Column:
+    """Treats NaNs as NULLs for statistical functions to avoid DuckDB OutOfRange errors."""
+    if isinstance(col.type(), (dt.Float64, dt.Float32)):
+        return col.isnan().cases((True, None), else_=col)
+    return col
+
+
 # Standard Column Metrics Registration
-registry.register(Metric("mean", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.mean()))
+registry.register(
+    Metric("mean", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).mean())
+)
 registry.register(
     Metric("min", MetricCategory.COLUMN, [dt.Numeric, dt.Temporal], lambda col: col.min())
 )
 registry.register(
     Metric("max", MetricCategory.COLUMN, [dt.Numeric, dt.Temporal], lambda col: col.max())
 )
-registry.register(Metric("std", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.std()))
+registry.register(
+    Metric("std", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).std(how="sample"))
+)
 registry.register(Metric("missing", MetricCategory.COLUMN, None, lambda col: col.isnull().sum()))
 registry.register(Metric("n_distinct", MetricCategory.COLUMN, None, lambda col: col.nunique()))
 registry.register(
@@ -74,21 +86,29 @@ registry.register(
     )
 )
 
-registry.register(Metric("sum", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.sum()))
-registry.register(Metric("median", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.median()))
-registry.register(Metric("p5", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.05)))
 registry.register(
-    Metric("p25", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.25))
+    Metric("sum", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).sum())
 )
 registry.register(
-    Metric("p75", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.75))
+    Metric("median", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).median())
 )
 registry.register(
-    Metric("p95", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.95))
+    Metric("p5", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).quantile(0.05))
 )
-registry.register(Metric("variance", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.var()))
+registry.register(
+    Metric("p25", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).quantile(0.25))
+)
+registry.register(
+    Metric("p75", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).quantile(0.75))
+)
+registry.register(
+    Metric("p95", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).quantile(0.95))
+)
+registry.register(
+    Metric("variance", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).var())
+)
 # registry.register(Metric("skewness", ...))
 
 registry.register(
-    Metric("kurtosis", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.kurtosis())
+    Metric("kurtosis", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).kurtosis())
 )
