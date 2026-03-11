@@ -34,7 +34,7 @@ class CorrelationEngine:
                     row.append(1.0)
                 else:
                     # Pearson Correlation Expression
-                    expr = ibis.expr.api.corr(table[c1], table[c2])
+                    expr = table[c1].corr(table[c2], how="pop")
                     row.append(expr)
             matrix.append(row)
 

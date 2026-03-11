@@ -38,7 +38,45 @@ def profile(table: ibis.Table) -> InternalProfileReport:
             val = expr.to_pyarrow().as_py()
         report.add_metric(col_name, metric_name, val)
 
-    # 4. Capture Samples (Head)
+    # 4. Handle Correlations
+    from .report.model.correlations import CorrelationEngine
+
+    numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
+    if len(numeric_cols) >= 2:
+        # Build correlation expressions
+        corr_results = CorrelationEngine._compute_pearson(table, numeric_cols)
+        # Execute matrix (this could be optimized into a single batch)
+        # For now, we execute row by row or flat
+        flat_exprs = []
+        for row in corr_results["matrix"]:
+            for item in row:
+                if isinstance(item, ibis.expr.types.Scalar):
+                    flat_exprs.append(item)
+
+        if flat_exprs:
+            # Aggregate all correlations in one go
+            executed_vals = table.aggregate(flat_exprs).to_pyarrow().to_pydict()
+
+            # Map results back to matrix
+            final_matrix = []
+            val_idx = 0
+            for i, row in enumerate(corr_results["matrix"]):
+                new_row = []
+                for j, item in enumerate(row):
+                    if i == j:
+                        new_row.append(1.0)
+                    else:
+                        # Use the key from the executed aggregate (usually the col name if alias exists, but here we didn't alias)
+                        # Ibis aggregate usually returns keys like 'corr(col1, col2)'
+                        # Better to use a controlled indexing
+                        key = list(executed_vals.keys())[val_idx]
+                        new_row.append(executed_vals[key][0])
+                        val_idx += 1
+                final_matrix.append(new_row)
+
+            report.correlations["pearson"] = {"columns": numeric_cols, "matrix": final_matrix}
+
+    # 5. Capture Samples (Head)
     # Note: Ibis doesn't have a reliable cross-backend 'tail' without an order key.
     # We'll just capture the head for now.
     head_sample = table.head(10).to_pyarrow().to_pydict()
