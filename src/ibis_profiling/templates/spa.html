@@ -21,10 +21,11 @@
     .var-name { font-family: monospace; font-weight: 700; font-size: 1.2rem; color: #007bff; text-decoration: none; }
     .badge { text-transform: uppercase; padding: 4px 8px; font-weight: 500; font-size: 11px; }
     .metric-value { font-family: monospace; font-weight: 600; text-align: right; white-space: nowrap; }
-    .nav-link { color: #333; }
+    .nav-link { color: #333; cursor: pointer; }
     .nav-link.active { background-color: #0d6efd !important; color: white !important; }
     #view-container > div { display: none; }
     #view-container > div.active { display: block; }
+    .details-section { background-color: #fcfcfc; border: 1px solid #eee; border-radius: 4px; padding: 1.5rem; margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -57,8 +58,8 @@
     const state = { rendered: {} };
 
     function nav(viewId) {
-      document.querySelectorAll(".nav-link").forEach(el => el.classList.remove("active"));
-      const activeLink = document.querySelector(`a[href="#${viewId}"]`);
+      document.querySelectorAll(".sidebar .nav-link").forEach(el => el.classList.remove("active"));
+      const activeLink = document.querySelector(`.sidebar a[href="#${viewId}"]`);
       if(activeLink) activeLink.classList.add("active");
       
       document.querySelectorAll("#view-container > div").forEach(el => el.classList.remove("active"));
@@ -77,55 +78,6 @@
       else if (viewId === 'correlations') renderCorrelations(container);
       else if (viewId === 'missing') renderMissing(container);
       else if (viewId === 'sample') renderSample(container);
-      else container.innerHTML = `<div class='text-center py-5 text-muted'><h4>${viewId}</h4><p>Details coming soon.</p></div>`;
-    }
-
-    function renderCorrelations(container) {
-      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Correlations</h1></div>`;
-      const corrs = data.correlations || {};
-      Object.entries(corrs).forEach(([name, d], i) => {
-        if (!d.matrix || d.matrix.length === 0) return;
-        const div = document.createElement("div");
-        div.className = "row item";
-        const chartId = `corr-${i}`;
-        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header text-capitalize'>${name}</p><div id='${chartId}' style='height: 600px;'></div></div>`;
-        container.appendChild(div);
-
-        setTimeout(() => {
-          const z = d.matrix;
-          const x = d.columns;
-          const y = d.columns;
-          Plotly.newPlot(chartId, [{
-            z: z, x: x, y: y, type: 'heatmap',
-            colorscale: [[0, '#f46d43'], [0.5, '#ffffbf'], [1, '#66bd63']],
-            zmin: -1, zmax: 1
-          }], {
-            margin: { t: 30, b: 100, l: 100, r: 30 },
-            height: 600
-          });
-        }, 50);
-      });
-    }
-
-    function renderMissing(container) {
-      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Missing Values</h1></div>`;
-      const m = data.missing || {};
-      if (m.bar && m.bar.counts) {
-        const div = document.createElement("div");
-        div.className = "row item";
-        const chartId = "missing-bar";
-        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header'>Missing Values (Count)</p><div id='${chartId}' style='height: 400px;'></div></div>`;
-        container.appendChild(div);
-
-        setTimeout(() => {
-          Plotly.newPlot(chartId, [{
-            x: m.bar.columns, y: m.bar.counts, type: 'bar', marker: {color: '#6c757d'}
-          }], {
-            margin: { t: 10, b: 100, l: 50, r: 10 },
-            height: 400
-          });
-        }, 50);
-      }
     }
 
     function renderOverview(container) {
@@ -179,6 +131,7 @@
         const div = document.createElement("div");
         div.className = "variable row item";
         const chartId = `chart-${i}`;
+        const detailsId = `details-${i}`;
         
         let leftStats = `
           <tr><th>Distinct</th><td class='metric-value'>${stats.n_distinct.toLocaleString()}</td></tr>
@@ -202,7 +155,49 @@
           <div class="col-sm-4"><table class="table table-striped small"><tbody>${leftStats}</tbody></table></div>
           <div class="col-sm-4"><table class="table table-striped small"><tbody>${midStats}</tbody></table></div>
           <div class="col-sm-4"><div id="${chartId}" style="height: 150px;"></div></div>
-          <div class="col-sm-12 text-end"><button class="btn btn-light btn-sm" onclick="alert('Detailed analysis for ${col} coming in the next engine pass')">More details</button></div>
+          <div class="col-sm-12 text-end">
+            <button class="btn btn-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#${detailsId}">More details</button>
+          </div>
+          <div class="collapse col-sm-12" id="${detailsId}">
+            <div class="details-section">
+              <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#stats-${i}">Statistics</button></li>
+                ${stats.type === 'Numeric' ? `<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#quantiles-${i}">Quantiles</button></li>` : ''}
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#values-${i}">Common Values</button></li>
+              </ul>
+              <div class="tab-content">
+                <div class="tab-pane fade show active" id="stats-${i}">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <table class="table table-sm small">
+                        ${stats.type === 'Numeric' ? `
+                          <tr><th>Standard deviation</th><td class='metric-value'>${stats.std ? stats.std.toFixed(4) : ''}</td></tr>
+                          <tr><th>Variance</th><td class='metric-value'>${stats.variance ? stats.variance.toFixed(4) : ''}</td></tr>
+                          <tr><th>Kurtosis</th><td class='metric-value'>${stats.kurtosis ? stats.kurtosis.toFixed(4) : ''}</td></tr>
+                          <tr><th>Skewness</th><td class='metric-value'>${stats.skewness ? stats.skewness.toFixed(4) : ''}</td></tr>
+                        ` : `<tr><td colspan="2" class="text-muted">Descriptive stats not available for categorical.</td></tr>`}
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="quantiles-${i}">
+                   <table class="table table-sm small w-50">
+                     ${Object.entries(stats.quantiles || {}).map(([p, v]) => `<tr><th>${p}</th><td class='metric-value'>${v}</td></tr>`).join("")}
+                   </table>
+                </div>
+                <div class="tab-pane fade" id="values-${i}">
+                   <table class="table table-sm table-striped small">
+                     <thead><tr><th>Value</th><th>Count</th><th>Frequency (%)</th></tr></thead>
+                     <tbody>
+                       ${stats.histogram ? stats.histogram.bins.map((b, idx) => `
+                         <tr><td>${b}</td><td class='metric-value'>${stats.histogram.counts[idx].toLocaleString()}</td><td class='metric-value'>${((stats.histogram.counts[idx]/data.table.n)*100).toFixed(1)}%</td></tr>
+                       `).join("") : ''}
+                     </tbody>
+                   </table>
+                </div>
+              </div>
+            </div>
+          </div>
         `;
         container.appendChild(div);
 
@@ -213,6 +208,51 @@
           }, 50);
         }
       });
+    }
+
+    function renderCorrelations(container) {
+      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Correlations</h1></div>`;
+      const corrs = data.correlations || {};
+      Object.entries(corrs).forEach(([name, d], i) => {
+        if (!d.matrix || d.matrix.length === 0) return;
+        const div = document.createElement("div");
+        div.className = "row item";
+        const chartId = `corr-${i}`;
+        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header text-capitalize'>${name}</p><div id='${chartId}' style='height: 600px;'></div></div>`;
+        container.appendChild(div);
+
+        setTimeout(() => {
+          Plotly.newPlot(chartId, [{
+            z: d.matrix, x: d.columns, y: d.columns, type: 'heatmap',
+            colorscale: [[0, '#f46d43'], [0.5, '#ffffbf'], [1, '#66bd63']],
+            zmin: -1, zmax: 1
+          }], {
+            margin: { t: 30, b: 100, l: 100, r: 30 },
+            height: 600
+          });
+        }, 50);
+      });
+    }
+
+    function renderMissing(container) {
+      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Missing Values</h1></div>`;
+      const m = data.missing || {};
+      if (m.bar && m.bar.counts) {
+        const div = document.createElement("div");
+        div.className = "row item";
+        const chartId = "missing-bar";
+        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header'>Missing Values (Count)</p><div id='${chartId}' style='height: 400px;'></div></div>`;
+        container.appendChild(div);
+
+        setTimeout(() => {
+          Plotly.newPlot(chartId, [{
+            x: m.bar.columns, y: m.bar.counts, type: 'bar', marker: {color: '#6c757d'}
+          }], {
+            margin: { t: 10, b: 100, l: 50, r: 10 },
+            height: 400
+          });
+        }, 50);
+      }
     }
 
     function renderSample(container) {

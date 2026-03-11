@@ -16,11 +16,11 @@ class SummaryEngine:
         for col_name, dtype in schema.items():
             dt_str = str(dtype).lower()
             mapped_type = "Categorical"
-            if "int" in dt_str or "float" in dt_str:
+            if any(t in dt_str for t in ["int", "float", "decimal"]):
                 mapped_type = "Numeric"
             elif "bool" in dt_str:
                 mapped_type = "Boolean"
-            elif "time" in dt_str or "date" in dt_str:
+            elif any(t in dt_str for t in ["time", "date"]):
                 mapped_type = "DateTime"
 
             # Initialize base model
@@ -29,15 +29,22 @@ class SummaryEngine:
                 "n_distinct": 0,
                 "n_missing": 0,
                 "p_missing": 0.0,
+                "quantiles": {},
             }
 
         for col, val in row.items():
             if "__" in col and not col.startswith("_dataset__"):
                 col_name, metric_name = col.split("__", 1)
                 if col_name in variables:
-                    # Clean the value (handle numpy/polars types)
+                    # Clean the value
                     if hasattr(val, "item"):
                         val = val.item()
-                    variables[col_name][metric_name] = val
+
+                    # Special handling for quantiles
+                    if metric_name.startswith("p") and metric_name[1:].isdigit():
+                        p_val = metric_name[1:] + "%"
+                        variables[col_name]["quantiles"][p_val] = val
+                    else:
+                        variables[col_name][metric_name] = val
 
         return variables
