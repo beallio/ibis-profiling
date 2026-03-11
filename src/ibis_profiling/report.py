@@ -116,7 +116,7 @@ class ProfileReport:
             return self._template_minimal()
 
     def _template_ydata(self, json) -> str:
-        """A Sidebar and Navbar based clone of the ydata-profiling layout."""
+        """Near-exact mimicry of the ydata-profiling HTML report."""
         html = [
             "<!doctype html><html lang=en><head>",
             "<meta charset=utf-8><meta content='width=device-width,initial-scale=1,shrink-to-fit=no' name=viewport>",
@@ -124,40 +124,42 @@ class ProfileReport:
             "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>",
             "<script src='https://cdn.plot.ly/plotly-2.24.1.min.js'></script>",
             "<style>",
-            "body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; background-color: #fff; }",
-            ".navbar { box-shadow: 0 2px 4px rgba(0,0,0,.04); border-bottom: 1px solid #e1e4e8; }",
-            ".content { padding-top: 20px; }",
-            ".section-header { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; margin-top: 40px; }",
-            ".section-name { font-size: 24px; font-weight: 700; color: #333; }",
-            ".item { margin-bottom: 30px; }",
+            "body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; font-size: 14px; color: #333; }",
+            ".navbar { background-color: #f8f9fa !important; border-bottom: 1px solid #ddd; padding: 10px 0; }",
+            ".navbar-brand { font-weight: 700; color: #333 !important; }",
+            ".section-header { margin-top: 40px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }",
+            ".section-name { font-size: 28px; font-weight: 700; }",
+            ".row.item { margin-bottom: 30px; }",
             ".item-header { font-size: 18px; font-weight: 600; margin-bottom: 15px; color: #444; }",
-            ".table { font-size: 14px; }",
-            ".table th { font-weight: 600; color: #666; width: 40%; }",
-            ".badge { font-weight: 500; text-transform: uppercase; padding: 5px 10px; }",
-            ".var-card { border: 1px solid #e1e4e8; border-radius: 4px; padding: 20px; margin-bottom: 25px; }",
-            ".var-name { font-family: monospace; font-weight: 700; font-size: 1.1rem; color: #007bff; }",
+            ".table th { font-weight: 600; color: #666; background-color: transparent !important; }",
+            ".variable { padding: 20px 0; border-bottom: 1px solid #eee; }",
+            ".var-name { font-family: monospace; font-weight: 700; font-size: 1.2rem; color: #007bff; text-decoration: none; }",
+            ".badge { text-transform: uppercase; padding: 4px 8px; font-weight: 500; font-size: 11px; }",
+            ".text-bg-danger { background-color: #dc3545; }",
+            ".text-bg-info { background-color: #0dcaf0; }",
+            ".bar { background-color: #007bff; height: 18px; color: white; padding: 0 5px; font-size: 11px; line-height: 18px; border-radius: 2px; }",
             "</style>",
             "</head><body>",
-            "<nav class='navbar navbar-expand-lg bg-light sticky-top'><div class='container-fluid'>",
+            "<nav class='navbar navbar-expand-lg sticky-top'><div class='container-fluid'>",
             "<a class='navbar-brand' href='#'>Ibis Profiling Report</a>",
             "<div class='collapse navbar-collapse'><ul class='navbar-nav ms-auto'>",
             "<li class='nav-item'><a class='nav-link' href='#overview'>Overview</a></li>",
             "<li class='nav-item'><a class='nav-link' href='#variables'>Variables</a></li>",
             "<li class='nav-item'><a class='nav-link' href='#sample'>Sample</a></li>",
             "</ul></div></div></nav>",
-            "<div class='container content'>",
+            "<div class='container mt-4'>",
             # Overview Section
             "<div class='section-header' id='overview'><h1 class='section-name'>Overview</h1></div>",
-            "<div class='row item'><ul class='nav nav-tabs mb-3' role='tablist'>",
-            "<li class='nav-item'><button class='nav-link active' data-bs-toggle='tab' data-bs-target='#tab-overview' type='button'>Dataset Statistics</button></li>",
+            "<div class='row item'><ul class='nav nav-tabs tab-nav mb-3' role='tablist'>",
+            "<li class='nav-item'><button class='nav-link active' data-bs-toggle='tab' data-bs-target='#tab-overview' type='button'>Overview</button></li>",
             "<li class='nav-item'><button class='nav-link' data-bs-toggle='tab' data-bs-target='#tab-alerts' type='button'>Alerts</button></li>",
             "</ul>",
             "<div class='tab-content'>",
-            "<div class='tab-pane fade show active' id='tab-overview'><div class='row'>",
+            "<div class='tab-pane fade show active' id='tab-overview'><div class='row sub-item'>",
             "<div class='col-sm-6'><p class='h4 item-header'>Dataset statistics</p><table class='table table-striped'><tbody>",
         ]
 
-        # Dataset Stats Table
+        # Dataset Stats
         ds_stats = [
             ("Number of variables", self.dataset_stats.get("n_var")),
             ("Number of observations", self.dataset_stats.get("row_count")),
@@ -171,7 +173,7 @@ class ProfileReport:
 
         html.append("</tbody></table></div>")
 
-        # Variable Types Table
+        # Variable Types
         html.append(
             "<div class='col-sm-6'><p class='h4 item-header'>Variable types</p><table class='table table-striped'><tbody>"
         )
@@ -183,73 +185,79 @@ class ProfileReport:
             html.append(f"<tr><th>{t.capitalize()}</th><td>{count}</td></tr>")
         html.append("</tbody></table></div></div></div>")
 
-        # Alerts Tab
+        # Alerts (Dynamic)
         html.append(
-            "<div class='tab-pane fade' id='tab-alerts'><div class='alert alert-info'>No high-priority alerts detected.</div></div>"
+            "<div class='tab-pane fade' id='tab-alerts'><table class='table table-striped'>"
         )
-        html.append("</div></div>")
+        alerts_found = 0
+        for col, stats in self.column_stats.items():
+            if stats.get("n_distinct") == self.dataset_stats.get("row_count"):
+                html.append(
+                    f"<tr><td><code>{col}</code> has unique values</td><td><span class='badge text-bg-danger'>Unique</span></td></tr>"
+                )
+                alerts_found += 1
+            if stats.get("zeros", 0) > 0:
+                z_perc = stats.get("zeros", 0) / self.dataset_stats.get("row_count", 1)
+                html.append(
+                    f"<tr><td><code>{col}</code> has {stats.get('zeros'):,} ({z_perc:.1%}) zeros</td><td><span class='badge text-bg-info'>Zeros</span></td></tr>"
+                )
+                alerts_found += 1
+        if alerts_found == 0:
+            html.append("<tr><td>No alerts detected.</td></tr>")
+        html.append("</table></div></div></div>")
 
         # Variables Section
         html.append(
             "<div class='section-header' id='variables'><h1 class='section-name'>Variables</h1></div>"
         )
         for i, (col, stats) in enumerate(self.column_stats.items()):
-            html.append(f"<div class='var-card' id='var-{col}'><div class='row'>")
-            # Left: Stats
+            html.append(f"<div class='variable row item' id='var-{col}'><div class='row sub-item'>")
+            # Header
             html.append(
-                f"<div class='col-md-4'><div class='var-name'>{col}</div><div class='text-muted small mb-3 text-uppercase'>{stats.get('type')}</div>"
+                f"<div class='col-sm-12'><p class='item-header h4'><a class='var-name' href='#var-{col}'>{col}</a><br>"
             )
-            html.append("<table class='table table-sm'>")
-            # Distinct, Missing, etc.
+            html.append(
+                f"<span class='fs-6 text-body-secondary text-uppercase'>{stats.get('type')}</span></p></div>"
+            )
+
+            # Left Column: Basic Stats
+            html.append("<div class='col-sm-6'><table class='table table-striped'><tbody>")
             v_metrics = [
-                ("Distinct", "n_distinct"),
-                ("Distinct (%)", "distinct_perc"),
-                ("Missing", "missing"),
-                ("Missing (%)", None),
+                ("Distinct", stats.get("n_distinct", 0)),
+                ("Distinct (%)", f"{stats.get('distinct_perc', 0):.1%}"),
+                ("Missing", stats.get("missing", 0)),
+                (
+                    "Missing (%)",
+                    f"{(stats.get('missing', 0) / self.dataset_stats.get('row_count', 1)):.1%}",
+                ),
             ]
-            for label, key in v_metrics:
-                if key:
-                    val = stats.get(key, 0)
-                    if "perc" in key:
-                        val = f"{val:.1%}"
-                    elif isinstance(val, int):
-                        val = f"{val:,}"
-                else:
-                    m_val = stats.get("missing", 0)
-                    row_count = self.dataset_stats.get("row_count", 1)
-                    val = f"{m_val / row_count:.1%}"
-                html.append(f"<tr><th>{label}</th><td class='text-end'>{val}</td></tr>")
-
-            # Numeric stats
             if stats.get("mean") is not None:
-                for m in ["Mean", "Minimum", "Maximum", "Zeros"]:
-                    key = m.lower() if m != "Minimum" else "min"
-                    if m == "Maximum":
-                        key = "max"
-                    val = stats.get(key, 0)
-                    if isinstance(val, float):
-                        val = f"{val:.4f}"
-                    elif isinstance(val, int):
-                        val = f"{val:,}"
-                    html.append(f"<tr><th>{m}</th><td class='text-end'>{val}</td></tr>")
+                v_metrics += [
+                    ("Mean", f"{stats.get('mean', 0):.4f}"),
+                    ("Minimum", stats.get("min")),
+                    ("Maximum", stats.get("max")),
+                    ("Zeros", f"{stats.get('zeros', 0):,}"),
+                ]
+            for label, val in v_metrics:
+                v_str = f"{val:,}" if isinstance(val, int) else str(val)
+                html.append(f"<tr><th>{label}</th><td>{v_str}</td></tr>")
+            html.append("</tbody></table></div>")
 
-            html.append("</table></div>")
-
-            # Right: Histogram
+            # Right Column: Mini-Histogram/Plot
+            html.append("<div class='col-sm-6'>")
             if "top_values" in stats:
                 chart_id = f"chart-{i}"
                 top_vals = stats["top_values"]
                 counts = list(top_vals.get(f"{col}_count", []))
                 labels = [str(x) for x in top_vals.get(col, [])]
-                html.append(
-                    f"<div class='col-md-8'><div id='{chart_id}' style='height: 280px;'></div>"
-                )
+                html.append(f"<div id='{chart_id}' style='height: 250px;'></div>")
                 html.append(
                     f"<script>Plotly.newPlot('{chart_id}', [{{x: {json.dumps(labels)}, y: {json.dumps(counts)}, type: 'bar', marker: {{color: '#007bff'}}}}], "
                 )
                 html.append(
-                    "{margin: {t: 10, b: 40, l: 50, r: 10}, height: 280, font: {size: 11}, xaxis: {tickangle: -45}});</script></div>"
+                    "{margin: {t: 10, b: 40, l: 50, r: 10}, height: 250, font: {size: 11}, xaxis: {tickangle: -45}});</script>"
                 )
+            html.append("</div>")
 
             html.append("</div></div>")
 
@@ -257,23 +265,22 @@ class ProfileReport:
         html.append(
             "<div class='section-header' id='sample'><h1 class='section-name'>Sample</h1></div>"
         )
-        for stype in ["head"]:
-            sample = self.dataset_stats.get(stype)
-            if sample:
-                html.append(
-                    "<div class='table-responsive'><table class='table table-sm table-striped border'><thead><tr>"
-                )
-                cols = list(sample.keys())
+        sample = self.dataset_stats.get("head")
+        if sample:
+            html.append(
+                "<div class='table-responsive'><table class='table table-sm table-striped border'><thead><tr>"
+            )
+            cols = list(sample.keys())
+            for c in cols:
+                html.append(f"<th>{c}</th>")
+            html.append("</tr></thead><tbody>")
+            n_rows = len(sample[cols[0]])
+            for r in range(n_rows):
+                html.append("<tr>")
                 for c in cols:
-                    html.append(f"<th>{c}</th>")
-                html.append("</tr></thead><tbody>")
-                n_rows = len(sample[cols[0]])
-                for r in range(n_rows):
-                    html.append("<tr>")
-                    for c in cols:
-                        html.append(f"<td>{sample[c][r]}</td>")
-                    html.append("</tr>")
-                html.append("</tbody></table></div>")
+                    html.append(f"<td>{sample[c][r]}</td>")
+                html.append("</tr>")
+            html.append("</tbody></table></div>")
 
         html.append(
             "</div><script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script></body></html>"

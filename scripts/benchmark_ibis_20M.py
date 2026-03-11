@@ -1,7 +1,10 @@
 # /// script
 # dependencies = [
-#   "ibis-framework",
-#   "duckdb",
+#   "ibis-framework[duckdb]",
+#   "polars",
+#   "pyarrow",
+#   "numpy",
+#   "packaging",
 # ]
 # ///
 import ibis
