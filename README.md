@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/ibis_profiling/assets/img/ibis-profiling-logo.png" width="400" alt="Ibis Profiling Logo">
+</p>
+
 # Ibis Profiling
 
 An ultra-high-performance data profiling system built natively for **Ibis**.
