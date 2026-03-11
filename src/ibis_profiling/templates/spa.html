@@ -88,7 +88,11 @@
         typesHtml += `<tr><th>${k}</th><td class='metric-value'>${v}</td></tr>`;
       });
 
-      let alertsHtml = alerts.length ? alerts.map(a => `<tr><td><code>${a.fields[0]}</code> has ${a.type.toLowerCase()}</td><td><span class='badge bg-info'>${a.type}</span></td></tr>`).join("") : "<tr><td class='text-muted'>No alerts.</td></tr>";
+      let alertsHtml = alerts.length ? alerts.map(a => {
+        const levelClass = a.level === 'warning' ? 'bg-danger' : 'bg-info';
+        const msg = getAlertMessage(a);
+        return `<tr><td><code>${a.fields.join(", ")}</code></td><td>${msg}</td><td><span class='badge ${levelClass}'>${a.type}</span></td></tr>`;
+      }).join("") : "<tr><td class='text-muted'>No alerts.</td></tr>";
 
       container.innerHTML = `
         <div class='section-header'><h1 class='section-name'>Overview</h1></div>
@@ -118,11 +122,26 @@
               </div>
             </div>
             <div class="tab-pane fade" id="tab-alerts">
-              <table class="table table-striped"><tbody>${alertsHtml}</tbody></table>
+              <table class="table table-striped">
+                <thead><tr><th>Field</th><th>Message</th><th>Type</th></tr></thead>
+                <tbody>${alertsHtml}</tbody>
+              </table>
             </div>
           </div>
         </div>
       `;
+    }
+
+    function getAlertMessage(a) {
+      switch(a.type) {
+        case 'CONSTANT': return 'has constant value';
+        case 'UNIQUE': return 'has unique values';
+        case 'HIGH_CARDINALITY': return `has high cardinality (n=${a.value})`;
+        case 'MISSING': return `has ${(a.value*100).toFixed(1)}% missing values`;
+        case 'ZEROS': return `has ${a.value.toLocaleString()} zeros`;
+        case 'SKEWED': return `is highly skewed (skewness=${a.value.toFixed(2)})`;
+        default: return 'alert triggered';
+      }
     }
 
     function renderVariables(container) {
@@ -209,7 +228,7 @@
                      <thead><tr><th>Value</th><th>Count</th><th>Frequency (%)</th></tr></thead>
                      <tbody>
                        ${stats.histogram ? stats.histogram.bins.map((b, idx) => `
-                         <tr><td>${b}</td><td class='metric-value'>${stats.histogram.counts[idx].toLocaleString()}</td><td class='metric-value'>${((stats.histogram.counts[idx]/data.table.n)*100).toFixed(1)}%</td></tr>
+                         <tr><td>${b === 'None' ? '<em>Missing</em>' : b}</td><td class='metric-value'>${stats.histogram.counts[idx].toLocaleString()}</td><td class='metric-value'>${((stats.histogram.counts[idx]/data.table.n)*100).toFixed(1)}%</td></tr>
                        `).join("") : ''}
                      </tbody>
                    </table>
@@ -222,7 +241,8 @@
 
         if (stats.histogram) {
           setTimeout(() => {
-            Plotly.newPlot(chartId, [{x: stats.histogram.bins, y: stats.histogram.counts, type: 'bar', marker: {color: '#0d6efd'}}], 
+            const labels = stats.histogram.bins.map(b => b === 'None' ? 'Missing' : b);
+            Plotly.newPlot(chartId, [{x: labels, y: stats.histogram.counts, type: 'bar', marker: {color: '#0d6efd'}}], 
             {margin: {t: 5, b: 20, l: 30, r: 5}, height: 150, font: {size: 10}}, {displayModeBar: false});
           }, 50);
         }
