@@ -74,8 +74,58 @@
     function renderView(viewId, container) {
       if (viewId === 'overview') renderOverview(container);
       else if (viewId === 'variables') renderVariables(container);
+      else if (viewId === 'correlations') renderCorrelations(container);
+      else if (viewId === 'missing') renderMissing(container);
       else if (viewId === 'sample') renderSample(container);
       else container.innerHTML = `<div class='text-center py-5 text-muted'><h4>${viewId}</h4><p>Details coming soon.</p></div>`;
+    }
+
+    function renderCorrelations(container) {
+      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Correlations</h1></div>`;
+      const corrs = data.correlations || {};
+      Object.entries(corrs).forEach(([name, d], i) => {
+        if (!d.matrix || d.matrix.length === 0) return;
+        const div = document.createElement("div");
+        div.className = "row item";
+        const chartId = `corr-${i}`;
+        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header text-capitalize'>${name}</p><div id='${chartId}' style='height: 600px;'></div></div>`;
+        container.appendChild(div);
+
+        setTimeout(() => {
+          const z = d.matrix;
+          const x = d.columns;
+          const y = d.columns;
+          Plotly.newPlot(chartId, [{
+            z: z, x: x, y: y, type: 'heatmap',
+            colorscale: [[0, '#f46d43'], [0.5, '#ffffbf'], [1, '#66bd63']],
+            zmin: -1, zmax: 1
+          }], {
+            margin: { t: 30, b: 100, l: 100, r: 30 },
+            height: 600
+          });
+        }, 50);
+      });
+    }
+
+    function renderMissing(container) {
+      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Missing Values</h1></div>`;
+      const m = data.missing || {};
+      if (m.bar && m.bar.counts) {
+        const div = document.createElement("div");
+        div.className = "row item";
+        const chartId = "missing-bar";
+        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header'>Missing Values (Count)</p><div id='${chartId}' style='height: 400px;'></div></div>`;
+        container.appendChild(div);
+
+        setTimeout(() => {
+          Plotly.newPlot(chartId, [{
+            x: m.bar.columns, y: m.bar.counts, type: 'bar', marker: {color: '#6c757d'}
+          }], {
+            margin: { t: 10, b: 100, l: 50, r: 10 },
+            height: 400
+          });
+        }, 50);
+      }
     }
 
     function renderOverview(container) {

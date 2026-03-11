@@ -73,6 +73,11 @@ class ProfileReport:
         # 4. Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
 
+        # 5. Generate Missing Values summary
+        from .model.missing import MissingEngine
+
+        self.missing = MissingEngine.process(self.variables)
+
     def add_metric(self, col_name: str, metric_name: str, value: any):
         """Adds extra data like samples or histograms to the model."""
         if metric_name in ["head", "tail"]:
@@ -84,7 +89,7 @@ class ProfileReport:
                 labels = [str(x) for x in value.get(col_name, [])]
                 self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
             else:
-                self.variables[col_name][metric_name] = value
+                self.variables[col_name][metric_name] = self._to_json_serializable(value)
 
     def to_dict(self) -> dict:
         return {
