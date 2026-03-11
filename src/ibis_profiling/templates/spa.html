@@ -146,12 +146,29 @@
 
     function renderVariables(container) {
       container.innerHTML = `<div class='section-header'><h1 class='section-name'>Variables</h1></div>`;
+      
+      // Map alerts to fields for quick lookup
+      const alertsByField = {};
+      (data.alerts || []).forEach(a => {
+        a.fields.forEach(f => {
+          if(!alertsByField[f]) alertsByField[f] = [];
+          alertsByField[f].push(a);
+        });
+      });
+
       Object.entries(data.variables).forEach(([col, stats], i) => {
         const div = document.createElement("div");
         div.className = "variable row item";
         const chartId = `chart-${i}`;
         const detailsId = `details-${i}`;
         
+        // Build alert badges for this field
+        const fieldAlerts = alertsByField[col] || [];
+        const alertBadges = fieldAlerts.map(a => {
+          const levelClass = a.level === 'warning' ? 'bg-danger' : 'bg-info';
+          return `<span class="badge ${levelClass} ms-1" title="${getAlertMessage(a)}">${a.type}</span>`;
+        }).join("");
+
         let leftStats = `
           <tr><th>Distinct</th><td class='metric-value'>${stats.n_distinct.toLocaleString()}</td></tr>
           <tr><th>Distinct (%)</th><td class='metric-value'>${(stats.distinct_perc*100).toFixed(1)}%</td></tr>
@@ -179,7 +196,14 @@
         }
 
         div.innerHTML = `
-          <div class="col-sm-12"><p class="item-header h4"><a class="var-name" href="#">${col}</a><br><span class="fs-6 text-body-secondary">${stats.type}</span></p></div>
+          <div class="col-sm-12">
+            <p class="item-header h4">
+              <a class="var-name" href="#">${col}</a>
+              ${alertBadges}
+              <br>
+              <span class="fs-6 text-body-secondary">${stats.type}</span>
+            </p>
+          </div>
           <div class="col-sm-4"><table class="table table-striped small"><tbody>${leftStats}</tbody></table></div>
           <div class="col-sm-4"><table class="table table-striped small"><tbody>${midStats}</tbody></table></div>
           <div class="col-sm-4"><div id="${chartId}" style="height: 150px;"></div></div>
