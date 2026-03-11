@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ibis Profiling Report</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #212529;
+      --accent: #0d6efd;
+      --sidebar-bg: #f8f9fa;
+      --border-color: #dee2e6;
+    }
+    [data-theme="dark"] {
+      --bg: #212529;
+      --text: #f8f9fa;
+      --accent: #3b82f6;
+      --sidebar-bg: #343a40;
+      --border-color: #495057;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+    }
+    .sidebar h4 { margin-bottom: 1.5rem; font-weight: 700; color: var(--accent); }
+    .nav-link {
+      color: var(--text);
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      margin-bottom: 0.25rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .nav-link:hover, .nav-link.active {
+      background-color: var(--accent);
+      color: white;
+    }
+    .content {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 2rem;
+    }
+    .card {
+      background-color: var(--bg);
+      border-color: var(--border-color);
+      margin-bottom: 1.5rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+    .card-header {
+      background-color: var(--sidebar-bg);
+      border-bottom-color: var(--border-color);
+      font-weight: bold;
+    }
+    .table { color: var(--text); }
+    .table td, .table th { border-color: var(--border-color); }
+    .badge-alert { background-color: #dc3545; color: white; }
+    .metric-value { font-family: monospace; font-weight: 600; text-align: right; }
+    #view-container > div { display: none; }
+    #view-container > div.active { display: block; }
+    
+    /* Variable specific */
+    .var-header { border-bottom: 2px solid var(--accent); margin-bottom: 1rem; padding-bottom: 0.5rem; }
+    .var-name { font-size: 1.25rem; font-weight: bold; color: var(--accent); font-family: monospace; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h4>Ibis Profiling</h4>
+    <a href="#overview" class="nav-link active" onclick="nav('overview')">Overview</a>
+    <a href="#variables" class="nav-link" onclick="nav('variables')">Variables</a>
+    <a href="#interactions" class="nav-link" onclick="nav('interactions')">Interactions</a>
+    <a href="#correlations" class="nav-link" onclick="nav('correlations')">Correlations</a>
+    <a href="#missing" class="nav-link" onclick="nav('missing')">Missing Values</a>
+    <a href="#sample" class="nav-link" onclick="nav('sample')">Sample</a>
+    
+    <div class="mt-auto">
+      <button class="btn btn-sm btn-outline-secondary w-100" onclick="toggleTheme()">Toggle Theme</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="view-container">
+      <div id="view-overview" class="active"></div>
+      <div id="view-variables"></div>
+      <div id="view-interactions"></div>
+      <div id="view-correlations"></div>
+      <div id="view-missing"></div>
+      <div id="view-sample"></div>
+    </div>
+  </div>
+
+  <!-- INJECT JSON DATA HERE -->
+  <script id="report-data" type="application/json">
+    {{REPORT_DATA}}
+  </script>
+
+  <script>
+    // 1. Load Data
+    const rawData = document.getElementById("report-data").textContent;
+    let data = {};
+    try {
+      data = JSON.parse(rawData);
+    } catch(e) {
+      console.error("Failed to parse report data", e);
+      document.getElementById("view-overview").innerHTML = "<div class='alert alert-danger'>Failed to load report data.</div>";
+    }
+
+    // State
+    const state = {
+      rendered: {
+        overview: false,
+        variables: false,
+        interactions: false,
+        correlations: false,
+        missing: false,
+        sample: false
+      }
+    };
+
+    // 2. Navigation & Lazy Rendering
+    function nav(viewId) {
+      document.querySelectorAll(".nav-link").forEach(el => el.classList.remove("active"));
+      document.querySelector(`a[href="#${viewId}"]`).classList.add("active");
+      
+      document.querySelectorAll("#view-container > div").forEach(el => el.classList.remove("active"));
+      const viewEl = document.getElementById(`view-${viewId}`);
+      viewEl.classList.add("active");
+
+      if (!state.rendered[viewId]) {
+        renderView(viewId, viewEl);
+        state.rendered[viewId] = true;
+      }
+    }
+
+    function renderView(viewId, container) {
+      if (viewId === 'overview') renderOverview(container);
+      else if (viewId === 'variables') renderVariables(container);
+      else if (viewId === 'sample') renderSample(container);
+      else {
+        container.innerHTML = `<div class='card'><div class='card-body text-center py-5 text-muted'><h4>${viewId.charAt(0).toUpperCase() + viewId.slice(1)}</h4><p>Module execution completed but complex visualization rendering is pending.</p></div></div>`;
+      }
+    }
+
+    // 3. Renderers
+    function renderOverview(container) {
+      const t = data.table || {};
+      const alerts = data.alerts || [];
+      
+      let typesHtml = "";
+      if(t.types) {
+          for(const [k,v] of Object.entries(t.types)) {
+              typesHtml += `<tr><th>${k}</th><td class='metric-value'>${v}</td></tr>`;
+          }
+      }
+
+      let alertsHtml = "";
+      if (alerts.length > 0) {
+        alerts.forEach(a => {
+          alertsHtml += `<tr><td><code>${a.fields.join(", ")}</code></td><td>${a.type}</td><td><span class='badge badge-alert'>Alert</span></td></tr>`;
+        });
+      } else {
+        alertsHtml = "<tr><td colspan='3' class='text-muted'>No alerts detected.</td></tr>";
+      }
+
+      container.innerHTML = `
+        <h2 class="mb-4">Dataset Overview</h2>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">Dataset Statistics</div>
+              <div class="card-body p-0">
+                <table class="table table-striped mb-0">
+                  <tbody>
+                    <tr><th>Number of variables</th><td class='metric-value'>${t.n_var}</td></tr>
+                    <tr><th>Number of observations</th><td class='metric-value'>${t.n}</td></tr>
+                    <tr><th>Missing cells</th><td class='metric-value'>${t.n_cells_missing}</td></tr>
+                    <tr><th>Missing cells (%)</th><td class='metric-value'>${(t.p_cells_missing*100).toFixed(1)}%</td></tr>
+                    <tr><th>Duplicate rows</th><td class='metric-value'>${t.n_duplicates || 0}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">Variable Types</div>
+              <div class="card-body p-0">
+                <table class="table table-striped mb-0">
+                  <tbody>${typesHtml}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card mt-4">
+          <div class="card-header">Alerts</div>
+          <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+              <tbody>${alertsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderVariables(container) {
+      container.innerHTML = `<h2 class="mb-4">Variables</h2>`;
+      const vars = data.variables || {};
+      
+      let index = 0;
+      for (const [colName, stats] of Object.entries(vars)) {
+        const type = stats.type || "Unknown";
+        
+        let statsHtml = `
+          <tr><th>Distinct</th><td class='metric-value'>${stats.n_distinct}</td></tr>
+          <tr><th>Missing</th><td class='metric-value'>${stats.n_missing}</td></tr>
+          <tr><th>Missing (%)</th><td class='metric-value'>${(stats.p_missing*100).toFixed(1)}%</td></tr>
+        `;
+        
+        if (type === "Numeric") {
+          statsHtml += `
+            <tr><th>Mean</th><td class='metric-value'>${stats.mean !== null ? stats.mean.toFixed(4) : ''}</td></tr>
+            <tr><th>Minimum</th><td class='metric-value'>${stats.min}</td></tr>
+            <tr><th>Maximum</th><td class='metric-value'>${stats.max}</td></tr>
+            <tr><th>Zeros</th><td class='metric-value'>${stats.zeros}</td></tr>
+          `;
+        }
+
+        const card = document.createElement("div");
+        card.className = "card var-card";
+        const chartId = `chart-${index++}`;
+
+        card.innerHTML = `
+          <div class="card-body">
+            <div class="var-header d-flex justify-content-between">
+              <div class="var-name">${colName}</div>
+              <span class="badge bg-secondary">${type}</span>
+            </div>
+            <div class="row">
+              <div class="col-md-4">
+                <table class="table table-sm table-borderless">${statsHtml}</table>
+              </div>
+              <div class="col-md-8">
+                <div id="${chartId}" style="height: 250px; width: 100%;"></div>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+
+        // Render chart if histogram data exists
+        if (stats.histogram && stats.histogram.bins && stats.histogram.counts) {
+           // Defer plot rendering slightly so element is in DOM with dimensions
+           setTimeout(() => {
+             Plotly.newPlot(chartId, [{
+               x: stats.histogram.bins,
+               y: stats.histogram.counts,
+               type: 'bar',
+               marker: { color: '#0d6efd' }
+             }], {
+               margin: { t: 10, b: 30, l: 40, r: 10 },
+               paper_bgcolor: 'rgba(0,0,0,0)',
+               plot_bgcolor: 'rgba(0,0,0,0)',
+               font: { color: document.body.getAttribute("data-theme") === "dark" ? "#fff" : "#333" }
+             }, {displayModeBar: false});
+           }, 50);
+        } else {
+            document.getElementById(chartId).innerHTML = "<div class='text-center text-muted mt-5'>No distribution available</div>";
+        }
+      }
+    }
+
+    function renderSample(container) {
+      container.innerHTML = `<h2 class="mb-4">Sample Data</h2>`;
+      const s = data.sample || {};
+      
+      ['head', 'tail'].forEach(stype => {
+        if (s[stype]) {
+          const keys = Object.keys(s[stype]);
+          if(keys.length === 0) return;
+          const numRows = s[stype][keys[0]].length;
+          
+          let tableHtml = `<div class="card mb-4"><div class="card-header">${stype.charAt(0).toUpperCase() + stype.slice(1)}</div><div class="table-responsive"><table class="table table-sm table-striped mb-0"><thead><tr>`;
+          keys.forEach(k => tableHtml += `<th>${k}</th>`);
+          tableHtml += `</tr></thead><tbody>`;
+          
+          for (let r=0; r<numRows; r++) {
+            tableHtml += `<tr>`;
+            keys.forEach(k => tableHtml += `<td>${s[stype][k][r]}</td>`);
+            tableHtml += `</tr>`;
+          }
+          tableHtml += `</tbody></table></div></div>`;
+          container.innerHTML += tableHtml;
+        }
+      });
+    }
+
+    // 4. Theming
+    function toggleTheme() {
+      const body = document.body;
+      const isDark = body.getAttribute("data-theme") === "dark";
+      body.setAttribute("data-theme", isDark ? "light" : "dark");
+      // Could also trigger Plotly.relayout for all charts here to update fonts
+    }
+
+    // Initialize
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.substring(1) || 'overview';
+        nav(hash);
+    });
+    
+    // Initial load
+    if (Object.keys(data).length > 0) {
+      nav(window.location.hash.substring(1) || 'overview');
+    }
+
+  </script>
+</body>
+</html>

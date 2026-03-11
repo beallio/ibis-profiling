@@ -28,9 +28,9 @@ def test_json_serialization_handles_complex_types():
     assert isinstance(json_str, str)
 
     # Check values
-    assert result["dataset"]["row_count"] == 20000000
-    assert result["columns"]["a"]["min"] == "2023-01-01T00:00:00"
-    assert result["columns"]["b"]["mean"] == 10.5
+    assert result["table"]["n"] == 20000000
+    assert result["variables"]["a"]["min"] == "2023-01-01T00:00:00"
+    assert result["variables"]["b"]["mean"] == 10.5
 
 
 if __name__ == "__main__":

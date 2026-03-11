@@ -12,11 +12,11 @@ def test_basic_profile():
     report_obj = profile(table)
     report = report_obj.to_dict()
 
-    assert "dataset" in report
-    assert "columns" in report
-    assert "id" in report["columns"]
-    assert "txt" in report["columns"]
-    assert report["dataset"]["row_count"] == 1
+    assert "table" in report
+    assert "variables" in report
+    assert "id" in report["variables"]
+    assert "txt" in report["variables"]
+    assert report["table"]["n"] == 1
 
 
 def test_complex_profile():
@@ -38,11 +38,11 @@ def test_complex_profile():
     report = report_obj.to_dict()
 
     # Dataset stats
-    assert report["dataset"]["row_count"] == 4
+    assert report["table"]["n"] == 4
 
     # Integer column
-    int_stats = report["columns"]["int_col"]
-    assert int_stats["missing"] == 1
+    int_stats = report["variables"]["int_col"]
+    assert int_stats["n_missing"] == 1
     assert int_stats["n_distinct"] == 3
     assert int_stats["n_unique"] == 3  # All are singletons in this sample [1, 2, 3]
     assert int_stats["min"] == 1
@@ -50,13 +50,13 @@ def test_complex_profile():
     assert int_stats["mean"] == 2.0
 
     # String column
-    str_stats = report["columns"]["str_col"]
+    str_stats = report["variables"]["str_col"]
     assert str_stats["n_distinct"] == 3
     assert str_stats["n_unique"] == 2  # 'a' is not a singleton
     assert "mean" not in str_stats  # Should not have mean for string
 
     # Date column
-    date_stats = report["columns"]["date_col"]
+    date_stats = report["variables"]["date_col"]
     assert date_stats["min"] == "2023-01-01T00:00:00"
     assert date_stats["max"] == "2023-01-04T00:00:00"
 
@@ -73,7 +73,7 @@ def test_profilereport_wrapper():
     # Test ydata-style API
     assert isinstance(report.to_dict(), dict)
     assert isinstance(report.get_description(), dict)
-    assert "id" in report.get_description()["columns"]
+    assert "id" in report.get_description()["variables"]
 
     # Test file export (minimal check)
     import os

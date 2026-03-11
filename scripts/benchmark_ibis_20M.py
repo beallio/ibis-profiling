@@ -31,14 +31,15 @@ def main():
     duration = time.time() - start_time
     print(f"Profile completed in {duration:.2f} seconds.")
 
-    # Generate all 5 templates
-    templates = ["ydata", "modern", "executive", "dense", "minimal"]
-    for temp in templates:
-        path = os.path.join(output_dir, f"profile_{temp}.html")
-        print(f"Generating {temp} report...")
-        with open(path, "w") as f:
-            f.write(report.to_html(template=temp))
-        print(f"Saved to {path}")
+    # Generate SPA report
+    html_path = os.path.join(output_dir, "profile_spa.html")
+    print("Generating SPA HTML report...")
+    report.to_file(html_path)
+
+    json_path = os.path.join(output_dir, "profile_spa.json")
+    report.to_file(json_path)
+
+    print(f"Saved to {html_path} and {json_path}")
 
 
 if __name__ == "__main__":

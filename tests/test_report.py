@@ -11,9 +11,9 @@ def test_report_building():
     report = ProfileReport(raw_results, schema)
     result = report.to_dict()
 
-    assert result["dataset"]["row_count"] == 5
-    assert result["columns"]["a"]["mean"] == 10.0
-    assert result["columns"]["a"]["type"] == str(dt.Int64())
+    assert result["table"]["n"] == 5
+    assert result["variables"]["a"]["mean"] == 10.0
+    assert result["variables"]["a"]["type"] == "Numeric"
 
 
 def test_report_empty_results():
@@ -23,8 +23,8 @@ def test_report_empty_results():
     report = ProfileReport(raw_results, schema)
     result = report.to_dict()
 
-    assert result["dataset"] == {}
-    assert result["columns"] == {}
+    assert result["table"] == {}
+    assert result["variables"] == {}
 
 
 def test_report_to_html():
@@ -35,8 +35,7 @@ def test_report_to_html():
     html = report.to_html()
 
     assert "Ibis Profiling Report" in html
-    assert "Number of observations" in html
-    assert "10.0000" in html  # Mean with formatting
+    assert "10.0" in html
     assert "5" in html
 
 
@@ -48,4 +47,4 @@ def test_report_date_serialization():
     report = ProfileReport(raw_results, schema)
     result = report.to_dict()
 
-    assert result["columns"]["a"]["min"] == "2023-01-01"
+    assert result["variables"]["a"]["min"] == "2023-01-01"
