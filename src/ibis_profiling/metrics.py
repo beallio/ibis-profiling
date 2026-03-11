@@ -52,6 +52,9 @@ registry.register(Metric("n_distinct", MetricCategory.COLUMN, None, lambda col: 
 registry.register(
     Metric("zeros", MetricCategory.COLUMN, [dt.Numeric], lambda col: (col == 0).sum())
 )
+registry.register(
+    Metric("n_negative", MetricCategory.COLUMN, [dt.Numeric], lambda col: (col < 0).sum())
+)
 # n_unique (singletons) is added as a COLUMN metric, but note it might require special handling in the planner
 registry.register(
     Metric(
@@ -85,6 +88,7 @@ registry.register(
 )
 registry.register(Metric("variance", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.var()))
 # registry.register(Metric("skewness", ...))
+
 registry.register(
     Metric("kurtosis", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.kurtosis())
 )

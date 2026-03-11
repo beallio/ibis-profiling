@@ -23,8 +23,13 @@ class ProfileReport:
         self.missing = {}
         self.alerts = []
         self.samples = {}
+        self.analysis = {
+            "title": "Ibis Profiling Report",
+            "date_start": datetime.now().isoformat(),
+        }
 
         self._build()
+        self.analysis["date_end"] = datetime.now().isoformat()
 
     def _to_json_serializable(self, val):
         """Converts Polars/Temporal types to standard Python types for JSON serialization."""
@@ -46,29 +51,81 @@ class ProfileReport:
             self.table = {
                 "n": n,
                 "n_var": len(self.schema),
-                "n_cells_missing": sum(v.get("missing", 0) for v in self.variables.values()),
+                "n_cells_missing": 0,
+                "n_vars_with_missing": 0,
+                "n_vars_all_missing": 0,
                 "types": {},
             }
-            self.table["p_cells_missing"] = (
-                self.table["n_cells_missing"] / (n * self.table["n_var"]) if n > 0 else 0
-            )
 
             # Type counts
             for v in self.variables.values():
                 t = v["type"]
                 self.table["types"][t] = self.table["types"].get(t, 0) + 1
 
-        # 3. Post-process variables (normalization)
+        # 3. Post-process variables (normalization & derived metrics)
+        n_cells_missing = 0
         for col, stats in self.variables.items():
-            stats["n_missing"] = self._to_json_serializable(stats.pop("missing", 0))
-            stats["p_missing"] = self._to_json_serializable(stats["n_missing"] / n if n > 0 else 0)
-            stats["distinct_perc"] = self._to_json_serializable(
+            stats["n"] = n
+            # SummaryEngine now uses n_missing, but let's be safe
+            m_count = stats.get("n_missing", stats.pop("missing", 0))
+            stats["n_missing"] = self._to_json_serializable(m_count)
+            stats["p_missing"] = self._to_json_serializable(m_count / n if n > 0 else 0)
+            stats["p_distinct"] = self._to_json_serializable(
                 stats.get("n_distinct", 0) / n if n > 0 else 0
             )
+
+            stats["count"] = n - m_count
+            stats["is_unique"] = stats.get("n_distinct", 0) == n
+
+            n_cells_missing += m_count
+            if m_count > 0:
+                self.table["n_vars_with_missing"] += 1
+            if m_count == n and n > 0:
+                self.table["n_vars_all_missing"] += 1
+
+            # Derived Numeric Stats
+            if stats.get("type") == "Numeric":
+                # Range
+                if stats.get("max") is not None and stats.get("min") is not None:
+                    stats["range"] = stats["max"] - stats["min"]
+
+                # IQR
+                if "75%" in stats and "25%" in stats:
+                    stats["iqr"] = stats["75%"] - stats["25%"]
+
+                # CV
+                if (
+                    stats.get("std") is not None
+                    and stats.get("mean") is not None
+                    and stats["mean"] != 0
+                ):
+                    stats["cv"] = stats["std"] / stats["mean"]
+
+                # Zeros Percentage
+                if "n_zeros" in stats:
+                    stats["p_zeros"] = stats["n_zeros"] / n if n > 0 else 0
+
+                # Infinite Percentage
+                if "n_infinite" in stats:
+                    stats["p_infinite"] = stats["n_infinite"] / n if n > 0 else 0
+
+                # Negative Percentage
+                if "n_negative" in stats:
+                    stats["p_negative"] = stats["n_negative"] / n if n > 0 else 0
+
+            # Unique Percentage
+            if "n_unique" in stats:
+                stats["p_unique"] = stats["n_unique"] / n if n > 0 else 0
 
             # Ensure other stats are serializable
             for k, v in list(stats.items()):
                 stats[k] = self._to_json_serializable(v)
+
+        if self.table:
+            self.table["n_cells_missing"] = n_cells_missing
+            self.table["p_cells_missing"] = (
+                n_cells_missing / (n * self.table["n_var"]) if n > 0 else 0
+            )
 
         # 4. Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
@@ -93,6 +150,7 @@ class ProfileReport:
 
     def to_dict(self) -> dict:
         return {
+            "analysis": self.analysis,
             "table": self.table,
             "variables": self.variables,
             "correlations": self.correlations,

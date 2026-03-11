@@ -29,7 +29,8 @@ class SummaryEngine:
                 "n_distinct": 0,
                 "n_missing": 0,
                 "p_missing": 0.0,
-                "quantiles": {},
+                "n": 0,
+                "count": 0,
             }
 
         for col, val in row.items():
@@ -40,10 +41,20 @@ class SummaryEngine:
                     if hasattr(val, "item"):
                         val = val.item()
 
-                    # Special handling for quantiles
+                    # Mapping logic to match ydata JSON schema
                     if metric_name.startswith("p") and metric_name[1:].isdigit():
-                        p_val = metric_name[1:] + "%"
-                        variables[col_name]["quantiles"][p_val] = val
+                        p_key = metric_name[1:] + "%"
+                        variables[col_name][p_key] = val
+                    elif metric_name == "missing":
+                        variables[col_name]["n_missing"] = val
+                    elif metric_name == "zeros":
+                        variables[col_name]["n_zeros"] = val
+                    elif metric_name == "infinite":
+                        variables[col_name]["n_infinite"] = val
+                    elif metric_name == "median":
+                        variables[col_name]["50%"] = val
+                    elif metric_name == "n_negative":
+                        variables[col_name]["n_negative"] = val
                     else:
                         variables[col_name][metric_name] = val
 
