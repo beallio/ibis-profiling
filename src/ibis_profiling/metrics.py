@@ -83,4 +83,8 @@ registry.register(
 registry.register(
     Metric("p95", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.quantile(0.95))
 )
-# kurtosis and skewness might have backend specific issues in Ibis, omitting for now for stability
+registry.register(Metric("variance", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.var()))
+# registry.register(Metric("skewness", ...))
+registry.register(
+    Metric("kurtosis", MetricCategory.COLUMN, [dt.Numeric], lambda col: col.kurtosis())
+)

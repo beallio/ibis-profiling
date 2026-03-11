@@ -175,14 +175,20 @@
                           <tr><th>Variance</th><td class='metric-value'>${stats.variance ? stats.variance.toFixed(4) : ''}</td></tr>
                           <tr><th>Kurtosis</th><td class='metric-value'>${stats.kurtosis ? stats.kurtosis.toFixed(4) : ''}</td></tr>
                           <tr><th>Skewness</th><td class='metric-value'>${stats.skewness ? stats.skewness.toFixed(4) : ''}</td></tr>
-                        ` : `<tr><td colspan="2" class="text-muted">Descriptive stats not available for categorical.</td></tr>`}
+                        ` : ''}
+                        ${stats.type === 'DateTime' ? `
+                          <tr><th>Range</th><td class='metric-value'>${stats.min} to ${stats.max}</td></tr>
+                        ` : ''}
+                        ${stats.type === 'Categorical' ? `
+                          <tr><th>Unique</th><td class='metric-value'>${stats.n_unique}</td></tr>
+                        ` : ''}
                       </table>
                     </div>
                   </div>
                 </div>
                 <div class="tab-pane fade" id="quantiles-${i}">
                    <table class="table table-sm small w-50">
-                     ${Object.entries(stats.quantiles || {}).map(([p, v]) => `<tr><th>${p}</th><td class='metric-value'>${v}</td></tr>`).join("")}
+                     ${Object.entries(stats.quantiles || {}).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).map(([p, v]) => `<tr><th>${p}</th><td class='metric-value'>${v}</td></tr>`).join("")}
                    </table>
                 </div>
                 <div class="tab-pane fade" id="values-${i}">

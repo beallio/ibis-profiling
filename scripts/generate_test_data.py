@@ -34,7 +34,15 @@ def generate_fast_loan_data(n_rows):
 
     df = pl.DataFrame(data)
 
-    # Add a few string columns using Faker (still a bit slow, but only for 2 columns)
+    # Inject nulls randomly into numeric and categorical columns
+    for col in ["loan_amount", "annual_income", "credit_score", "loan_status", "region"]:
+        null_mask = rng.random(n_rows) < 0.05  # 5% missing
+        df = df.with_columns(
+            pl.when(pl.Series(null_mask)).then(None).otherwise(pl.col(col)).alias(col)
+        )
+
+    # Add a few string columns using Faker
+
     if n_rows <= 100000:
         df = df.with_columns(
             [
