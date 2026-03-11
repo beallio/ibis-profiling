@@ -173,9 +173,9 @@
 
         let leftStats = `
           <tr><th>Distinct</th><td class='metric-value'>${stats.n_distinct.toLocaleString()}</td></tr>
-          <tr><th>Distinct (%)</th><td class='metric-value'>${(stats.distinct_perc*100).toFixed(1)}%</td></tr>
+          <tr><th>Distinct (%)</th><td class='metric-value'>${((stats.p_distinct || 0)*100).toFixed(1)}%</td></tr>
           <tr><th>Missing</th><td class='metric-value'>${stats.n_missing.toLocaleString()}</td></tr>
-          <tr><th>Missing (%)</th><td class='metric-value'>${(stats.p_missing*100).toFixed(1)}%</td></tr>
+          <tr><th>Missing (%)</th><td class='metric-value'>${((stats.p_missing || 0)*100).toFixed(1)}%</td></tr>
         `;
         
         let midStats = "";
@@ -184,7 +184,7 @@
             <tr><th>Mean</th><td class='metric-value'>${stats.mean ? stats.mean.toFixed(4) : ''}</td></tr>
             <tr><th>Minimum</th><td class='metric-value'>${stats.min}</td></tr>
             <tr><th>Maximum</th><td class='metric-value'>${stats.max}</td></tr>
-            <tr><th>Zeros</th><td class='metric-value'>${stats.zeros || 0}</td></tr>
+            <tr><th>Zeros</th><td class='metric-value'>${stats.n_zeros || 0}</td></tr>
           `;
         } else if(stats.type === "DateTime") {
           midStats = `
@@ -193,7 +193,7 @@
           `;
         } else if(stats.type === "Categorical" || stats.type === "Boolean") {
           midStats = `
-            <tr><th>Unique</th><td class='metric-value'>${stats.n_unique || ''}</td></tr>
+            <tr><th>Unique</th><td class='metric-value'>${stats.n_unique || 0}</td></tr>
           `;
         }
 
@@ -229,7 +229,7 @@
                           <tr><th>Variance</th><td class='metric-value'>${stats.variance ? stats.variance.toFixed(4) : ''}</td></tr>
                           <tr><th>Kurtosis</th><td class='metric-value'>${stats.kurtosis ? stats.kurtosis.toFixed(4) : ''}</td></tr>
                           <tr><th>Skewness</th><td class='metric-value'>${stats.skewness ? stats.skewness.toFixed(4) : ''}</td></tr>
-                          <tr><th>Sum</th><td class='metric-value'>${stats.sum ? stats.sum.toLocaleString() : ''}</td></tr>
+                          <tr><th>Sum</th><td class='metric-value'>${stats.sum ? (typeof stats.sum === 'number' ? stats.sum.toLocaleString(undefined, {maximumFractionDigits: 2}) : stats.sum) : ''}</td></tr>
                         ` : ''}
                         ${stats.type === 'DateTime' ? `
                           <tr><th>Minimum</th><td class='metric-value'>${stats.min || ''}</td></tr>
@@ -246,7 +246,7 @@
                 </div>
                 <div class="tab-pane fade" id="quantiles-${i}">
                    <table class="table table-sm small w-50">
-                     ${Object.entries(stats.quantiles || {}).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).map(([p, v]) => `<tr><th>${p}</th><td class='metric-value'>${v}</td></tr>`).join("")}
+                     ${Object.entries(stats).filter(([k]) => k.endsWith('%')).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).map(([p, v]) => `<tr><th>${p}</th><td class='metric-value'>${typeof v === 'number' ? v.toFixed(4) : v}</td></tr>`).join("")}
                    </table>
                 </div>
                 <div class="tab-pane fade" id="values-${i}">

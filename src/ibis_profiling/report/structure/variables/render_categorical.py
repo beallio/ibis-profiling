@@ -9,7 +9,7 @@ def render_categorical(stats: dict) -> Container:
             {
                 "name": "Distinct",
                 "value": fmt_numeric(stats.get("n_distinct")),
-                "perc": fmt_percent(stats.get("distinct_perc", 0)),
+                "perc": fmt_percent(stats.get("p_distinct", 0)),
             },
             {
                 "name": "Missing",

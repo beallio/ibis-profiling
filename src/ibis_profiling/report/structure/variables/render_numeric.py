@@ -9,7 +9,7 @@ def render_numeric(stats: dict) -> Container:
             {
                 "name": "Distinct",
                 "value": fmt_numeric(stats.get("n_distinct")),
-                "perc": fmt_percent(stats.get("distinct_perc", 0)),
+                "perc": fmt_percent(stats.get("p_distinct", 0)),
             },
             {
                 "name": "Missing",
@@ -19,7 +19,7 @@ def render_numeric(stats: dict) -> Container:
             {"name": "Mean", "value": fmt_numeric(stats.get("mean"))},
             {"name": "Minimum", "value": fmt_numeric(stats.get("min"))},
             {"name": "Maximum", "value": fmt_numeric(stats.get("max"))},
-            {"name": "Zeros", "value": fmt_numeric(stats.get("zeros"))},
+            {"name": "Zeros", "value": fmt_numeric(stats.get("n_zeros"))},
         ],
         name="summary",
     )
