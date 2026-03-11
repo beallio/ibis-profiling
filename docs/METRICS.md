@@ -8,6 +8,9 @@ This document provides a detailed breakdown of how metrics are calculated and ho
 
 The profiler uses a multi-pass execution engine to compute statistics efficiently across massive datasets while remaining compatible with SQL-based backends (like DuckDB).
 
+### Safe-Aggregation Layer
+To ensure backend stability, all numeric aggregations are wrapped in a safety layer that treats `NaN` values as `NULL`. This prevents `OutOfRange` errors in engines like DuckDB during standard deviation or variance calculations.
+
 ### Core Statistics (Pass 1)
 These are computed in a single global aggregation pass using Ibis primitives.
 
@@ -16,16 +19,16 @@ These are computed in a single global aggregation pass using Ibis primitives.
 | `n` | Total number of observations (rows) in the table. | All |
 | `n_missing` | Count of `NULL` or `NaN` values. | All |
 | `p_missing` | `n_missing / n` | All |
-| `n_distinct` | Count of unique values (including `NULL` if applicable). | All |
+| `n_distinct` | Count of unique values (excluding `NULL`). | All |
 | `p_distinct` | `n_distinct / n` | All |
 | `count` | `n - n_missing` (Total non-missing values) | All |
-| `mean` | `sum(x) / count` | Numeric |
-| `std` | Standard deviation (Bessel's correction applied). | Numeric |
+| `mean` | `sum(x) / count` (NaNs treated as NULL) | Numeric |
+| `std` | Sample standard deviation (Bessel's correction). | Numeric |
 | `variance` | `std^2` | Numeric |
 | `min` / `max` | Minimum and maximum values. | Numeric, DateTime |
-| `n_zeros` | Count of values exactly equal to `0`. | Numeric |
+| `zeros` | Count of values exactly equal to `0`. | Numeric |
 | `n_negative` | Count of values `< 0`. | Numeric |
-| `n_infinite` | Count of `+/- inf` values (Float only). | Numeric |
+| `infinite` | Count of `+/- inf` values (Float only). | Numeric |
 
 ### Advanced Statistics (Pass 2)
 To avoid "Nested Aggregation" errors in SQL backends (where a metric depends on a previously calculated mean), these are computed using values from Pass 1 as constants.
@@ -58,12 +61,12 @@ The alert engine scans the calculated metrics and triggers warnings based on ind
 
 | Alert Type | Logic / Threshold | Severity |
 | :--- | :--- | :--- |
-| **CONSTANT** | `n_distinct == 1` | Warning |
-| **UNIQUE** | `n_distinct == n` | Info |
-| **HIGH_CARDINALITY** | `p_distinct > 0.5` (and not `UNIQUE`) | Warning |
-| **MISSING** | `p_missing > 0.05` (More than 5% missing) | Warning |
-| **ZEROS** | `p_zeros > 0.05` (More than 5% zeros) | Info |
-| **SKEWED** | `abs(skewness) > 20` | Warning |
+| **CONSTANT** | `n_distinct == 1` | warning |
+| **UNIQUE** | `n_distinct == n` | warning |
+| **HIGH_CARDINALITY** | `p_distinct > 0.5` (and not `UNIQUE`, Categorical only) | warning |
+| **MISSING** | `p_missing > 0.05` (More than 5% missing) | info |
+| **ZEROS** | `p_zeros > 0.10` (More than 10% zeros) | info |
+| **SKEWED** | `abs(skewness) > 20` | info |
 
 ### Suppression Rules
 To reduce noise, the engine applies hierarchical suppression:

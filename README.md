@@ -20,7 +20,17 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 - **Multi-Pass Execution:** Intelligently splits computation into optimized passes to handle complex moments (Skewness, MAD) without backend "nested aggregation" errors.
 - **JSON Schema Parity:** Achieves full structural and statistical parity with `ydata-profiling`, allowing drop-in replacement for downstream automated pipelines.
 - **High-Fidelity SPA:** Generates a modern Single Page Application (SPA) report with interactive Plotly charts, SVG-based nullity matrices, and alert badges.
-- **Scalability:** Profile **5 million rows in < 8 seconds** and **20 million rows in < 30 seconds** (including correlations and histograms).
+- **Scalability:** Profile **10 million rows in < 25 seconds** (Full mode) and **20 million rows in < 50 seconds** (Minimal mode).
+
+---
+
+## 🛡️ Backend Stability & NaN Handling
+
+A critical challenge in database-native profiling is the handling of `NaN` (Not-a-Number) values in floating-point columns. Traditional database aggregations (like `STDDEV_SAMP` in DuckDB) often throw `OutOfRange` errors when encountering `NaN`s.
+
+**Ibis Profiling** implements a **Safe-Aggregation** layer that automatically treats `NaN` values as `NULL` during statistical computation. This ensures:
+1. **Zero Crash Policy:** Profiles complete successfully even on messy synthetic or sensor data.
+2. **Mathematical Consistency:** Statistics (mean, std, variance) are computed on the subset of valid numeric values, matching the behavior of high-level tools like Pandas while staying within the database.
 
 ---
 

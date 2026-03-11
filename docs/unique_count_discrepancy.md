@@ -22,9 +22,12 @@ The investigation revealed that the two systems use different definitions for "u
    - Result: **934,133**
 
 ## Conclusion
-There is no error in the statistical computation of either system. The difference is purely semantic. 
+The investigation confirmed that the difference was purely semantic. To achieve full structural parity with `ydata-profiling` while maintaining database-standard expectations, the **Ibis-Native Profiler now computes both metrics**:
 
-To maintain parity with traditional expectations of "Unique Count" in database contexts, the Ibis-Native Profiler will continue to report **Distinct Values**. However, for users coming from `ydata-profiling`, it is important to note that our `unique` corresponds to their `n_distinct`.
+1. **`n_distinct`**: Standard SQL `COUNT(DISTINCT x)`.
+2. **`n_unique`**: Count of singleton values (values appearing exactly once).
+
+This ensures users have access to both the "distinct" and "truly unique" counts as defined in the YData schema.
 
 ## Verification Script
 The following check was performed using Polars on the 1M row sample:
