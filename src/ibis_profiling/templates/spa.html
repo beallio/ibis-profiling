@@ -335,7 +335,7 @@
         div.innerHTML = `
           <div class='col-sm-12'>
             <p class='h4 item-header'>${m.matrix.name}</p>
-            <div id='${matrixId}' class='p-3 border' style='overflow-x: auto; background: #fff;'></div>
+            <div id='${matrixId}' class='p-3 border rounded shadow-sm' style='overflow-x: auto; background: #fff; min-height: 300px;'></div>
             <p class='text-muted small mt-2'>${m.matrix.caption}</p>
           </div>
         `;
@@ -346,22 +346,29 @@
         const firstCol = mat.values.find(v => v && v.length > 0);
         if (firstCol) {
           const nRows = firstCol.length;
-          const cellW = Math.max(80, 800/nCols);
-          const cellH = 2; // Sparkline-style density
+          const labelHeight = 100;
+          const cellW = Math.max(60, 800/nCols);
+          const cellH = 2; 
           
-          let svg = `<svg width="${nCols * cellW}" height="${nRows * cellH}" style="display: block;">`;
+          let svg = `<svg width="${nCols * cellW + 50}" height="${nRows * cellH + labelHeight + 20}" style="display: block;">`;
+          
+          // Column Labels (Top)
           mat.columns.forEach((col, i) => {
-             // svg += `<text x="${i*cellW + 5}" y="${nRows*cellH - 5}" font-size="10" transform="rotate(-90, ${i*cellW+5}, ${nRows*cellH-5})">${col}</text>`;
+             svg += `<text x="${i*cellW + (cellW/2)}" y="${labelHeight - 5}" font-size="11" font-weight="600" text-anchor="start" transform="rotate(-45, ${i*cellW + (cellW/2)}, ${labelHeight - 5})">${col}</text>`;
+             
              if (mat.values[i]) {
                mat.values[i].forEach((isNull, j) => {
-                 if (isNull) {
-                   svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#eee" />`;
-                 } else {
-                   svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#444" />`;
-                 }
+                 const y = labelHeight + (j * cellH);
+                 // YData style: grey/white for missing, dark for present
+                 svg += `<rect x="${i*cellW}" y="${y}" width="${cellW-1}" height="${cellH}" fill="${isNull ? '#eee' : '#444'}" />`;
                });
              }
           });
+          
+          // Row markers (0 and N)
+          svg += `<text x="${nCols * cellW + 5}" y="${labelHeight + 10}" font-size="10" fill="#999">0</text>`;
+          svg += `<text x="${nCols * cellW + 5}" y="${labelHeight + (nRows * cellH)}" font-size="10" fill="#999">${nRows}</text>`;
+          
           svg += `</svg>`;
           document.getElementById(matrixId).innerHTML = svg;
         }
