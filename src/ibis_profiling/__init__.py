@@ -27,7 +27,26 @@ def profile(table: ibis.Table) -> InternalProfileReport:
     # 2. Build base report
     report = InternalProfileReport(raw_results, inspector.get_column_types())
 
-    # 3. Handle complex metrics (e.g. n_unique, top_values)
+    # 3. Handle advanced moments (Skewness) in a second pass if possible
+    # We use mean/std from pass 1 to avoid nesting issues
+    skew_aggs = []
+    numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
+    for col_name in numeric_cols:
+        stats = report.variables[col_name]
+        mean = stats.get("mean")
+        std = stats.get("std")
+        if mean is not None and std is not None and std > 0:
+            col = table[col_name]
+            skew_expr = ((col - mean) / std).pow(3).mean().name(f"{col_name}__skewness")
+            skew_aggs.append(skew_expr)
+
+    if skew_aggs:
+        skew_results = table.aggregate(skew_aggs).to_pyarrow().to_pydict()
+        for k, v in skew_results.items():
+            c_name = k.split("__")[0]
+            report.add_metric(c_name, "skewness", v[0])
+
+    # 4. Handle complex metrics (e.g. n_unique, top_values)
     complex_plans = planner.build_complex_metrics()
     for col_name, metric_name, expr in complex_plans:
         if isinstance(expr, ibis.expr.types.Table):

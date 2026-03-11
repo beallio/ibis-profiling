@@ -34,9 +34,13 @@ def generate_fast_loan_data(n_rows):
 
     df = pl.DataFrame(data)
 
-    # Inject nulls randomly into numeric and categorical columns
-    for col in ["loan_amount", "annual_income", "credit_score", "loan_status", "region"]:
-        null_mask = rng.random(n_rows) < 0.05  # 5% missing
+    # Inject nulls randomly into ALL columns except ID
+    for col in df.columns:
+        if col == "loan_id":
+            continue
+        # Randomly decide missing percentage for each column (0% to 15%)
+        p_missing = rng.uniform(0, 0.15)
+        null_mask = rng.random(n_rows) < p_missing
         df = df.with_columns(
             pl.when(pl.Series(null_mask)).then(None).otherwise(pl.col(col)).alias(col)
         )

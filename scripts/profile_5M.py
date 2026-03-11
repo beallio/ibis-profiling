@@ -16,24 +16,14 @@ from ibis_profiling import ProfileReport
 def main():
     data_path = "/tmp/ibis-profiling/loan_data_5M.parquet"
 
-    # 1. Get 5M records (Use existing 20M file if available to save time)
-    source_20M = "/home/beallio/Downloads/loan_data_20M.parquet"
-    if os.path.exists(source_20M):
-        print(f"Sampling 5M records from {source_20M}...")
-        con = ibis.duckdb.connect()
-        table = con.read_parquet(source_20M).limit(5_000_000)
-    elif not os.path.exists(data_path):
-        print("Generating 5M records (Faker is slow, this may take a minute)...")
-        from generate_test_data import generate_legacy_loan_data
-        from faker import Faker
+    # 1. Generate new 5M records with randomized missing values
+    if True:  # Force generation
+        print("Generating 5M records with randomized missing values (Vectorized)...")
+        from generate_test_data import generate_fast_loan_data
 
-        fake = Faker()
-        df = generate_legacy_loan_data(fake, 5_000_000)
+        df = generate_fast_loan_data(5_000_000)
         df.write_parquet(data_path)
         print(f"Data saved to {data_path}")
-        con = ibis.duckdb.connect()
-        table = con.read_parquet(data_path)
-    else:
         con = ibis.duckdb.connect()
         table = con.read_parquet(data_path)
 

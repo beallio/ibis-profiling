@@ -44,17 +44,11 @@ class QueryPlanner:
             if metric and metric.supports(dtype):
                 plans.append((col_name, metric.name, metric.build_expr(col)))
 
-            # 2. Histograms for numeric columns
-            if dtype.is_numeric():
-                # We calculate a 10-bin histogram
-                # Note: We use a subquery to get min/max for scaling if not already known
-                # but for simplicity in this pass, we'll use ibis.histogram
-                # which is supported by DuckDB and others.
-                hist_expr = (
-                    col.value_counts().order_by(col_name).limit(20)
-                )  # Top 20 for categorical/small numeric
-                # For true numeric histograms, we'll add a specialized method later.
-                # For now, let's treat top-values as the "distribution" for the UI.
-                plans.append((col_name, "top_values", hist_expr))
+            # 2. Histograms / Distribution (top values) for ALL columns
+            # We treat top-values as the "distribution" for the UI.
+            # For numeric columns, it acts as a frequency plot of values.
+            # For categorical, it's the standard value counts.
+            hist_expr = col.value_counts().order_by(ibis.desc(f"{col_name}_count")).limit(20)
+            plans.append((col_name, "top_values", hist_expr))
 
         return plans
