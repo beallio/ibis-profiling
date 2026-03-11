@@ -99,6 +99,19 @@ stats = report.to_dict()
 print(f"Dataset Skewness: {stats['variables']['income']['skewness']}")
 ```
 
+### Minimal vs. Full Profiling
+
+The `ProfileReport` supports a `minimal` flag (default `False`) to toggle between fast exploratory profiling and deep statistical analysis.
+
+| Feature | Minimal Mode (`minimal=True`) | Full Mode (`minimal=False`) |
+| :--- | :--- | :--- |
+| **Core Stats** | Count, Mean, Std, Min/Max, Zeros, Nullity. | All Minimal stats. |
+| **Advanced Moments** | Skipped. | Skewness, Kurtosis, MAD. |
+| **Correlations** | Skipped. | Full Pearson pairwise matrix. |
+| **Missing Values** | Count and percentage only. | Nullity Matrix (SVG) and Heatmap. |
+| **Duplicates** | Skipped. | Dataset-wide duplicate row count. |
+| **Performance** | **Ultra-Fast.** Recommended for datasets > 50M rows. | **Detailed.** Recommended for deep data quality audits. |
+
 ---
 
 ## 🏗 Architecture
