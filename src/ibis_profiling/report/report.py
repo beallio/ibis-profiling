@@ -2,8 +2,10 @@ import polars as pl
 from datetime import datetime, date
 import json
 import os
+from typing import Any
 from .model.summary import SummaryEngine
 from .model.alerts import AlertEngine
+from .structure.report import Report
 
 
 class ProfileReport:
@@ -95,6 +97,10 @@ class ProfileReport:
             "sample": self.samples,
             "package": {"name": "ibis-profiling", "version": "0.1.0"},
         }
+
+    def get_structure(self) -> Any:
+        """Returns the logical structure of the report."""
+        return Report(self.to_dict()).get_structure()
 
     def to_json(self) -> str:
         class ReportEncoder(json.JSONEncoder):
