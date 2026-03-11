@@ -328,7 +328,7 @@
       }
       
       // Render Matrix
-      if (m.matrix && m.matrix.matrix && m.matrix.matrix.values) {
+      if (m.matrix && m.matrix.matrix && m.matrix.matrix.values && m.matrix.matrix.values.length > 0) {
         const div = document.createElement("div");
         div.className = "row item";
         const matrixId = "missing-matrix";
@@ -343,23 +343,28 @@
         
         const mat = m.matrix.matrix;
         const nCols = mat.columns.length;
-        const nRows = mat.values[0].length;
-        const cellW = Math.max(80, 800/nCols);
-        const cellH = 2; // Sparkline-style density
-        
-        let svg = `<svg width="${nCols * cellW}" height="${nRows * cellH}" style="display: block;">`;
-        mat.columns.forEach((col, i) => {
-           svg += `<text x="${i*cellW + 5}" y="${nRows*cellH - 5}" font-size="10" transform="rotate(-90, ${i*cellW+5}, ${nRows*cellH-5})">${col}</text>`;
-           mat.values[i].forEach((isNull, j) => {
-             if (isNull) {
-               svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#eee" />`;
-             } else {
-               svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#444" />`;
+        const firstCol = mat.values.find(v => v && v.length > 0);
+        if (firstCol) {
+          const nRows = firstCol.length;
+          const cellW = Math.max(80, 800/nCols);
+          const cellH = 2; // Sparkline-style density
+          
+          let svg = `<svg width="${nCols * cellW}" height="${nRows * cellH}" style="display: block;">`;
+          mat.columns.forEach((col, i) => {
+             // svg += `<text x="${i*cellW + 5}" y="${nRows*cellH - 5}" font-size="10" transform="rotate(-90, ${i*cellW+5}, ${nRows*cellH-5})">${col}</text>`;
+             if (mat.values[i]) {
+               mat.values[i].forEach((isNull, j) => {
+                 if (isNull) {
+                   svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#eee" />`;
+                 } else {
+                   svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#444" />`;
+                 }
+               });
              }
-           });
-        });
-        svg += `</svg>`;
-        document.getElementById(matrixId).innerHTML = svg;
+          });
+          svg += `</svg>`;
+          document.getElementById(matrixId).innerHTML = svg;
+        }
       }
 
       // Render Heatmap

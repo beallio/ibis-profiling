@@ -2,6 +2,7 @@ import polars as pl
 from datetime import datetime, date
 import json
 import os
+import math
 from typing import Any
 from .model.summary import SummaryEngine
 from .model.alerts import AlertEngine
@@ -40,11 +41,18 @@ class ProfileReport:
         if isinstance(val, ir.Scalar):
             # Convert Ibis scalar to python
             try:
-                return val.to_pyarrow().as_py()
+                val = val.to_pyarrow().as_py()
             except Exception:
                 return str(val)
+
         if hasattr(val, "item"):
-            return val.item()
+            val = val.item()
+
+        # Handle NaN/Inf which break strict JSON
+        if isinstance(val, float):
+            if math.isnan(val) or math.isinf(val):
+                return None
+
         return val
 
     def _build(self):
@@ -183,11 +191,20 @@ class ProfileReport:
                     return obj.isoformat()
                 if isinstance(obj, ir.Scalar):
                     try:
-                        return obj.to_pyarrow().as_py()
+                        val = obj.to_pyarrow().as_py()
                     except Exception:
                         return str(obj)
-                if hasattr(obj, "item"):
-                    return obj.item()
+                else:
+                    val = obj
+
+                if hasattr(val, "item"):
+                    val = val.item()
+
+                if isinstance(val, float):
+                    if math.isnan(val) or math.isinf(val):
+                        return None
+                    return val
+
                 return super().default(obj)
 
         return json.dumps(self.to_dict(), indent=2, cls=ReportEncoder)
