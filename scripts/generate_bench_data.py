@@ -100,11 +100,14 @@ def generate_bench_data_chunk(n_rows, start_id, rng, fake):
 def main():
     parser = argparse.ArgumentParser(description="Memory-efficient data generator.")
     parser.add_argument("--rows", type=int, default=100000)
+    parser.add_argument(
+        "--cols", type=int, default=20, help="Number of columns to generate (max 20)"
+    )
     parser.add_argument("--output", type=str, default="/tmp/ibis-profiling/bench_data.parquet")
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
-    print(f"Generating {args.rows:,} rows x 20 columns in chunks...")
+    print(f"Generating {args.rows:,} rows x {args.cols} columns in chunks...")
 
     rng = np.random.default_rng(42)
     fake = Faker()
@@ -113,11 +116,40 @@ def main():
     chunk_size = 1_000_000
     n_chunks = (args.rows + chunk_size - 1) // chunk_size
 
+    # Define all available column names in order
+    all_col_names = [
+        "id",
+        "const_str",
+        "mostly_null",
+        "mostly_zero",
+        "high_card",
+        "skewed",
+        "corr_base",
+        "corr_high",
+        "num_uniform",
+        "num_normal",
+        "cat_low",
+        "cat_med",
+        "bool_true",
+        "bool_mixed",
+        "text_short",
+        "text_long",
+        "int_pos",
+        "int_neg",
+        "float_small",
+        "float_large",
+    ]
+    target_cols = all_col_names[: args.cols]
+
     for i in range(n_chunks):
         rows_to_gen = min(chunk_size, args.rows - i * chunk_size)
         start_id = i * chunk_size
         print(f"  Chunk {i + 1}/{n_chunks} ({rows_to_gen:,} rows)...")
         df = generate_bench_data_chunk(rows_to_gen, start_id, rng, fake)
+
+        # Subset columns if requested
+        if args.cols < 20:
+            df = df.select(target_cols)
 
         if i == 0:
             df.write_parquet(args.output)

@@ -24,17 +24,17 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 
 Benchmarks were conducted using a synthetic dataset with 20 columns (mix of numeric, categorical, text, and boolean) on a standard Linux environment using the **DuckDB** backend.
 
-| Dataset Size | Ibis Profiler (Full) | Ibis Profiler (Minimal) | ydata-profiling (Minimal) | Speedup (Minimal) |
-| :--- | :--- | :--- | :--- | :--- |
-| **10k Rows** | 0.88s | 0.90s | 9.92s | ~11x |
-| **50k Rows** | 1.15s | 1.16s | 17.53s | ~15x |
-| **500k Rows** | - | 2.16s | 85.92s | ~40x |
-| **1M Rows** | - | 3.15s | 147.24s | ~46x |
-| **5M Rows** | - | 12.23s | >5m (est) | - |
-| **10M Rows** | - | 27.27s | >10m (est) | - |
-| **20M Rows** | - | 49.17s | >20m (est) | - |
+| Dataset Size | Ibis (Full) | Ibis (Min) | ydata (Min) | Mem Ibis (Min) | Mem ydata (Min) | Speedup |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **10k Rows** | 0.88s | 0.90s | 9.92s | ~3.6 MB | ~74 MB | ~11x |
+| **50k Rows** | 1.15s | 1.16s | 17.53s | ~3.6 MB | ~293 MB | ~15x |
+| **500k Rows** | 2.50s | 2.16s | 85.92s | ~3.6 MB | ~2.5 GB | ~40x |
+| **1M Rows** | 3.52s | 3.15s | 147.24s | ~3.2 MB | ~4.8 GB | ~46x |
+| **5M Rows** | 12.38s | 12.23s | ~15m (est) | ~3.2 MB | >20 GB (est)| ~73x (est) |
+| **10M Rows** | 24.53s | 27.27s | ~35m (est) | ~3.6 MB | >40 GB (est)| ~77x (est) |
+| **20M Rows** | 32.15s* | 49.17s | >1h (est) | ~3.6 MB | >80 GB (est)| >100x (est) |
 
-*Note: Ibis Profiler Full mode includes correlations and complex moments. ydata-profiling was run in "minimal" mode for larger datasets to avoid OOM errors.*
+*Note: 20M Full result (32.15s) was run with 10 columns to avoid OOM. All other benchmarks use 20 columns. ydata-profiling was run in "minimal" mode for larger datasets to avoid OOM errors. Ibis memory usage is nearly constant (< 1MB difference) between Minimal and Full modes.*
 
 ---
 

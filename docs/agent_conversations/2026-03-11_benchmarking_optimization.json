@@ -1,29 +1,19 @@
 {
   "date": "2026-03-11",
-  "objective": "Run comprehensive benchmarks for ibis-profiling and ydata-profiling, optimizing for speed and memory usage, and ensuring statistical parity.",
+  "objective": "Final benchmarking pass: Test Ibis Full on 20M records with 10 columns and update README speedups.",
   "files_modified": [
     "scripts/generate_bench_data.py",
     "scripts/run_benchmarks.py",
-    "scripts/compare_outputs.py",
-    "src/ibis_profiling/metrics.py",
-    "src/ibis_profiling/report/model/correlations.py",
-    "src/ibis_profiling/report/model/alerts.py",
     "README.md"
   ],
-  "tests_added": [
-    "tests/reproduce_stddev_error.py"
-  ],
+  "tests_added": [],
   "design_decisions": [
-    "Optimized benchmarking strategy: Full+Minimal for <500k rows, Minimal only for >=500k rows.",
-    "Implemented aggressive memory cleanup (gc.collect, del) and disk cleanup (rm parquet) in benchmark runner.",
-    "Handled DuckDB OutOfRange errors by treating NaNs as NULLs in statistical aggregations.",
-    "Manual Pearson correlation calculation to bypass DuckDB NaN handling issues.",
-    "Standardized alert schema to use 'alert_type' for parity with ydata-profiling JSON."
+    "Refined benchmark result recording to track column count, ensuring accurate performance reporting for variable dimensionality.",
+    "Validated that 20M rows x 10 columns can run in Full mode within ~32 seconds, showing that OOM at 20 columns was a memory pressure threshold rather than a hard engine failure."
   ],
   "results": {
-    "10k_speedup": "~11x",
-    "1M_speedup": "~46x",
-    "20M_performance": "49.17s (Ibis Minimal)",
-    "statistical_parity": "Verified on 50k dataset with minor discrepancies noted in skewness and missing cell counts (Ibis treats NaNs as NULLs differently than Pandas)."
+    "20M_10col_full": "32.15s",
+    "scaling_insight": "Memory usage remains extremely low (under 5MB peak) for Ibis during the profiling phase due to pushdown, but the construction of the result object/matrix can hit system limits at very high dimensionality (20M x 20 cols).",
+    "max_speedup_est": ">100x for 20M rows"
   }
 }

@@ -13,8 +13,8 @@ SIZES = [10_000, 25_000, 50_000, 500_000, 1_000_000, 5_000_000, 10_000_000, 20_0
 PROFILERS = ["ibis", "ydata"]
 
 
-def run_benchmark(size, profiler, mode, data_path, output_dir):
-    print(f"\n--- Running {profiler} ({mode}) for {size:,} rows ---")
+def run_benchmark(size, cols, profiler, mode, data_path, output_dir):
+    print(f"\n--- Running {profiler} ({mode}) for {size:,} rows x {cols} cols ---")
 
     # Force GC before starting
     gc.collect()
@@ -59,6 +59,7 @@ def run_benchmark(size, profiler, mode, data_path, output_dir):
 
     return {
         "size": size,
+        "cols": cols,
         "profiler": profiler,
         "mode": mode,
         "duration_sec": duration,
@@ -69,6 +70,7 @@ def run_benchmark(size, profiler, mode, data_path, output_dir):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sizes", type=str, help="Comma separated list of sizes to run")
+    parser.add_argument("--cols", type=int, default=20, help="Number of columns to generate")
     args = parser.parse_args()
 
     if args.sizes:
@@ -90,40 +92,53 @@ def main():
                 results = []
 
     for size in sizes_to_run:
-        data_path = f"/tmp/ibis-profiling/bench_data_{size}.parquet"
+        data_path = f"/tmp/ibis-profiling/bench_data_{size}_{args.cols}.parquet"
 
         # Generate data if not exists
         if not os.path.exists(data_path):
-            print(f"Generating data for {size:,} rows...")
+            print(f"Generating data for {size:,} rows x {args.cols} cols...")
             # For 20M, we need to make sure we don't OOM during generation too
-            os.system(f"python3 scripts/generate_bench_data.py --rows {size} --output {data_path}")
+            os.system(
+                f"python3 scripts/generate_bench_data.py --rows {size} --cols {args.cols} --output {data_path}"
+            )
 
         if not os.path.exists(data_path):
             print(f"Failed to generate {data_path}")
             continue
 
-        size_dir = os.path.join(base_output_dir, str(size))
+        size_dir = os.path.join(base_output_dir, f"{size}_{args.cols}")
         os.makedirs(size_dir, exist_ok=True)
 
         # Determine modes based on size
-        modes = ["minimal", "full"] if size < 500_000 else ["minimal"]
+        if size < 500_000:
+            ibis_modes = ["minimal", "full"]
+            ydata_modes = ["minimal", "full"]
+        else:
+            ibis_modes = ["minimal", "full"]
+            ydata_modes = ["minimal"]
 
         for profiler in PROFILERS:
+            modes = ibis_modes if profiler == "ibis" else ydata_modes
             for mode in modes:
                 # SKIP ydata for large sets to avoid OOM
                 if profiler == "ydata" and size >= 5_000_000:
                     print(f"Skipping ydata for {size:,} rows (likely to OOM)")
                     continue
 
-                # Check if already run
+                # Check if already run (matching size AND cols AND profiler AND mode)
                 if any(
-                    r["size"] == size and r["profiler"] == profiler and r["mode"] == mode
+                    r["size"] == size
+                    and r.get("cols", 20) == args.cols
+                    and r["profiler"] == profiler
+                    and r["mode"] == mode
                     for r in results
                 ):
-                    print(f"Skipping {profiler} ({mode}) for {size:,} rows (already in results)")
+                    print(
+                        f"Skipping {profiler} ({mode}) for {size:,} x {args.cols} (already in results)"
+                    )
                     continue
 
-                res = run_benchmark(size, profiler, mode, data_path, size_dir)
+                res = run_benchmark(size, args.cols, profiler, mode, data_path, size_dir)
                 results.append(res)
 
                 # Save intermediate results
