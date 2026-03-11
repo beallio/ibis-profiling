@@ -116,6 +116,11 @@ def profile(table: ibis.Table) -> InternalProfileReport:
     head_sample = table.head(10).to_pyarrow().to_pydict()
     report.add_metric("_dataset", "head", head_sample)
 
+    # 6. Missing Values (Matrix/Heatmap)
+    from .report.model.missing import MissingEngine
+
+    report.missing = MissingEngine.compute(table, report.variables)
+
     return report
 
 

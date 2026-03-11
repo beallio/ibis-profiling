@@ -32,9 +32,17 @@ class ProfileReport:
         self.analysis["date_end"] = datetime.now().isoformat()
 
     def _to_json_serializable(self, val):
-        """Converts Polars/Temporal types to standard Python types for JSON serialization."""
+        """Converts Polars/Temporal/Ibis types to standard Python types for JSON serialization."""
+        import ibis.expr.types as ir
+
         if isinstance(val, (datetime, date)):
             return val.isoformat()
+        if isinstance(val, ir.Scalar):
+            # Convert Ibis scalar to python
+            try:
+                return val.to_pyarrow().as_py()
+            except Exception:
+                return str(val)
         if hasattr(val, "item"):
             return val.item()
         return val
@@ -131,11 +139,6 @@ class ProfileReport:
         # 4. Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
 
-        # 5. Generate Missing Values summary
-        from .model.missing import MissingEngine
-
-        self.missing = MissingEngine.process(self.variables)
-
     def add_metric(self, col_name: str, metric_name: str, value: any):
         """Adds extra data like samples or histograms to the model."""
         if metric_name in ["head", "tail"]:
@@ -172,10 +175,17 @@ class ProfileReport:
         return Report(self.to_dict()).get_structure()
 
     def to_json(self) -> str:
+        import ibis.expr.types as ir
+
         class ReportEncoder(json.JSONEncoder):
             def default(self, obj):
                 if isinstance(obj, (datetime, date)):
                     return obj.isoformat()
+                if isinstance(obj, ir.Scalar):
+                    try:
+                        return obj.to_pyarrow().as_py()
+                    except Exception:
+                        return str(obj)
                 if hasattr(obj, "item"):
                     return obj.item()
                 return super().default(obj)

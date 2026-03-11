@@ -15,9 +15,12 @@ def test_correlation_and_missing_model():
     report.variables["b"]["n_missing"] = 5
 
     # Re-run missing processing
+    # Re-run missing processing
     from ibis_profiling.report.model.missing import MissingEngine
+    import ibis
 
-    report.missing = MissingEngine.process(report.variables)
+    dummy_table = ibis.memtable({"a": [1] * 10, "b": [2] * 10})
+    report.missing = MissingEngine.compute(dummy_table, report.variables)
 
     # Check missing model
     assert "bar" in report.missing

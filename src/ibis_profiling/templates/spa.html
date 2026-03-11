@@ -327,21 +327,69 @@
         }, 50);
       }
       
-      // Render Placeholders for Matrix/Heatmap
-      ['matrix', 'heatmap'].forEach(type => {
-        if(m[type] && (!m[type].matrix || Object.keys(m[type].matrix).length === 0)) {
-           const div = document.createElement("div");
-           div.className = "row item";
-           div.innerHTML = `
-             <div class='col-sm-12'>
-               <p class='h4 item-header'>${m[type].name}</p>
-               <div class='alert alert-light border text-center py-4'>Analysis for ${m[type].name} coming soon.</div>
-               <p class='text-muted small'>${m[type].caption}</p>
-             </div>
-           `;
-           container.appendChild(div);
-        }
-      });
+      // Render Matrix
+      if (m.matrix && m.matrix.matrix && m.matrix.matrix.values) {
+        const div = document.createElement("div");
+        div.className = "row item";
+        const matrixId = "missing-matrix";
+        div.innerHTML = `
+          <div class='col-sm-12'>
+            <p class='h4 item-header'>${m.matrix.name}</p>
+            <div id='${matrixId}' class='p-3 border' style='overflow-x: auto; background: #fff;'></div>
+            <p class='text-muted small mt-2'>${m.matrix.caption}</p>
+          </div>
+        `;
+        container.appendChild(div);
+        
+        const mat = m.matrix.matrix;
+        const nCols = mat.columns.length;
+        const nRows = mat.values[0].length;
+        const cellW = Math.max(80, 800/nCols);
+        const cellH = 2; // Sparkline-style density
+        
+        let svg = `<svg width="${nCols * cellW}" height="${nRows * cellH}" style="display: block;">`;
+        mat.columns.forEach((col, i) => {
+           svg += `<text x="${i*cellW + 5}" y="${nRows*cellH - 5}" font-size="10" transform="rotate(-90, ${i*cellW+5}, ${nRows*cellH-5})">${col}</text>`;
+           mat.values[i].forEach((isNull, j) => {
+             if (isNull) {
+               svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#eee" />`;
+             } else {
+               svg += `<rect x="${i*cellW}" y="${j*cellH}" width="${cellW-2}" height="${cellH}" fill="#444" />`;
+             }
+           });
+        });
+        svg += `</svg>`;
+        document.getElementById(matrixId).innerHTML = svg;
+      }
+
+      // Render Heatmap
+      if (m.heatmap && m.heatmap.matrix && m.heatmap.matrix.matrix && m.heatmap.matrix.matrix.length > 0) {
+        const div = document.createElement("div");
+        div.className = "row item";
+        const heatId = "missing-heatmap";
+        div.innerHTML = `
+          <div class='col-sm-12'>
+            <p class='h4 item-header'>${m.heatmap.name}</p>
+            <div id='${heatId}' style='height: 500px;'></div>
+            <p class='text-muted small mt-2'>${m.heatmap.caption}</p>
+          </div>
+        `;
+        container.appendChild(div);
+        
+        setTimeout(() => {
+          Plotly.newPlot(heatId, [{
+            z: m.heatmap.matrix.matrix, 
+            x: m.heatmap.matrix.columns, 
+            y: m.heatmap.matrix.columns, 
+            type: 'heatmap',
+            colorscale: [[0, '#f46d43'], [0.5, '#ffffbf'], [1, '#66bd63']],
+            zmin: -1, zmax: 1
+          }], {
+            margin: { t: 30, b: 100, l: 100, r: 30 },
+            height: 500
+          });
+        }, 50);
+      }
     }
 
     function renderSample(container) {
