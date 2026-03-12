@@ -118,8 +118,7 @@ class ProfileReport:
         n_cells_missing = 0
         for col, stats in self.variables.items():
             stats["n"] = n
-            # SummaryEngine now uses n_missing, but let's be safe
-            m_count = stats.get("n_missing", stats.pop("missing", 0))
+            m_count = stats.get("n_missing", 0)
             stats["n_missing"] = self._to_json_serializable(m_count)
             stats["p_missing"] = self._to_json_serializable(m_count / n if n > 0 else 0)
             stats["p_distinct"] = self._to_json_serializable(

@@ -15,7 +15,7 @@ def test_alert_detection():
         "constant": {"n_distinct": 1, "p_missing": 0.0, "type": "Categorical"},
         "unique": {"n_distinct": 100, "p_missing": 0.0, "type": "Numeric"},
         "missing": {"n_distinct": 10, "p_missing": 0.9, "type": "Numeric"},
-        "zeros": {"n_distinct": 2, "p_missing": 0.0, "zeros": 90, "type": "Numeric"},
+        "zeros": {"n_distinct": 2, "p_missing": 0.0, "n_zeros": 90, "type": "Numeric"},
         "high_card": {"n_distinct": 80, "p_missing": 0.0, "type": "Categorical"},
     }
 

@@ -12,7 +12,7 @@ class AlertEngine:
         for col, stats in variables.items():
             n_distinct = stats.get("n_distinct", 0)
             p_missing = stats.get("p_missing", 0)
-            zeros = stats.get("zeros", 0)
+            n_zeros = stats.get("n_zeros", 0)
             v_type = stats.get("type")
 
             # 1. Constant (High Priority)
@@ -43,14 +43,14 @@ class AlertEngine:
                 )
 
             # 5. Zeros
-            if n > 0 and (zeros / n) > 0.1:
+            if n > 0 and (n_zeros / n) > 0.1:
                 alerts.append(
-                    {"alert_type": "ZEROS", "fields": [col], "value": zeros, "level": "info"}
+                    {"alert_type": "ZEROS", "fields": [col], "value": n_zeros, "level": "info"}
                 )
 
             # 6. Skewness
             skew = stats.get("skewness")
-            if skew is not None and abs(skew) > 20:
+            if skew is not None and abs(skew) > 10:
                 alerts.append(
                     {"alert_type": "SKEWED", "fields": [col], "value": skew, "level": "info"}
                 )

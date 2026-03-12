@@ -1,0 +1,20 @@
+{
+  "date": "2026-03-12",
+  "task_objective": "Standardize internal metric naming and fix alert engine inconsistencies",
+  "files_modified": [
+    "src/ibis_profiling/report/model/summary.py",
+    "src/ibis_profiling/report/model/alerts.py",
+    "src/ibis_profiling/report/report.py",
+    "tests/test_alerts_engine.py",
+    "docs/specs/ibis_profiling_json_spec.md"
+  ],
+  "tests_added": [
+    "tests/test_alerts_engine.py (updated to use n_zeros)"
+  ],
+  "design_decisions": [
+    "Standardized internal metrics to use 'n_' prefix (n_zeros, n_missing, n_infinite) for consistency across engines.",
+    "Lowered SKEWED alert threshold from 20 to 10 for better data quality detection.",
+    "Removed redundant safety checks in Report._build that handled multiple key names."
+  ],
+  "results": "All tests passed. ZEROS alerts are now correctly triggered and internal data flow is more predictable."
+}

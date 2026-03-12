@@ -54,6 +54,12 @@ class SummaryEngine:
                         variables[col_name]["n_zeros"] = val
                     elif metric_name == "infinite":
                         variables[col_name]["n_infinite"] = val
+                    elif metric_name == "n_zeros":
+                        variables[col_name]["n_zeros"] = val
+                    elif metric_name == "n_missing":
+                        variables[col_name]["n_missing"] = val
+                    elif metric_name == "n_infinite":
+                        variables[col_name]["n_infinite"] = val
                     elif metric_name == "median":
                         variables[col_name]["50%"] = val
                     elif metric_name == "n_negative":
