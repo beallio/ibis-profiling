@@ -38,6 +38,7 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 - **DateTime Distribution:** Full support for temporal histograms and distribution analysis.
 - **Excel Support:** Directly profile Excel files (.xlsx, .xls, .xlsb) using high-performance Rust-based parsing.
 - **Scalability:** Profile **10 million rows in < 25 seconds** (Full mode) and **20 million rows in < 50 seconds** (Minimal mode).
+- **Python Compatibility:** Fully tested on **Python 3.11 through 3.14.3** (Core functionality).
 
 ---
 
