@@ -9,6 +9,31 @@ from .model.alerts import AlertEngine
 from .structure.report import Report
 
 
+class ReportEncoder(json.JSONEncoder):
+    def default(self, obj):
+        import ibis.expr.types as ir
+
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        if isinstance(obj, ir.Scalar):
+            try:
+                val = obj.to_pyarrow().as_py()
+            except Exception:
+                return str(obj)
+        else:
+            val = obj
+
+        if hasattr(val, "item"):
+            val = val.item()
+
+        if isinstance(val, float):
+            if math.isnan(val) or math.isinf(val):
+                return None
+            return val
+
+        return super().default(obj)
+
+
 class ProfileReport:
     """Canonical Report Model that assembles data from specialized engines."""
 
@@ -228,30 +253,6 @@ class ProfileReport:
         return Report(self.to_dict()).get_structure()
 
     def to_json(self) -> str:
-        import ibis.expr.types as ir
-
-        class ReportEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, (datetime, date)):
-                    return obj.isoformat()
-                if isinstance(obj, ir.Scalar):
-                    try:
-                        val = obj.to_pyarrow().as_py()
-                    except Exception:
-                        return str(obj)
-                else:
-                    val = obj
-
-                if hasattr(val, "item"):
-                    val = val.item()
-
-                if isinstance(val, float):
-                    if math.isnan(val) or math.isinf(val):
-                        return None
-                    return val
-
-                return super().default(obj)
-
         return json.dumps(self.to_dict(), indent=2, cls=ReportEncoder)
 
     def to_file(self, output_file: str):
@@ -263,7 +264,9 @@ class ProfileReport:
         template_path = os.path.join(os.path.dirname(__file__), "..", "templates", "spa.html")
         with open(template_path, "r") as f:
             html = f.read()
-        return html.replace("{{REPORT_DATA}}", self.to_json())
+        # Minify JSON for embedding
+        report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
+        return html.replace("{{REPORT_DATA}}", report_json)
 
     def get_description(self) -> dict:
         return self.to_dict()
