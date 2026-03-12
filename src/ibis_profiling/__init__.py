@@ -206,6 +206,11 @@ def profile(
     return report
 
 
+def profile_excel(path: str, **kwargs) -> InternalProfileReport:
+    """Convenience function to profile an Excel file."""
+    return InternalProfileReport.from_excel(path, **kwargs)
+
+
 class ProfileReport:
     """
     Compatibility wrapper to mimic ydata-profiling API.
@@ -214,6 +219,13 @@ class ProfileReport:
     def __init__(self, table: ibis.Table, minimal: bool = False, **kwargs):
         title = kwargs.get("title", "Ibis Profiling Report")
         self._report = profile(table, minimal=minimal, title=title)
+
+    @classmethod
+    def from_excel(cls, path: str, **kwargs) -> "ProfileReport":
+        """Compatibility method to mimic ydata-profiling from_excel."""
+        instance = cls.__new__(cls)
+        instance._report = profile_excel(path, **kwargs)
+        return instance
 
     def to_file(self, output_file: str):
         return self._report.to_file(output_file)
@@ -231,4 +243,4 @@ class ProfileReport:
         return self._report.to_html(template=template)
 
 
-__all__ = ["profile", "registry", "ProfileReport"]
+__all__ = ["profile", "registry", "ProfileReport", "profile_excel"]

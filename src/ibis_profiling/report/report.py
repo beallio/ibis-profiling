@@ -270,5 +270,17 @@ class ProfileReport:
         report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
         return html.replace("{{REPORT_DATA}}", report_json)
 
+    @staticmethod
+    def from_excel(path: str, **kwargs) -> "ProfileReport":
+        """Convenience method to profile an Excel file."""
+        import polars as pl
+        import ibis
+        from .. import profile
+
+        # Use calamine for high performance (requires fastexcel)
+        df = pl.read_excel(path, engine="calamine", **kwargs)
+        table = ibis.memtable(df)
+        return profile(table)
+
     def get_description(self) -> dict:
         return self.to_dict()
