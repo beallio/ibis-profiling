@@ -66,6 +66,7 @@ Each variable object is keyed by its column name. Content varies by inferred typ
 | `range`, `iqr`, `cv` | Both | Range, Interquartile Range, and Coefficient of Variation. |
 | `n_zeros`, `p_zeros` | Both | Zero-value statistics. |
 | `n_negative`, `p_negative`| Both | Negative-value statistics. |
+| `n_infinite`, `p_infinite`| Both | Count and percentage of infinite values. |
 | `skewness`, `mad` | **Full** | Skewness and Median Absolute Deviation. |
 | `monotonic_increasing` | **Full** | `Boolean` (True if non-decreasing). |
 | `monotonic_decreasing` | **Full** | `Boolean` (True if non-increasing). |
@@ -97,8 +98,19 @@ Contains matrices (e.g., `pearson`, `spearman`) formatted as a list of dictionar
 - `heatmap`: Pearson correlation of nullity between columns.
 
 ### 3.6. `alerts`
-List of JSON objects representing data quality issues:
-- `alert_type`: `CONSTANT`, `UNIQUE`, `HIGH_CARDINALITY`, `MISSING`, `ZEROS`, `SKEWED`.
+List of JSON objects representing data quality issues.
+
+| Alert Type | Logic / Threshold | Level |
+| :--- | :--- | :--- |
+| `CONSTANT` | `n_distinct == 1` | `warning` |
+| `UNIQUE` | `n_distinct == n` | `warning` |
+| `HIGH_CARDINALITY`| `p_distinct > 0.5` (Categorical only) | `warning` |
+| `MISSING` | `p_missing > 0.05` | `info` |
+| `ZEROS` | `p_zeros > 0.10` | `info` |
+| `SKEWED` | `abs(skewness) > 10` | `info` |
+
+#### Alert Object Structure
+- `alert_type`: `String` (from table above).
 - `fields`: `Array` containing the affected column name(s).
 - `level`: `warning` (High) or `info` (Normal).
 - `value`: (Optional) The metric that triggered the alert.
