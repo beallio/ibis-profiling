@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-11",
+  "objective": "Final benchmarking pass: Test Ibis Full on 20M records with 10 columns and update README speedups.",
+  "files_modified": [
+    "scripts/generate_bench_data.py",
+    "scripts/run_benchmarks.py",
+    "README.md"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Refined benchmark result recording to track column count, ensuring accurate performance reporting for variable dimensionality.",
+    "Validated that 20M rows x 10 columns can run in Full mode within ~32 seconds, showing that OOM at 20 columns was a memory pressure threshold rather than a hard engine failure."
+  ],
+  "results": {
+    "20M_10col_full": "32.15s",
+    "scaling_insight": "Memory usage remains extremely low (under 5MB peak) for Ibis during the profiling phase due to pushdown, but the construction of the result object/matrix can hit system limits at very high dimensionality (20M x 20 cols).",
+    "max_speedup_est": ">100x for 20M rows"
+  }
+}

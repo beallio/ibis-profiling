@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Fix Nullity Matrix transposition and populate Job Duration in report.",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/templates/spa.html"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Added 'duration' to report.analysis in Python to capture the full profiling lifecycle.",
+    "Implemented client-side transposition in the NullityMatrix React component to handle Ibis's column-oriented matrix output.",
+    "Enhanced Job Duration UI to show seconds for longer runs and ms for shorter ones."
+  ],
+  "results": "Nullity Matrix now correctly displays 250 rows vertically instead of being horizontally stretched. Job Duration in the sidebar correctly reflects the actual time taken by the profiling process."
+}

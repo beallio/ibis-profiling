@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Add Excel support and optimize dependencies.",
+  "files_modified": [
+    "pyproject.toml",
+    "src/ibis_profiling/report/report.py",
+    "src/ibis_profiling/__init__.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Added 'fastexcel' to core dependencies to enable high-performance Excel parsing via Polars/Calamine.",
+    "Moved 'ydata-profiling' to dev dependencies as it is only used for parity testing.",
+    "Implemented 'ProfileReport.from_excel' using the 'calamine' engine for maximum speed.",
+    "Added 'profile_excel' convenience function to the top-level API."
+  ],
+  "results": "Direct Excel profiling is now supported via ProfileReport.from_excel('file.xlsx'). The project dependency footprint for production users is reduced by removing ydata-profiling from core."
+}

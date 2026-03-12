@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Benchmark ibis-profiling against ydata-profiling after feature updates and perform parity check.",
+  "files_modified": [
+    "README.md",
+    "scripts/run_benchmarks.py",
+    "scripts/compare_outputs.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Used sys.executable in run_benchmarks.py to ensure subprocesses use the correct virtual environment.",
+    "Updated compare_outputs.py to handle new metrics like monotonicity and extreme values (lists).",
+    "Reduced dimensionality for 10M and 20M 'Full' runs to 10 and 5 columns respectively to avoid OOM during Spearman rank computation.",
+    "Stored official comparison reports in /tmp/ibis-profiling/reports_comparison/ for persistent access."
+  ],
+  "results": "Benchmarks confirmed that Ibis remains significantly faster (>20x for 10k rows) and more memory-efficient (>20x) than YData. Statistical parity was verified for core metrics, and new features (Spearman, Extreme Values) were successfully benchmarked and verified."
+}

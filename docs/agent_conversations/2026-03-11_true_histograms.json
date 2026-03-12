@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Implement true mathematical binning for numeric histograms.",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/planner.py",
+    "src/ibis_profiling/report/report.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Replaced the top-values based pseudo-histogram with a true equal-width binning approach for numeric columns.",
+    "Utilized min/max results from the first profiling pass to calculate 20 equal-width bins in a second execution pass.",
+    "Implemented bin indexing using Ibis 'clip' and 'floor' expressions for backend-agnostic performance.",
+    "Enhanced Report model to reconstruct full range labels (e.g., '[10.0, 12.5]') for the UI, ensuring empty bins are correctly represented."
+  ],
+  "results": "Numeric histograms now correctly visualize statistical distributions, including normal and skewed curves, providing accurate data insights."
+}

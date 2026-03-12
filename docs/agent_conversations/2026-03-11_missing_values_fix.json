@@ -1,0 +1,24 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Fix incorrect missing value counts and matrix representations in the report.",
+  "files_modified": [
+    "src/ibis_profiling/metrics.py",
+    "src/ibis_profiling/report/model/missing.py",
+    "src/ibis_profiling/report/report.py",
+    "src/ibis_profiling/templates/spa.html",
+    "tests/test_advanced_features.py",
+    "tests/test_visual_model.py"
+  ],
+  "tests_added": [
+    "tests/reproduce_nan_issue.py (temporary)",
+    "tests/test_expr.py (temporary)"
+  ],
+  "design_decisions": [
+    "NaN values are now explicitly handled in the 'missing' metric using safe_col() which treats them as NULL.",
+    "The JSON output is now sanitized to replace NaN/Inf with None for standard JSON compatibility.",
+    "Correlation matrices are transformed to list-of-dicts format in to_dict() to match ydata-profiling schema.",
+    "The SPA template was updated to be polymorphic, supporting both raw matrix and list-of-dicts formats.",
+    "Implemented a modern React-based dark UI for the report template (spa.html) using Tailwind CSS and Lucide icons."
+  ],
+  "results": "Missing value counts for columns with NaNs are now correct (previously 0). JSON reports are now valid JSON (no more raw NaN tokens). Correlation matrices follow standard ydata-profiling format while remaining renderable in the SPA. The report now features a polished, dark-themed React UI."
+}

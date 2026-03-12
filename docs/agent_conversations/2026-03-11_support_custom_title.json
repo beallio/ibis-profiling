@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Support custom title in ProfileReport and profile function.",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/report/report.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Added 'title' parameter to ProfileReport and profile() function to match ydata-profiling API.",
+    "Ensured title is correctly passed through the compatibility wrapper via **kwargs.",
+    "Defaulted title to 'Ibis Profiling Report' for backward compatibility."
+  ],
+  "results": "Users can now customize the report title using ProfileReport(table, title='My Title')."
+}

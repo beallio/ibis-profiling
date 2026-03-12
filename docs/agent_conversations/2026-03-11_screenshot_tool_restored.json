@@ -1,0 +1,16 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Restore and improve screenshot automation tool.",
+  "files_modified": [
+    "src/ibis_profiling/templates/spa.html",
+    "scripts/take_screenshots.py",
+    "pyproject.toml"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Improved SPA template to support deep-linking via URL hashes (e.g., #missing, #variables), which facilitates automated testing and screenshotting.",
+    "Implemented a robust 'scripts/take_screenshots.py' utility using the chromium-browser CLI instead of Selenium to avoid driver compatibility issues.",
+    "Cleaned up dev dependencies by removing Selenium and webdriver-manager."
+  ],
+  "results": "The project now has a maintainable, high-performance screenshot utility that leverages a more robust architectural feature (deep-linking) in the report UI."
+}

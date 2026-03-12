@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Update documentation, remove contributor section, and add report screenshots.",
+  "files_modified": [
+    "README.md",
+    "src/ibis_profiling/assets/img/report_overview.png",
+    "src/ibis_profiling/assets/img/report_variables.png",
+    "src/ibis_profiling/assets/img/report_missing.png",
+    "src/ibis_profiling/assets/img/report_preview.png"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Removed 'Contributing' section from README as requested.",
+    "Used chromium-browser CLI in headless mode to capture high-fidelity screenshots of the SPA report.",
+    "Added a 'Preview' section to the README with visual demonstrations of the Overview, Variables, and Missing values tabs.",
+    "Updated Features and Usage documentation to reflect new Excel support and custom title capabilities."
+  ],
+  "results": "README.md is now up-to-date with current features and includes professional visual previews. Selenium dependencies were avoided by leveraging the system's chromium-browser CLI for screenshotting."
+}
