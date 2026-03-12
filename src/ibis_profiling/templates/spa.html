@@ -435,10 +435,27 @@
 
     function App() {
       const [reportData, setReportData] = useState(REPORT_DATA);
-      const [activeTab, setActiveTab] = useState('overview');
+      
+      // Initialize activeTab from URL hash if present
+      const getInitialTab = () => {
+        const hash = window.location.hash.slice(1);
+        const validTabs = ['overview', 'variables', 'correlations', 'missing', 'alerts', 'sample'];
+        return validTabs.includes(hash) ? hash : 'overview';
+      };
+
+      const [activeTab, setActiveTab] = useState(getInitialTab);
       const [search, setSearch] = useState('');
       const [imgError, setImgError] = useState(false);
-      
+
+      // Support hash-based switching for deep linking
+      useEffect(() => {
+        const handleHashChange = () => {
+          setActiveTab(getInitialTab());
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+      }, []);
+
       const defaultCorrType = reportData.correlations ? Object.keys(reportData.correlations)[0] || '' : '';
       const [corrType, setCorrType] = useState(defaultCorrType);
 
