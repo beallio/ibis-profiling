@@ -4,465 +4,1054 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ibis Profiling Report</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Babel for in-browser JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Import Map for React and Dependencies -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
+      }
+    }
+  </script>
+
   <style>
-    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; font-size: 14px; color: #333; background-color: #fff; }
-    .navbar { background-color: #f8f9fa !important; border-bottom: 1px solid #ddd; padding: 10px 0; }
-    .navbar-brand { font-weight: 700; color: #333 !important; }
-    .sidebar { width: 250px; background-color: #f8f9fa; border-right: 1px solid #dee2e6; position: fixed; height: 100vh; padding: 1rem; }
-    .content { margin-left: 250px; padding: 2rem; overflow-y: auto; }
-    .section-header { margin-top: 40px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-    .section-name { font-size: 28px; font-weight: 700; }
-    .row.item { margin-bottom: 30px; }
-    .item-header { font-size: 18px; font-weight: 600; margin-bottom: 15px; color: #444; }
-    .table th { font-weight: 600; color: #666; background-color: transparent !important; }
-    .variable { padding: 20px 0; border-bottom: 1px solid #eee; }
-    .var-name { font-family: monospace; font-weight: 700; font-size: 1.2rem; color: #007bff; text-decoration: none; }
-    .badge { text-transform: uppercase; padding: 4px 8px; font-weight: 500; font-size: 11px; }
-    .metric-value { font-family: monospace; font-weight: 600; text-align: right; white-space: nowrap; }
-    .nav-link { color: #333; cursor: pointer; }
-    .nav-link.active { background-color: #0d6efd !important; color: white !important; }
-    #view-container > div { display: none; }
-    #view-container > div.active { display: block; }
-    .details-section { background-color: #fcfcfc; border: 1px solid #eee; border-radius: 4px; padding: 1.5rem; margin-top: 1rem; }
+    body {
+      background-color: #020617; /* Tailwind slate-950 */
+      color: #e2e8f0; /* Tailwind slate-200 */
+    }
+    /* Custom Scrollbar for a polished look */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155; 
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569; 
+    }
   </style>
 </head>
 <body>
+  <div id="root"></div>
 
-  <div class="sidebar d-flex flex-column">
-    <h4 class="fw-bold text-primary mb-4">Ibis Profiling</h4>
-    <a href="#overview" class="nav-link active mb-1" onclick="nav('overview')">Overview</a>
-    <a href="#variables" class="nav-link mb-1" onclick="nav('variables')">Variables</a>
-    <a href="#correlations" class="nav-link mb-1" onclick="nav('correlations')">Correlations</a>
-    <a href="#missing" class="nav-link mb-1" onclick="nav('missing')">Missing Values</a>
-    <a href="#sample" class="nav-link mb-1" onclick="nav('sample')">Sample</a>
-  </div>
+  <!-- React Application -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useMemo } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { 
+      BarChart3, AlertTriangle, Table, Database, Info, Search, 
+      Clock, CheckCircle2, LayoutDashboard, PieChart, ChevronRight,
+      MapPin, ShieldCheck, TrendingUp, Percent,
+      Fingerprint, Lock, Copy, FileWarning, TextSelect, X, Layers
+    } from 'lucide-react';
 
-  <div class="content">
-    <div id="view-container">
-      <div id="view-overview" class="active"></div>
-      <div id="view-variables"></div>
-      <div id="view-correlations"></div>
-      <div id="view-missing"></div>
-      <div id="view-sample"></div>
-    </div>
-  </div>
+    // Alert configuration for distinct styling
+    const ALERT_CONFIG = {
+      UNIQUE: { icon: Fingerprint, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+      CONSTANT: { icon: Lock, color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
+      HIGH_CARDINALITY: { icon: Copy, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+      MISSING: { icon: FileWarning, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
+      DEFAULT: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' }
+    };
 
-  <script id="report-data" type="application/json">
-    {{REPORT_DATA}}
-  </script>
+    // Statically embedded payload replacing the API call
+    const REPORT_DATA = {{REPORT_DATA}};
 
-  <script>
-    const data = JSON.parse(document.getElementById("report-data").textContent);
-    const state = { rendered: {} };
-
-    function nav(viewId) {
-      document.querySelectorAll(".sidebar .nav-link").forEach(el => el.classList.remove("active"));
-      const activeLink = document.querySelector(`.sidebar a[href="#${viewId}"]`);
-      if(activeLink) activeLink.classList.add("active");
-      
-      document.querySelectorAll("#view-container > div").forEach(el => el.classList.remove("active"));
-      const viewEl = document.getElementById(`view-${viewId}`);
-      viewEl.classList.add("active");
-
-      if (!state.rendered[viewId]) {
-        renderView(viewId, viewEl);
-        state.rendered[viewId] = true;
+    // Helper: Safely parse different matrix JSON structures
+    const parseMatrixData = (data) => {
+      if (!data) return { columns: [], matrix: [] };
+      // 1) Handle array of objects format (e.g. from missing heatmap or correlations)
+      if (Array.isArray(data)) {
+        if (data.length === 0) return { columns: [], matrix: [] };
+        const columns = Object.keys(data[0]);
+        const matrix = data.map(row => columns.map(col => row[col]));
+        return { columns, matrix };
       }
-    }
+      // 2) Handle { columns, matrix } or { columns, values } standard shapes
+      if (data.columns) {
+        if (data.matrix) return { columns: data.columns, matrix: data.matrix };
+        if (data.values) return { columns: data.columns, matrix: data.values };
+      }
+      // 3) Handle nested data.matrix format 
+      if (data.matrix && data.matrix.columns) {
+        if (data.matrix.matrix) return { columns: data.matrix.columns, matrix: data.matrix.matrix };
+        if (data.matrix.values) return { columns: data.matrix.columns, matrix: data.matrix.values };
+      }
+      return { columns: [], matrix: [] };
+    };
 
-    function renderView(viewId, container) {
-      if (viewId === 'overview') renderOverview(container);
-      else if (viewId === 'variables') renderVariables(container);
-      else if (viewId === 'correlations') renderCorrelations(container);
-      else if (viewId === 'missing') renderMissing(container);
-      else if (viewId === 'sample') renderSample(container);
-    }
+    // Filter helper to remove None/Null/NaN bins from histogram charts
+    const filterMissingBins = (bins, counts) => {
+      if (!bins || !counts || !Array.isArray(bins) || !Array.isArray(counts)) {
+        return { filteredBins: bins || [], filteredCounts: counts || [] };
+      }
+      const missingLabels = ['none', 'null', 'nan'];
+      const filteredBins = [];
+      const filteredCounts = [];
+      for (let i = 0; i < bins.length; i++) {
+        const binVal = bins[i];
+        if (binVal === null || binVal === undefined) continue;
+        const binStr = String(binVal).toLowerCase().trim();
+        if (!missingLabels.includes(binStr)) {
+          filteredBins.push(binVal);
+          filteredCounts.push(counts[i]);
+        }
+      }
+      return { filteredBins, filteredCounts };
+    };
 
-    function renderOverview(container) {
-      const t = data.table || {};
-      const alerts = data.alerts || [];
-      let typesHtml = "";
-      if(t.types) Object.entries(t.types).forEach(([k,v]) => {
-        typesHtml += `<tr><th>${k}</th><td class='metric-value'>${v}</td></tr>`;
-      });
+    const StatCard = ({ title, value, icon: Icon, sub, color="blue" }) => (
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl hover:shadow-blue-900/10 transition-shadow">
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-slate-400 text-sm font-medium">{title}</span>
+          <div className={`p-2 rounded-lg bg-${color}-500/10 text-${color}-400`}>
+            <Icon size={18} />
+          </div>
+        </div>
+        <div className="text-2xl font-mono font-bold text-slate-100">{value}</div>
+        {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
+      </div>
+    );
 
-      let alertsHtml = alerts.length ? alerts.map(a => {
-        const levelClass = a.level === 'warning' ? 'bg-danger' : 'bg-info';
-        const msg = getAlertMessage(a);
-        return `<tr><td><code>${a.fields.join(", ")}</code></td><td>${msg}</td><td><span class='badge ${levelClass}'>${a.type}</span></td></tr>`;
-      }).join("") : "<tr><td class='text-muted'>No alerts.</td></tr>";
+    const NumericHistogram = ({ bins, counts, height = 60, showTooltip = true }) => {
+      if (!counts || counts.length === 0) return <div className="h-full w-full bg-slate-800/30 rounded-lg flex items-center justify-center text-xs text-slate-500">No chart data</div>;
+      const max = Math.max(...counts);
+      
+      return (
+        <div className="flex items-end gap-0.5 w-full bg-slate-800/50 p-2 rounded-lg" style={{ height }}>
+          {counts.map((c, i) => {
+            let binLabel = bins?.[i];
+            if (binLabel !== undefined && !Number.isNaN(Number(binLabel))) {
+              binLabel = Number(binLabel) % 1 !== 0 ? Number(binLabel).toFixed(2) : binLabel;
+            }
 
-      container.innerHTML = `
-        <div class='section-header'><h1 class='section-name'>Overview</h1></div>
-        <div class="row item">
-          <ul class="nav nav-tabs mb-3" role="tablist">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-stats">Overview</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-alerts">Alerts <span class="badge bg-secondary">${alerts.length}</span></button></li>
-          </ul>
-          <div class="tab-content">
-            <div class="tab-pane fade show active" id="tab-stats">
-              <div class="row">
-                <div class="col-sm-6">
-                  <p class="h4 item-header">Dataset statistics</p>
-                  <table class="table table-striped">
-                    <tbody>
-                      <tr><th>Number of variables</th><td class='metric-value'>${t.n_var}</td></tr>
-                      <tr><th>Number of observations</th><td class='metric-value'>${t.n.toLocaleString()}</td></tr>
-                      <tr><th>Missing cells</th><td class='metric-value'>${t.n_cells_missing.toLocaleString()}</td></tr>
-                      <tr><th>Missing cells (%)</th><td class='metric-value'>${(t.p_cells_missing*100).toFixed(1)}%</td></tr>
-                      <tr><th>Duplicate rows</th><td class='metric-value'>${t.n_duplicates.toLocaleString()}</td></tr>
-                      <tr><th>Duplicate rows (%)</th><td class='metric-value'>${(t.p_duplicates*100).toFixed(1)}%</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div class="col-sm-6">
-                  <p class="h4 item-header">Variable types</p>
-                  <table class="table table-striped"><tbody>${typesHtml}</tbody></table>
-                </div>
+            return (
+              <div 
+                key={i} 
+                className="bg-blue-500/60 hover:bg-blue-400 transition-all duration-200 rounded-t-sm flex-1 relative group"
+                style={{ height: `${(c / (max || 1)) * 100}%` }}
+              >
+                {showTooltip && (
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-10 pointer-events-none shadow-xl">
+                    <div className="text-slate-400 mb-0.5">{binLabel ? `Bin: ${binLabel}` : 'Value'}</div>
+                    <div className="font-mono text-blue-300">{c.toLocaleString()} count</div>
+                  </div>
+                )}
               </div>
+            );
+          })}
+        </div>
+      );
+    };
+
+    const CategoricalChart = ({ bins, counts }) => {
+      if (!bins || !counts || counts.length === 0) return <div className="p-4 text-center text-xs text-slate-500">No categorical distribution data</div>;
+      const max = Math.max(...counts);
+      const displayLimit = 10;
+      const topBins = bins.slice(0, displayLimit);
+      const topCounts = counts.slice(0, displayLimit);
+
+      return (
+        <div className="space-y-3 bg-slate-800/20 p-4 rounded-xl border border-slate-800/50">
+          {topBins.map((bin, i) => (
+            <div key={i} className="flex items-center gap-3 text-xs">
+              <div className="w-24 truncate text-slate-400 font-medium text-right" title={String(bin)}>
+                {String(bin)}
+              </div>
+              <div className="flex-1 h-5 bg-slate-900 rounded overflow-hidden relative group border border-slate-800">
+                <div 
+                  className="h-full bg-blue-500/50 group-hover:bg-blue-400/80 transition-all rounded-r"
+                  style={{ width: `${(topCounts[i] / (max || 1)) * 100}%` }}
+                />
+              </div>
+              <div className="w-12 font-mono text-slate-300 text-right">{topCounts[i].toLocaleString()}</div>
             </div>
-            <div class="tab-pane fade" id="tab-alerts">
-              <table class="table table-striped">
-                <thead><tr><th>Field</th><th>Message</th><th>Type</th></tr></thead>
-                <tbody>${alertsHtml}</tbody>
-              </table>
+          ))}
+          {bins.length > displayLimit && (
+            <div className="text-center text-[10px] text-slate-500 mt-4 border-t border-slate-800/50 pt-2">
+              Showing top {displayLimit} of {bins.length} distinct categories
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const AlertBadge = ({ alert }) => {
+      const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
+      const Icon = config.icon;
+      return (
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${config.color} ${config.bg} ${config.border}`} title={alert.message}>
+          <Icon size={12} />
+          {alert.alert_type}
+        </span>
+      );
+    };
+
+    const ExtremeValuesList = ({ title, values }) => {
+      if (!values || values.length === 0) return null;
+      return (
+        <div className="flex-1">
+          <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">{title}</h5>
+          <div className="space-y-1.5">
+            {values.map((v, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs bg-slate-800/30 px-2 py-1.5 rounded border border-slate-800">
+                <span className="text-slate-600 font-mono w-4">{i+1}.</span>
+                <span className="text-slate-300 font-mono truncate" title={String(v)}>{String(v)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const MetricRow = ({ label, val, isPercent = false }) => {
+      if (val === undefined || val === null || val === 'null' || val === 'N/A' || (typeof val === 'number' && Number.isNaN(val))) return null;
+      
+      let formattedVal = val;
+      if (isPercent && typeof val === 'number') {
+        formattedVal = `${(val * 100).toFixed(2)}%`;
+      } else if (typeof val === 'number') {
+        if (val !== 0 && Math.abs(val) < 0.001) {
+          formattedVal = val.toExponential(3);
+        } else {
+          formattedVal = val.toLocaleString(undefined, { maximumFractionDigits: 4 });
+        }
+      } else if (typeof val === 'boolean') {
+        formattedVal = val ? 'True' : 'False';
+      }
+
+      return (
+        <div className="flex justify-between items-center py-1.5 border-b border-slate-800/50 last:border-0 hover:bg-slate-800/20 transition-all duration-200 px-1 rounded">
+          <span className="text-xs text-slate-400">{label}</span>
+          <span className="text-xs font-mono font-bold text-slate-200">
+            {String(formattedVal)}
+          </span>
+        </div>
+      );
+    };
+
+    const MetricsSection = ({ title, metrics }) => {
+      const validMetrics = metrics.filter(m => m.val !== undefined && m.val !== null && m.val !== 'null' && m.val !== 'N/A' && !(typeof m.val === 'number' && Number.isNaN(m.val)));
+      if (validMetrics.length === 0) return null;
+
+      return (
+        <div>
+          <h5 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">{title}</h5>
+          <div>
+            {validMetrics.map((m, i) => (
+              <MetricRow key={i} label={m.label} val={m.val} isPercent={m.isPercent} />
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const hasValidMetrics = (metrics) => {
+      return metrics.some(m => m.val !== undefined && m.val !== null && m.val !== 'null' && m.val !== 'N/A' && !(typeof m.val === 'number' && Number.isNaN(m.val)));
+    };
+
+    // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
+    const NullityMatrix = ({ data }) => {
+      const parsed = parseMatrixData(data);
+      const columns = parsed.columns;
+      const values = parsed.matrix; // array of rows containing booleans (true = missing data)
+
+      if (!columns || !columns.length || !values || !values.length) return null;
+
+      const numRows = values.length;
+      const numCols = columns.length;
+      const svgWidth = 1000;
+      const svgHeight = 400;
+      const colWidth = svgWidth / numCols;
+      const rowHeight = svgHeight / numRows;
+
+      // Determine complete (non-missing) elements per row for the sparkline
+      const rowCompleteness = values.map(row => row.filter(isMissing => !isMissing).length);
+
+      // Helper to consolidate consecutive present data blocks for efficient SVG rendering
+      const getBlocks = (cIdx) => {
+          const blocks = [];
+          let inBlock = false;
+          let start = 0;
+          for (let r = 0; r < numRows; r++) {
+              // 'values' has true for missing. We draw dark blocks for PRESENT data.
+              const isPresent = !values[r][cIdx];
+              if (isPresent && !inBlock) {
+                  inBlock = true;
+                  start = r;
+              } else if (!isPresent && inBlock) {
+                  inBlock = false;
+                  blocks.push({ start, end: r - 1 });
+              }
+          }
+          if (inBlock) {
+              blocks.push({ start, end: numRows - 1 });
+          }
+          return blocks;
+      };
+
+      const sparklinePoints = rowCompleteness.map((count, rIdx) => 
+         `${(count / numCols) * 100},${rIdx * rowHeight + rowHeight / 2}`
+      ).join(' ');
+      const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
+
+      return (
+        <div className="overflow-x-auto mt-12 pt-8 border-t border-slate-800">
+          <h3 className="font-bold text-xl mb-2">Nullity Matrix</h3>
+          <p className="text-sm text-slate-500 mb-6">Dense visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
+
+          <div className="flex gap-4 items-end min-w-[800px]">
+            <div className="flex-1 relative">
+              {/* Column Labels */}
+              <div className="flex mb-2">
+                 {columns.map((c, i) => (
+                    <div key={c} style={{ width: `${100/numCols}%` }} className="flex justify-start h-24 relative overflow-visible">
+                       <span className="absolute bottom-1 left-1/2 origin-bottom-left -rotate-45 text-[10px] font-mono text-slate-400 whitespace-nowrap">{c}</span>
+                    </div>
+                 ))}
+              </div>
+              
+              {/* SVG Matrix */}
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className="w-full h-96 bg-slate-900 border border-slate-800 shadow-inner rounded-sm">
+                {columns.map((_, cIdx) => (
+                   <g key={cIdx} transform={`translate(${cIdx * colWidth}, 0)`}>
+                      {getBlocks(cIdx).map((block, i) => (
+                         <rect
+                            key={i}
+                            x={colWidth * 0.05}
+                            y={block.start * rowHeight}
+                            width={colWidth * 0.9}
+                            height={(block.end - block.start + 1) * rowHeight}
+                            fill="#cbd5e1"
+                            className="transition-all hover:fill-blue-400"
+                         />
+                      ))}
+                   </g>
+                ))}
+              </svg>
+            </div>
+
+            {/* Completeness Sparkline */}
+            <div className="w-20 h-96 relative flex flex-col items-center">
+              <div className="text-[10px] text-slate-500 font-mono text-center absolute -top-8 w-full">Data<br/>Completeness</div>
+              <svg viewBox={`0 0 100 ${svgHeight}`} preserveAspectRatio="none" className="w-full h-full border-r border-t border-b border-slate-800/50 bg-slate-900/30 rounded-r-sm">
+                <polygon points={sparkPoly} fill="rgba(59, 130, 246, 0.15)" />
+                <polyline points={sparklinePoints} fill="none" stroke="#3b82f6" strokeWidth="1.5" />
+              </svg>
+              <div className="absolute top-2 right-2 text-xs font-mono text-slate-400">{numCols}</div>
+              <div className="absolute bottom-2 right-2 text-xs font-mono text-slate-400">0</div>
             </div>
           </div>
         </div>
-      `;
+      );
     }
 
-    function getAlertMessage(a) {
-      switch(a.type) {
-        case 'CONSTANT': return 'has constant value';
-        case 'UNIQUE': return 'has unique values';
-        case 'HIGH_CARDINALITY': return `has high cardinality (n=${a.value})`;
-        case 'MISSING': return `has ${(a.value*100).toFixed(1)}% missing values`;
-        case 'ZEROS': return `has ${a.value.toLocaleString()} zeros`;
-        case 'SKEWED': return `is highly skewed (skewness=${a.value.toFixed(2)})`;
-        default: return 'alert triggered';
-      }
-    }
-
-    function renderVariables(container) {
-      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Variables</h1></div>`;
+    // Sub-component for rendering standardized Correlation Matrices
+    const CorrelationMatrixComponent = ({ data }) => {
+      const { columns, matrix } = useMemo(() => parseMatrixData(data), [data]);
       
-      // Map alerts to fields for quick lookup
-      const alertsByField = {};
-      (data.alerts || []).forEach(a => {
-        a.fields.forEach(f => {
-          if(!alertsByField[f]) alertsByField[f] = [];
-          alertsByField[f].push(a);
-        });
-      });
+      if (!columns || columns.length === 0 || !matrix || matrix.length === 0) {
+        return <div className="py-12 text-center text-slate-500">No data available for this metric.</div>;
+      }
 
-      Object.entries(data.variables).forEach(([col, stats], i) => {
-        const div = document.createElement("div");
-        div.className = "variable row item";
-        const chartId = `chart-${i}`;
-        const detailsId = `details-${i}`;
-        
-        // Build alert badges for this field
-        const fieldAlerts = alertsByField[col] || [];
-        const alertBadges = fieldAlerts.map(a => {
-          const levelClass = a.level === 'warning' ? 'bg-danger' : 'bg-info';
-          return `<span class="badge ${levelClass} ms-1" title="${getAlertMessage(a)}">${a.type}</span>`;
-        }).join("");
-
-        let leftStats = `
-          <tr><th>Distinct</th><td class='metric-value'>${stats.n_distinct.toLocaleString()}</td></tr>
-          <tr><th>Distinct (%)</th><td class='metric-value'>${((stats.p_distinct || 0)*100).toFixed(1)}%</td></tr>
-          <tr><th>Missing</th><td class='metric-value'>${stats.n_missing.toLocaleString()}</td></tr>
-          <tr><th>Missing (%)</th><td class='metric-value'>${((stats.p_missing || 0)*100).toFixed(1)}%</td></tr>
-        `;
-        
-        let midStats = "";
-        if(stats.type === "Numeric") {
-          midStats = `
-            <tr><th>Mean</th><td class='metric-value'>${stats.mean ? stats.mean.toFixed(4) : ''}</td></tr>
-            <tr><th>Minimum</th><td class='metric-value'>${stats.min}</td></tr>
-            <tr><th>Maximum</th><td class='metric-value'>${stats.max}</td></tr>
-            <tr><th>Zeros</th><td class='metric-value'>${stats.n_zeros || 0}</td></tr>
-          `;
-        } else if(stats.type === "DateTime") {
-          midStats = `
-            <tr><th>Minimum</th><td class='metric-value'>${stats.min || ''}</td></tr>
-            <tr><th>Maximum</th><td class='metric-value'>${stats.max || ''}</td></tr>
-          `;
-        } else if(stats.type === "Categorical" || stats.type === "Boolean") {
-          midStats = `
-            <tr><th>Unique</th><td class='metric-value'>${stats.n_unique || 0}</td></tr>
-          `;
-        }
-
-        div.innerHTML = `
-          <div class="col-sm-12">
-            <p class="item-header h4">
-              <a class="var-name" href="#">${col}</a>
-              ${alertBadges}
-              <br>
-              <span class="fs-6 text-body-secondary">${stats.type}</span>
-            </p>
-          </div>
-          <div class="col-sm-4"><table class="table table-striped small"><tbody>${leftStats}</tbody></table></div>
-          <div class="col-sm-4"><table class="table table-striped small"><tbody>${midStats}</tbody></table></div>
-          <div class="col-sm-4"><div id="${chartId}" style="height: 150px;"></div></div>
-          <div class="col-sm-12 text-end">
-            <button class="btn btn-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#${detailsId}">More details</button>
-          </div>
-          <div class="collapse col-sm-12" id="${detailsId}">
-            <div class="details-section">
-              <ul class="nav nav-tabs mb-3" role="tablist">
-                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#stats-${i}">Statistics</button></li>
-                ${stats.type === 'Numeric' ? `<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#quantiles-${i}">Quantiles</button></li>` : ''}
-                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#values-${i}">Common Values</button></li>
-              </ul>
-              <div class="tab-content">
-                <div class="tab-pane fade show active" id="stats-${i}">
-                  <div class="row">
-                    <div class="col-md-6">
-                      <table class="table table-sm small">
-                        ${stats.type === 'Numeric' ? `
-                          <tr><th>Standard deviation</th><td class='metric-value'>${stats.std ? stats.std.toFixed(4) : ''}</td></tr>
-                          <tr><th>Variance</th><td class='metric-value'>${stats.variance ? stats.variance.toFixed(4) : ''}</td></tr>
-                          <tr><th>Kurtosis</th><td class='metric-value'>${stats.kurtosis ? stats.kurtosis.toFixed(4) : ''}</td></tr>
-                          <tr><th>Skewness</th><td class='metric-value'>${stats.skewness ? stats.skewness.toFixed(4) : ''}</td></tr>
-                          <tr><th>Sum</th><td class='metric-value'>${stats.sum ? (typeof stats.sum === 'number' ? stats.sum.toLocaleString(undefined, {maximumFractionDigits: 2}) : stats.sum) : ''}</td></tr>
-                        ` : ''}
-                        ${stats.type === 'DateTime' ? `
-                          <tr><th>Minimum</th><td class='metric-value'>${stats.min || ''}</td></tr>
-                          <tr><th>Maximum</th><td class='metric-value'>${stats.max || ''}</td></tr>
-                          <tr><th>Distinct</th><td class='metric-value'>${stats.n_distinct || ''}</td></tr>
-                        ` : ''}
-                        ${stats.type === 'Categorical' || stats.type === 'Boolean' ? `
-                          <tr><th>Unique (singletons)</th><td class='metric-value'>${stats.n_unique || 0}</td></tr>
-                          <tr><th>Distinct</th><td class='metric-value'>${stats.n_distinct || 0}</td></tr>
-                        ` : ''}
-                      </table>
+      return (
+        <div className="overflow-x-auto pb-4">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr>
+                <th className="p-1"></th>
+                {columns.map(c => (
+                  <th key={c} className="p-2 font-mono font-bold text-slate-500 h-28 align-bottom">
+                    <div className="transform -rotate-45 origin-bottom-left ml-6 truncate w-24">
+                      {c}
                     </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {matrix.map((row, i) => (
+                <tr key={i}>
+                  <td className="p-2 font-mono font-bold text-slate-400 text-right pr-6 whitespace-nowrap">
+                    {columns[i]}
+                  </td>
+                  {row.map((cell, j) => {
+                    const isMissing = cell === null || cell === undefined || Number.isNaN(cell);
+                    const bgOpacity = isMissing ? 0 : Math.min(Math.abs(cell), 1);
+                    // Blue for positive correlation, Red for negative
+                    const bgColor = isMissing ? 'transparent' : cell >= 0 ? `rgba(59, 130, 246, ${bgOpacity})` : `rgba(239, 68, 68, ${bgOpacity})`;
+                    
+                    return (
+                      <td 
+                        key={j} 
+                        className="w-12 h-12 border border-slate-800 text-center hover:scale-105 transition-transform cursor-crosshair relative group" 
+                        style={{ backgroundColor: bgColor }}
+                      >
+                        {isMissing ? (
+                          <span className="text-slate-600 text-[10px] italic">NaN</span>
+                        ) : (
+                          <>
+                            <span className={`font-mono text-[10px] ${bgOpacity > 0.5 ? 'text-white' : 'text-slate-400 opacity-80'}`}>
+                              {cell === 1 ? '1.0' : cell.toFixed(2)}
+                            </span>
+                            <div className="absolute z-10 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded whitespace-nowrap shadow-xl">
+                              {columns[i]} × {columns[j]}
+                              <br/>
+                              <span className="font-mono text-blue-300">{cell.toFixed(4)}</span>
+                            </div>
+                          </>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+
+    function App() {
+      const [reportData, setReportData] = useState(REPORT_DATA);
+      const [activeTab, setActiveTab] = useState('overview');
+      const [search, setSearch] = useState('');
+      const [imgError, setImgError] = useState(false);
+      
+      const defaultCorrType = reportData.correlations ? Object.keys(reportData.correlations)[0] || '' : '';
+      const [corrType, setCorrType] = useState(defaultCorrType);
+
+      const filteredVariables = useMemo(() => {
+        if (!reportData || !reportData.variables) return [];
+        return Object.entries(reportData.variables).filter(([key]) => 
+          key.toLowerCase().includes(search.toLowerCase())
+        );
+      }, [search, reportData]);
+
+      const sampleRows = useMemo(() => {
+        if (!reportData || !reportData.sample || !reportData.sample.head) return [];
+        const cols = Object.keys(reportData.sample.head);
+        if (cols.length === 0) return [];
+        const numRows = reportData.sample.head[cols[0]].length;
+        
+        return Array.from({ length: numRows }).map((_, i) => {
+          const row = {};
+          cols.forEach(col => {
+            row[col] = reportData.sample.head[col][i];
+          });
+          return row;
+        });
+      }, [reportData]);
+
+      const generateAlertMessage = (alert) => {
+        if (alert.message) return alert.message;
+        const fieldStr = alert.fields.join(', ');
+        switch (alert.alert_type) {
+          case 'UNIQUE': return `${fieldStr} contains entirely unique values.`;
+          case 'CONSTANT': return `${fieldStr} has a constant value across all rows.`;
+          case 'HIGH_CARDINALITY': return `${fieldStr} has high cardinality (${alert.value?.toLocaleString() || 'many'} distinct values).`;
+          case 'MISSING': return `${fieldStr} has missing values.`;
+          default: return `${fieldStr} triggered a ${alert.alert_type} alert.`;
+        }
+      };
+
+      const getAlertsForVariable = (varName) => {
+        return reportData.alerts?.filter(a => a.fields.includes(varName)) || [];
+      };
+
+      const currentCorrelationRaw = corrType ? reportData.correlations?.[corrType] : null;
+
+      // Polymorphic Navigation Construction
+      const navItems = [
+        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { id: 'variables', label: 'Variables', icon: BarChart3 }
+      ];
+      
+      const hasMissing = reportData.missing && Object.keys(reportData.missing).length > 0;
+      if (hasMissing) {
+        navItems.push({ id: 'missing', label: 'Missing', icon: FileWarning });
+      }
+      
+      const hasCorrelations = reportData.correlations && Object.keys(reportData.correlations).length > 0;
+      if (hasCorrelations) {
+        navItems.push({ id: 'correlations', label: 'Correlations', icon: PieChart });
+      }
+      
+      const hasDuplicates = reportData.duplicates && Object.keys(reportData.duplicates).length > 0;
+      if (hasDuplicates) {
+        navItems.push({ id: 'duplicates', label: 'Duplicates', icon: Layers });
+      }
+      
+      if (reportData.sample && reportData.sample.head && Object.keys(reportData.sample.head).length > 0) {
+        navItems.push({ id: 'sample', label: 'Sample Data', icon: Table });
+      }
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans pb-20 lg:pb-0">
+          
+          <aside className="fixed left-0 top-0 bottom-0 w-64 bg-slate-900/50 border-r border-slate-800 backdrop-blur-md z-20 hidden lg:block">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-10">
+                {imgError ? (
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+                    <Database className="text-white" size={20} />
                   </div>
+                ) : (
+                  <img 
+                    src="ibis-profiling-icon.png" 
+                    alt="Ibis Profiler Logo" 
+                    className="w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 object-cover border border-slate-700/50 bg-slate-900" 
+                    onError={() => setImgError(true)} 
+                  />
+                )}
+                <div>
+                  <h1 className="font-bold text-lg leading-tight tracking-tight">Ibis Profiler</h1>
                 </div>
-                <div class="tab-pane fade" id="quantiles-${i}">
-                   <table class="table table-sm small w-50">
-                     ${Object.entries(stats).filter(([k]) => k.endsWith('%')).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).map(([p, v]) => `<tr><th>${p}</th><td class='metric-value'>${typeof v === 'number' ? v.toFixed(4) : v}</td></tr>`).join("")}
-                   </table>
-                </div>
-                <div class="tab-pane fade" id="values-${i}">
-                   <table class="table table-sm table-striped small">
-                     <thead><tr><th>Value</th><th>Count</th><th>Frequency (%)</th></tr></thead>
-                     <tbody>
-                       ${stats.histogram ? stats.histogram.bins.map((b, idx) => `
-                         <tr><td>${b === 'None' ? '<em>Missing</em>' : b}</td><td class='metric-value'>${stats.histogram.counts[idx].toLocaleString()}</td><td class='metric-value'>${((stats.histogram.counts[idx]/data.table.n)*100).toFixed(1)}%</td></tr>
-                       `).join("") : ''}
-                     </tbody>
-                   </table>
+              </div>
+
+              <nav className="space-y-1">
+                {navItems.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                        activeTab === item.id 
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                          : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span className="font-medium text-sm">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              <div className="absolute bottom-8 left-6 right-6">
+                <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                  <div className="flex items-center gap-2 mb-2 text-slate-500">
+                    <Clock size={14} />
+                    <span className="text-xs">Job Duration</span>
+                  </div>
+                  <div className="text-sm font-mono text-slate-300">
+                    {Math.max(0, new Date(reportData.analysis.date_end) - new Date(reportData.analysis.date_start))} ms
+                  </div>
                 </div>
               </div>
             </div>
+          </aside>
+
+          <main className="lg:pl-64">
+            
+            <header className="sticky top-0 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800 z-10 px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-100">{reportData.analysis.title}</h2>
+                <p className="text-xs text-slate-500 font-mono">Analysis run {new Date(reportData.analysis.date_start).toLocaleString()}</p>
+              </div>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                <input 
+                  type="text" 
+                  placeholder="Search attributes..." 
+                  className="w-full bg-slate-900 border border-slate-800 rounded-full py-2 pl-10 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search.length > 0 && (
+                  <button 
+                    onClick={() => setSearch('')} 
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1 bg-slate-800 rounded-full flex items-center justify-center cursor-pointer z-10"
+                    type="button"
+                    aria-label="Clear search"
+                  >
+                    <X size={14} strokeWidth={3} />
+                  </button>
+                )}
+              </div>
+            </header>
+
+            <div className="p-8 max-w-7xl mx-auto">
+              
+              {/* OVERVIEW TAB */}
+              {activeTab === 'overview' && (
+                <div className="space-y-8 animate-in fade-in duration-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard 
+                      title="Total Rows" 
+                      value={reportData.table.n.toLocaleString()} 
+                      icon={Database} 
+                      sub={`${(reportData.table.p_duplicates * 100).toFixed(1)}% duplicated rows`} 
+                    />
+                    <StatCard 
+                      title="Variables" 
+                      value={reportData.table.n_var} 
+                      icon={Table} 
+                      sub={`${reportData.table.types.Numeric || 0} Num, ${reportData.table.types.Categorical || 0} Cat, ${reportData.table.types.Boolean || 0} Bool`} 
+                      color="purple" 
+                    />
+                    <StatCard 
+                      title="Missing Cells" 
+                      value={`${reportData.table.p_cells_missing === 0 ? '0' : (reportData.table.p_cells_missing * 100).toFixed(2)}%`} 
+                      icon={FileWarning} 
+                      sub={`Across ${reportData.table.n_vars_with_missing} variables`} 
+                      color="red" 
+                    />
+                    <StatCard 
+                      title="Memory Size" 
+                      value={`${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MB`} 
+                      icon={CheckCircle2} 
+                      sub={`${reportData.table.record_size} bytes per record`} 
+                      color="green" 
+                    />
+                  </div>
+
+                  <section className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                      <AlertTriangle className="text-yellow-500" size={20} /> System Alerts ({reportData.alerts?.length || 0})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {reportData.alerts?.map((alert, idx) => {
+                        const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
+                        const Icon = config.icon;
+                        return (
+                          <div key={idx} className={`flex items-start gap-3 p-4 bg-slate-950 border rounded-xl hover:bg-slate-800/50 transition-all duration-200 ${config.border}`}>
+                            <div className={`mt-0.5 ${config.color}`}>
+                              <Icon size={16} />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className={`text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded tracking-wider ${config.bg} ${config.color}`}>
+                                  {alert.alert_type}
+                                </span>
+                              </div>
+                              <div className="text-sm font-medium text-slate-300">{generateAlertMessage(alert)}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  <section>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-bold text-lg">Variable Quick View</h3>
+                      <button onClick={() => setActiveTab('variables')} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors">
+                        View detailed stats <ChevronRight size={14} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {Object.entries(reportData.variables).map(([name, meta]) => {
+                        const varAlerts = getAlertsForVariable(name);
+                        const { filteredBins: qvBins, filteredCounts: qvCounts } = filterMissingBins(meta.histogram?.bins, meta.histogram?.counts);
+
+                        return (
+                          <div 
+                            key={name} 
+                            className="bg-slate-900 border border-slate-800 p-4 rounded-2xl hover:border-blue-500/30 transition-colors group cursor-pointer flex flex-col h-full shadow-lg" 
+                            onClick={() => {
+                              setSearch(name);
+                              setActiveTab('variables');
+                            }}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <span className="font-bold text-sm text-slate-200 group-hover:text-blue-400 transition-colors truncate pr-2">{name}</span>
+                              <span className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">{meta.type}</span>
+                            </div>
+                            
+                            <div className="flex-1 mb-3">
+                              {meta.type === 'Categorical' || meta.type === 'Boolean' ? (
+                                <div className="text-xs text-slate-500 text-center h-full flex flex-col justify-center bg-slate-800/20 rounded p-2 border border-slate-800/50">
+                                  <span className="font-mono text-blue-400 mb-1 block">{qvBins.length} Categories</span>
+                                  <div className="flex gap-1 justify-center mt-1">
+                                    {qvBins.slice(0,3).map((b,i) => (
+                                      <span key={i} className="inline-block px-1 bg-slate-800 text-[9px] rounded truncate max-w-[40px]" title={String(b)}>{String(b)}</span>
+                                    ))}
+                                    {qvBins.length > 3 && <span className="text-[9px]">...</span>}
+                                  </div>
+                                </div>
+                              ) : (
+                                <NumericHistogram bins={qvBins} counts={qvCounts} height={40} showTooltip={false} />
+                              )}
+                            </div>
+
+                            <div className="flex justify-between items-center mt-auto pt-3 border-t border-slate-800/50">
+                              <div className="flex gap-1">
+                                {varAlerts.slice(0, 3).map((a, i) => {
+                                   const config = ALERT_CONFIG[a.alert_type] || ALERT_CONFIG.DEFAULT;
+                                   const Icon = config.icon;
+                                   return <div key={i} className={`${config.color} ${config.bg} p-1 rounded`} title={a.alert_type}><Icon size={10} /></div>;
+                                })}
+                                {varAlerts.length > 3 && <span className="text-[10px] text-slate-500 self-center">+{varAlerts.length-3}</span>}
+                              </div>
+                              <span className={`text-[10px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`}>
+                                {((meta.p_missing || 0) * 100).toFixed(1)}% null
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* VARIABLES TAB */}
+              {activeTab === 'variables' && (
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="text-blue-400" size={24} />
+                      <h2 className="text-2xl font-bold">Variable Details</h2>
+                    </div>
+                    <div className="text-xs font-mono text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full">
+                      Showing {filteredVariables.length} / {reportData.table.n_var}
+                    </div>
+                  </div>
+                  
+                  {filteredVariables.map(([name, meta]) => {
+                    const varAlerts = getAlertsForVariable(name);
+                    const isCategorical = meta.type === 'Categorical' || meta.type === 'Boolean';
+                    const hasExtremeValues = (meta.extreme_values_smallest && meta.extreme_values_smallest.length > 0) || 
+                                             (meta.extreme_values_largest && meta.extreme_values_largest.length > 0);
+
+                    const coreMetrics = [
+                      { label: "Mean", val: meta.mean },
+                      { label: "Std Dev", val: meta.std },
+                      { label: "Min", val: meta.min },
+                      { label: "Max", val: meta.max },
+                      { label: "Mean Length", val: meta.mean_length },
+                      { label: "Min Length", val: meta.min_length },
+                      { label: "Max Length", val: meta.max_length },
+                      { label: "Unique", val: meta.is_unique }
+                    ];
+                    
+                    const dataProperties = [
+                      { label: "Zero Values", val: meta.n_zeros },
+                      { label: "% Zeros", val: meta.p_zeros, isPercent: true },
+                      { label: "Negative Values", val: meta.n_negative },
+                      { label: "% Negative", val: meta.p_negative, isPercent: true },
+                      { label: "Infinite Values", val: meta.n_infinite },
+                      { label: "Hashable", val: meta.hashable },
+                      { label: "Monotonic Inc.", val: meta.monotonic_increasing },
+                      { label: "Monotonic Dec.", val: meta.monotonic_decreasing }
+                    ];
+
+                    const advancedStats = [
+                      { label: "Skewness", val: meta.skewness },
+                      { label: "Kurtosis", val: meta.kurtosis },
+                      { label: "Variance", val: meta.variance },
+                      { label: "Sum", val: meta.sum }
+                    ];
+
+                    const shapeAndScale = [
+                      { label: "Range", val: meta.range },
+                      { label: "IQR", val: meta.iqr },
+                      { label: "Coeff Var (CV)", val: meta.cv },
+                      { label: "Mean Abs Dev (MAD)", val: meta.mad },
+                    ];
+
+                    const renderCol1 = hasValidMetrics(coreMetrics) || hasValidMetrics(dataProperties);
+                    const renderCol2 = hasValidMetrics(shapeAndScale) || hasValidMetrics(advancedStats);
+
+                    // Filter out Nulls/NaNs from charts
+                    const { filteredBins: histBins, filteredCounts: histCounts } = filterMissingBins(meta.histogram?.bins, meta.histogram?.counts);
+
+                    let sortedLengthHistogram = null;
+                    if (meta.length_histogram?.bins && meta.length_histogram?.counts) {
+                      const { filteredBins: lenBins, filteredCounts: lenCounts } = filterMissingBins(meta.length_histogram.bins, meta.length_histogram.counts);
+                      const paired = lenBins.map((bin, i) => ({
+                        bin: Number(bin),
+                        count: lenCounts[i]
+                      }));
+                      paired.sort((a, b) => a.bin - b.bin);
+                      sortedLengthHistogram = {
+                        bins: paired.map(p => String(p.bin)),
+                        counts: paired.map(p => p.count)
+                      };
+                    }
+
+                    return (
+                      <div key={name} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl mb-8">
+                        
+                        <div className="bg-slate-800/30 p-5 px-6 border-b border-slate-800 flex justify-between items-center flex-wrap gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-blue-400">
+                              {meta.type === 'Numeric' ? <TrendingUp size={20}/> : meta.type === 'Categorical' ? <TextSelect size={20}/> : <ShieldCheck size={20}/>}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-bold text-lg text-slate-100">{name}</h3>
+                                {varAlerts.map((alert, i) => <AlertBadge key={i} alert={alert} />)}
+                              </div>
+                              <div className="flex gap-3 mt-1">
+                                 <span className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded uppercase font-bold tracking-wider">{meta.type}</span>
+                                 {meta.n_distinct !== undefined && (
+                                   <span className="text-[10px] text-slate-500 font-mono">{meta.n_distinct.toLocaleString()} distinct</span>
+                                 )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Missingness</div>
+                            <div className={`text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-slate-300'}`}>
+                              {((meta.p_missing || 0) * 100).toFixed(2)}% ({meta.n_missing?.toLocaleString() || 0})
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                          <div className={hasExtremeValues ? "lg:col-span-2" : "lg:col-span-3"}>
+                             
+                             {(histBins && histCounts && histCounts.length > 0) && (
+                               <>
+                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
+                                   <Percent size={14}/> Distribution Overview
+                                 </h4>
+                                 <div className="mb-8">
+                                   {isCategorical ? (
+                                     <CategoricalChart bins={histBins} counts={histCounts} />
+                                   ) : (
+                                     <>
+                                       <NumericHistogram bins={histBins} counts={histCounts} height={140} showTooltip={true} />
+                                       <div className="flex justify-between mt-3 px-1 text-[10px] text-slate-500 font-mono">
+                                          <span>Min: {meta.min !== undefined && meta.min !== null ? meta.min : 'N/A'}</span>
+                                          <span>Max: {meta.max !== undefined && meta.max !== null ? meta.max : 'N/A'}</span>
+                                       </div>
+                                     </>
+                                   )}
+                                 </div>
+                               </>
+                             )}
+
+                             {sortedLengthHistogram && sortedLengthHistogram.counts.length > 0 && (
+                               <div className="mb-8">
+                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-widest flex items-center gap-2 border-b border-slate-800 pb-2">
+                                   Length Distribution (Chars)
+                                 </h4>
+                                 <CategoricalChart bins={sortedLengthHistogram.bins} counts={sortedLengthHistogram.counts} />
+                               </div>
+                             )}
+                             
+                             {(renderCol1 || renderCol2) && (
+                               <div className={`grid grid-cols-1 ${renderCol1 && renderCol2 ? 'md:grid-cols-2' : ''} gap-8`}>
+                                  {renderCol1 && (
+                                    <div className="space-y-8">
+                                      <MetricsSection title="Core Metrics" metrics={coreMetrics} />
+                                      <MetricsSection title="Data Properties" metrics={dataProperties} />
+                                    </div>
+                                  )}
+                                  {renderCol2 && (
+                                    <div className="space-y-8">
+                                      <MetricsSection title="Shape & Scale" metrics={shapeAndScale} />
+                                      <MetricsSection title="Advanced Stats" metrics={advancedStats} />
+                                    </div>
+                                  )}
+                               </div>
+                             )}
+                          </div>
+
+                          {hasExtremeValues && (
+                            <div className="space-y-6">
+                              <div className="bg-slate-950/40 p-5 rounded-2xl border border-slate-800/80">
+                                <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest border-b border-slate-800 pb-2">Extreme Values</h4>
+                                <div className="flex flex-col gap-6">
+                                  <ExtremeValuesList title="Smallest" values={meta.extreme_values_smallest} />
+                                  <ExtremeValuesList title="Largest" values={meta.extreme_values_largest} />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* MISSING TAB */}
+              {activeTab === 'missing' && (
+                <div className="space-y-6 animate-in fade-in duration-700">
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 shadow-2xl">
+                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                          <FileWarning className="text-red-400" /> Missing Data Analysis
+                        </h2>
+                        <p className="text-slate-500 text-sm">
+                          Overview of nullity across all variables in the dataset.
+                        </p>
+                      </div>
+                    </div>
+
+                    {reportData.missing?.bar?.matrix?.counts?.every(c => c === 0) ? (
+                      <div className="py-16 text-center border-2 border-dashed border-green-500/20 rounded-xl bg-green-500/5 flex flex-col items-center">
+                         <CheckCircle2 size={48} className="text-green-500 mb-4" />
+                         <h3 className="text-xl font-bold text-green-400 mb-2">100% Data Completeness</h3>
+                         <p className="text-slate-400">No missing values were detected in any of the {reportData.table.n_var} variables.</p>
+                      </div>
+                    ) : (
+                      <CategoricalChart 
+                        bins={reportData.missing?.bar?.matrix?.columns} 
+                        counts={reportData.missing?.bar?.matrix?.counts} 
+                      />
+                    )}
+
+                    {reportData.missing?.matrix && Object.keys(reportData.missing.matrix).length > 0 && (
+                      <NullityMatrix data={reportData.missing.matrix} />
+                    )}
+
+                    {reportData.missing?.heatmap && Object.keys(reportData.missing.heatmap).length > 0 && (
+                      <div className="mt-16 pt-8 border-t border-slate-800/50">
+                        <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                          <PieChart className="text-blue-500" /> Nullity Correlation Heatmap
+                        </h3>
+                        <p className="text-slate-500 text-sm mb-8">
+                          {reportData.missing.heatmap.caption || "Pearson correlation of nullity between variables (-1 to 1)."}
+                        </p>
+                        <CorrelationMatrixComponent data={reportData.missing.heatmap.matrix} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* CORRELATIONS TAB */}
+              {activeTab === 'correlations' && (
+                <div className="space-y-6 animate-in fade-in duration-700">
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 shadow-2xl">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                          <PieChart className="text-blue-500" /> Correlation Matrix
+                        </h2>
+                        <p className="text-slate-500 text-sm">
+                          Linear dependence overview. Coloring indicates absolute correlation strength. <span className="text-blue-400">Blue</span> is positive, <span className="text-red-400">Red</span> is negative.
+                        </p>
+                      </div>
+                      
+                      {reportData.correlations && (
+                        <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-1">
+                          {Object.keys(reportData.correlations).map(type => (
+                            <button
+                              key={type}
+                              onClick={() => setCorrType(type)}
+                              className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
+                                corrType === type ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {currentCorrelationRaw && (
+                      <CorrelationMatrixComponent data={currentCorrelationRaw} />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* DUPLICATES TAB */}
+              {activeTab === 'duplicates' && (
+                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 shadow-2xl animate-in zoom-in-95 duration-500">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                          <Layers className="text-blue-500" /> Duplicate Rows
+                        </h2>
+                        <p className="text-slate-500 text-sm">
+                          Records that are exactly identical across all variables.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="py-12 text-center text-slate-500 border border-slate-800/50 border-dashed rounded-xl">
+                      Duplicate data overview not available in current payload.
+                    </div>
+                 </div>
+              )}
+
+              {/* SAMPLE DATA TAB */}
+              {activeTab === 'sample' && (
+                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+                    <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/20">
+                      <h2 className="text-xl font-bold flex items-center gap-2">
+                        <Table className="text-blue-400" /> Sample Data Preview
+                      </h2>
+                      <span className="text-xs font-mono text-slate-500 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                        Showing top {sampleRows.length} rows
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-[11px] leading-tight border-collapse">
+                        <thead className="bg-slate-950/80">
+                          <tr>
+                            {sampleRows.length > 0 && Object.keys(sampleRows[0]).map(k => (
+                              <th key={k} className="px-5 py-4 text-left font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap border-b border-slate-800">
+                                {k}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800">
+                          {sampleRows.map((row, i) => (
+                            <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                              {Object.values(row).map((val, j) => {
+                                const isMissing = val === 'null' || val === null || val === 'NaN' || val === 'nan' || (typeof val === 'number' && Number.isNaN(val));
+                                return (
+                                  <td key={j} className={`px-5 py-4 font-mono whitespace-nowrap ${isMissing ? 'text-red-400/80 italic font-bold' : 'text-slate-300'} ${typeof val === 'string' && val.length > 40 ? 'max-w-[200px] truncate' : ''}`} title={String(val)}>
+                                    {isMissing ? 'Null' : (typeof val === 'number' ? val.toLocaleString() : String(val))}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                 </div>
+              )}
+            </div>
+          </main>
+
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 px-4 py-3 flex justify-around z-30 backdrop-blur-md">
+             {navItems.map(item => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  <Icon size={20} />
+                  <span className="text-[9px] font-bold uppercase tracking-widest">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
-        `;
-        container.appendChild(div);
 
-        if (stats.histogram) {
-          setTimeout(() => {
-            const labels = stats.histogram.bins.map(b => b === 'None' ? 'Missing' : b);
-            Plotly.newPlot(chartId, [{x: labels, y: stats.histogram.counts, type: 'bar', marker: {color: '#0d6efd'}}], 
-            {margin: {t: 5, b: 20, l: 30, r: 5}, height: 150, font: {size: 10}}, {displayModeBar: false});
-          }, 50);
-        }
-      });
+        </div>
+      );
     }
 
-    function renderCorrelations(container) {
-      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Correlations</h1></div>`;
-      const corrs = data.correlations || {};
-      Object.entries(corrs).forEach(([name, d], i) => {
-        let z, x, y;
-        if (Array.isArray(d)) {
-          // List of dicts format
-          x = Object.keys(d[0]);
-          y = x;
-          z = d.map(row => x.map(col => row[col]));
-        } else if (d.matrix && d.columns) {
-          // Matrix object format
-          x = d.columns;
-          y = d.columns;
-          z = d.matrix;
-        } else {
-          return;
-        }
-
-        if (!z || z.length === 0) return;
-        
-        const div = document.createElement("div");
-        div.className = "row item";
-        const chartId = `corr-${i}`;
-        div.innerHTML = `<div class='col-sm-12'><p class='h4 item-header text-capitalize'>${name}</p><div id='${chartId}' style='height: 600px;'></div></div>`;
-        container.appendChild(div);
-
-        setTimeout(() => {
-          Plotly.newPlot(chartId, [{
-            z: z, x: x, y: y, type: 'heatmap',
-            colorscale: [[0, '#f46d43'], [0.5, '#ffffbf'], [1, '#66bd63']],
-            zmin: -1, zmax: 1
-          }], {
-            margin: { t: 30, b: 100, l: 100, r: 30 },
-            height: 600
-          });
-        }, 50);
-      });
-    }
-
-    function renderMissing(container) {
-      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Missing Values</h1></div>`;
-      const m = data.missing || {};
-      
-      // Render Bar Chart
-      if (m.bar && m.bar.matrix) {
-        const mat = m.bar.matrix;
-        const x = mat.columns || (Array.isArray(mat) ? Object.keys(mat[0]) : null);
-        const y = mat.counts || null; // Simplified
-        
-        if (x && y) {
-          const div = document.createElement("div");
-          div.className = "row item";
-          const chartId = "missing-bar";
-          div.innerHTML = `
-            <div class='col-sm-12'>
-              <p class='h4 item-header'>${m.bar.name}</p>
-              <div id='${chartId}' style='height: 400px;'></div>
-              <p class='text-muted small mt-2'>${m.bar.caption}</p>
-            </div>
-          `;
-          container.appendChild(div);
-
-          setTimeout(() => {
-            Plotly.newPlot(chartId, [{
-              x: x, y: y, type: 'bar', marker: {color: '#6c757d'}
-            }], {
-              margin: { t: 10, b: 100, l: 50, r: 10 },
-              height: 400
-            });
-          }, 50);
-        }
-      }
-      
-      // Render Matrix
-      if (m.matrix && m.matrix.matrix) {
-        const mat = m.matrix.matrix;
-        if (mat.columns && mat.values && mat.values.length > 0) {
-          const div = document.createElement("div");
-          div.className = "row item";
-          const matrixId = "missing-matrix";
-          div.innerHTML = `
-            <div class='col-sm-12'>
-              <p class='h4 item-header'>${m.matrix.name}</p>
-              <div id='${matrixId}' class='p-3 border rounded shadow-sm' style='overflow-x: auto; background: #fff; min-height: 300px;'></div>
-              <p class='text-muted small mt-2'>${m.matrix.caption}</p>
-            </div>
-          `;
-          container.appendChild(div);
-          
-          const nCols = mat.columns.length;
-          const firstCol = mat.values.find(v => v && v.length > 0);
-          if (firstCol) {
-            const nRows = firstCol.length;
-            const labelHeight = 120;
-            const cellW = Math.max(50, 800/nCols);
-            const cellH = 2; 
-            const svgW = nCols * cellW + 60;
-            const svgH = nRows * cellH + labelHeight + 20;
-            
-            let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" height="${svgH}" preserveAspectRatio="xMinYMin meet" style="display: block; font-family: sans-serif;">`;
-            
-            // Column Labels (Top)
-            mat.columns.forEach((col, i) => {
-               svg += `<text x="${i*cellW + (cellW/2)}" y="${labelHeight - 10}" font-size="12" font-weight="600" text-anchor="start" transform="rotate(-45, ${i*cellW + (cellW/2)}, ${labelHeight - 10})">${col}</text>`;
-               
-               if (mat.values[i]) {
-                 mat.values[i].forEach((isNull, j) => {
-                   const y = labelHeight + (j * cellH);
-                   svg += `<rect x="${i*cellW}" y="${y}" width="${cellW-1}" height="${cellH}" fill="${isNull ? '#eee' : '#444'}" />`;
-                 });
-               }
-            });
-            
-            // Row markers
-            svg += `<text x="${nCols * cellW + 10}" y="${labelHeight + 10}" font-size="11" fill="#666">0</text>`;
-            svg += `<text x="${nCols * cellW + 10}" y="${labelHeight + (nRows * cellH)}" font-size="11" fill="#666">${nRows}</text>`;
-            
-            svg += `</svg>`;
-            document.getElementById(matrixId).innerHTML = svg;
-          }
-        }
-      }
-
-      // Render Heatmap
-      if (m.heatmap && m.heatmap.matrix) {
-        const mat = m.heatmap.matrix;
-        let z, x, y;
-        if (Array.isArray(mat)) {
-          x = Object.keys(mat[0]);
-          y = x;
-          z = mat.map(row => x.map(col => row[col]));
-        } else if (mat.matrix && mat.columns) {
-          x = mat.columns;
-          y = mat.columns;
-          z = mat.matrix;
-        }
-
-        if (z && z.length > 0) {
-          const div = document.createElement("div");
-          div.className = "row item";
-          const heatId = "missing-heatmap";
-          div.innerHTML = `
-            <div class='col-sm-12'>
-              <p class='h4 item-header'>${m.heatmap.name}</p>
-              <div id='${heatId}' style='height: 500px;'></div>
-              <p class='text-muted small mt-2'>${m.heatmap.caption}</p>
-            </div>
-          `;
-          container.appendChild(div);
-          
-          setTimeout(() => {
-            Plotly.newPlot(heatId, [{
-              z: z, x: x, y: y, 
-              type: 'heatmap',
-              colorscale: [[0, '#f46d43'], [0.5, '#ffffbf'], [1, '#66bd63']],
-              zmin: -1, zmax: 1
-            }], {
-              margin: { t: 30, b: 100, l: 100, r: 30 },
-              height: 500
-            });
-          }, 50);
-        }
-      }
-    }
-
-    function renderSample(container) {
-      container.innerHTML = `<div class='section-header'><h1 class='section-name'>Sample</h1></div>`;
-      const s = data.sample || {};
-      ['head', 'tail'].forEach(stype => {
-        if (!s[stype]) return;
-        const keys = Object.keys(s[stype]);
-        const rows = s[stype][keys[0]].length;
-        let html = `<p class='h4 item-header text-capitalize'>${stype}</p><div class='table-responsive'><table class='table table-sm table-striped border small'><thead><tr>`;
-        keys.forEach(k => html += `<th>${k}</th>`);
-        html += `</tr></thead><tbody>`;
-        for(let r=0; r<rows; r++) {
-          html += `<tr>`;
-          keys.forEach(k => html += `<td>${s[stype][k][r]}</td>`);
-          html += `</tr>`;
-        }
-        container.innerHTML += html + `</tbody></table></div><br>`;
-      });
-    }
-
-    window.addEventListener('hashchange', () => nav(window.location.hash.substring(1) || 'overview'));
-    nav(window.location.hash.substring(1) || 'overview');
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
