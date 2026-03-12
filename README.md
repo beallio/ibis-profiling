@@ -37,7 +37,7 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 - **Auto-Categorical Detection:** Intelligent heuristics automatically reclassify low-cardinality integers (e.g., status codes, term months) as categorical for better visualization.
 - **DateTime Distribution:** Full support for temporal histograms and distribution analysis.
 - **Excel Support:** Directly profile Excel files (.xlsx, .xls, .xlsb) using high-performance Rust-based parsing.
-- **Scalability:** Profile **10 million rows in < 25 seconds** (Full mode) and **20 million rows in < 50 seconds** (Minimal mode).
+- **Scalability:** Profile **5 million rows in < 12 seconds** (Minimal mode) and **< 22 seconds** (Full mode).
 - **Python Compatibility:** Fully tested on **Python 3.11 through 3.14.3** (Core functionality).
 
 ---
@@ -150,7 +150,7 @@ The `ProfileReport` supports a `minimal` flag (default `False`) to toggle betwee
 | **Advanced Moments** | Skipped. | Skewness, Kurtosis, MAD. |
 | **Correlations** | Skipped. | Pearson and Spearman matrices. |
 | **Advanced Analysis** | Skipped. | Extreme Values, Monotonicity, Text Lengths. |
-| **Visualizations** | Summary only. | Nullity Matrix (SVG) and Heatmap. |
+| **Visualizations** | **Histograms (Numeric/DateTime)**, Summary only. | Nullity Matrix (SVG), Heatmap, **Scatter Plots**. |
 | **Duplicates** | Skipped. | Dataset-wide duplicate row count. |
 | **Performance** | **Ultra-Fast.** Recommended for datasets > 50M rows. | **Detailed.** Recommended for deep data quality audits. |
 
@@ -177,9 +177,7 @@ html = report.to_html(minify=False)
 
 1.  **Linguistic Analysis:** Unicode script detection and character-level distributions are missing (require complex UDFs).
 2.  **Advanced Correlations:** `phi_k`, `kendall`, and `cramers_v` are currently placeholders (higher computational complexity).
-3.  **Interactions:** Pairwise scatter plot data is not yet generated.
-4.  **Memory Footprint:** While Ibis uses backend-specific commands (like DuckDB's `PRAGMA storage_info`) where possible, it falls back to schema-based estimation for others.
-5.  **Tail Sample:** Ibis does not provide a reliable `tail()` without an explicit ordering key; only `head()` is captured.
+3.  **Memory Footprint:** While Ibis uses backend-specific commands (like DuckDB's `PRAGMA storage_info`) where possible, it falls back to schema-based estimation for others.
 
 ---
 
