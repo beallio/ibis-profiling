@@ -4,8 +4,21 @@ import os
 import sys
 
 
+import argparse
+
+
 def main():
-    input_path = "/tmp/ibis-profiling/min_test.parquet"
+    parser = argparse.ArgumentParser(description="Generate a test report from a parquet file.")
+    parser.add_argument(
+        "input",
+        nargs="?",
+        default="/tmp/ibis-profiling/min_test.parquet",
+        help="Path to input parquet file",
+    )
+    parser.add_argument("--no-minify", action="store_true", help="Disable HTML minification")
+    args = parser.parse_args()
+
+    input_path = args.input
     if not os.path.exists(input_path):
         print(f"Input file {input_path} not found.")
         sys.exit(1)
@@ -19,8 +32,9 @@ def main():
     html_out = "/tmp/ibis-profiling/test_report.html"
     json_out = "/tmp/ibis-profiling/test_report.json"
 
-    print(f"Saving HTML to {html_out}...")
-    report.to_file(html_out)
+    minify = not args.no_minify
+    print(f"Saving HTML to {html_out} (minify={minify})...")
+    report.to_file(html_out, minify=minify)
 
     print(f"Saving JSON to {json_out}...")
     report.to_file(json_out)
