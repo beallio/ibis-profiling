@@ -48,10 +48,25 @@ class QueryPlanner:
                 plans.append((col_name, metric.name, metric.build_expr(col)))
 
             # 2. Histograms / Distribution (top values) for ALL columns
-            # We treat top-values as the "distribution" for the UI.
-            # For numeric columns, it acts as a frequency plot of values.
-            # For categorical, it's the standard value counts.
-            hist_expr = col.value_counts().order_by(ibis.desc(f"{col_name}_count")).limit(20)
+            # For numeric columns, we round to create a pseudo-histogram if continuous.
+            if isinstance(
+                dtype,
+                (
+                    ibis.expr.datatypes.Integer,
+                    ibis.expr.datatypes.Floating,
+                    ibis.expr.datatypes.Decimal,
+                ),
+            ):
+                # Rounding helps group continuous values into "bins" for the top-value plot
+                # We sort by the second column (count) and rename it to 'count'
+                vc = col.round(2).value_counts()
+                count_col = vc.columns[1]
+                hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)
+            else:
+                vc = col.value_counts()
+                count_col = vc.columns[1]
+                hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)
+
             plans.append((col_name, "top_values", hist_expr))
 
             # 3. Extreme Values (Smallest/Largest)

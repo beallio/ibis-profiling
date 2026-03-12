@@ -192,9 +192,26 @@ class ProfileReport:
         elif col_name in self.variables:
             # Handle complex mapping like histograms
             if metric_name == "top_values":
-                counts = list(value.get(f"{col_name}_count", []))
-                labels = [str(x) for x in value.get(col_name, [])]
-                self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
+                # Ibis value_counts() returns [col_name, count_col]
+                # count_col can be 'count', or f'{col_name}_count', or an expression string
+
+                # 1. Identify count column
+                if "count" in value:
+                    count_key = "count"
+                else:
+                    # Fallback to anything ending in _count or having 'count' in it
+                    count_keys = [k for k in value.keys() if "count" in k.lower()]
+                    count_key = count_keys[0] if count_keys else None
+
+                # 2. Identify label column (the one that isn't the count)
+                label_keys = [k for k in value.keys() if k != count_key]
+                label_key = label_keys[0] if label_keys else None
+
+                if count_key and label_key:
+                    counts = list(value.get(count_key, []))
+                    labels = [str(x) for x in value.get(label_key, [])]
+                    self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
+
             elif metric_name == "length_histogram":
                 # Value is a dict with two columns: the length and the count
                 keys = list(value.keys())
