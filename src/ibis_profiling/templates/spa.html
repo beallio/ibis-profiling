@@ -98,13 +98,14 @@
       if (!bins || !counts || !Array.isArray(bins) || !Array.isArray(counts)) {
         return { filteredBins: bins || [], filteredCounts: counts || [] };
       }
-      const missingLabels = ['none', 'null', 'nan'];
+      const missingLabels = ['none', 'null', 'nan', 'undefined', ''];
       const filteredBins = [];
       const filteredCounts = [];
       for (let i = 0; i < bins.length; i++) {
         const binVal = bins[i];
         if (binVal === null || binVal === undefined) continue;
         const binStr = String(binVal).toLowerCase().trim();
+        // Don't filter out range labels like "[10.0, 20.0]"
         if (!missingLabels.includes(binStr)) {
           filteredBins.push(binVal);
           filteredCounts.push(counts[i]);
@@ -128,13 +129,16 @@
 
     const NumericHistogram = ({ bins, counts, height = 60, showTooltip = true }) => {
       if (!counts || counts.length === 0) return <div className="h-full w-full bg-slate-800/30 rounded-lg flex items-center justify-center text-xs text-slate-500">No chart data</div>;
-      const max = Math.max(...counts);
+      
+      // Ensure all counts are numbers and filter out any weirdness
+      const numericCounts = counts.map(c => Number(c) || 0);
+      const max = Math.max(...numericCounts, 1);
       
       return (
         <div className="flex items-end gap-0.5 w-full bg-slate-800/50 p-2 rounded-lg" style={{ height }}>
-          {counts.map((c, i) => {
+          {numericCounts.map((c, i) => {
             let binLabel = bins?.[i];
-            if (binLabel !== undefined && !Number.isNaN(Number(binLabel))) {
+            if (binLabel !== undefined && !String(binLabel).includes('[') && !Number.isNaN(Number(binLabel))) {
               binLabel = Number(binLabel) % 1 !== 0 ? Number(binLabel).toFixed(2) : binLabel;
             }
 
@@ -142,7 +146,7 @@
               <div 
                 key={i} 
                 className="bg-blue-500/60 hover:bg-blue-400 transition-all duration-200 rounded-t-sm flex-1 relative group"
-                style={{ height: `${(c / (max || 1)) * 100}%` }}
+                style={{ height: `${(c / max) * 100}%` }}
               >
                 {showTooltip && (
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-10 pointer-events-none shadow-xl">
