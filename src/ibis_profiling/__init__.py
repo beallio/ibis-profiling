@@ -7,7 +7,9 @@ from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
 
 
-def profile(table: ibis.Table, minimal: bool = False) -> InternalProfileReport:
+def profile(
+    table: ibis.Table, minimal: bool = False, title: str = "Ibis Profiling Report"
+) -> InternalProfileReport:
     """
     Main entrypoint for profiling an Ibis table.
 
@@ -40,7 +42,7 @@ def profile(table: ibis.Table, minimal: bool = False) -> InternalProfileReport:
     }
 
     # 3. Build base report
-    report = InternalProfileReport(raw_results, col_types)
+    report = InternalProfileReport(raw_results, col_types, title=title)
     report.analysis["date_start"] = start_time.isoformat()
 
     # 4. Inject column-level static metadata (hashable)
@@ -210,7 +212,8 @@ class ProfileReport:
     """
 
     def __init__(self, table: ibis.Table, minimal: bool = False, **kwargs):
-        self._report = profile(table, minimal=minimal)
+        title = kwargs.get("title", "Ibis Profiling Report")
+        self._report = profile(table, minimal=minimal, title=title)
 
     def to_file(self, output_file: str):
         return self._report.to_file(output_file)

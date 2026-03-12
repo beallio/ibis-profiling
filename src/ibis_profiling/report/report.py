@@ -37,7 +37,9 @@ class ReportEncoder(json.JSONEncoder):
 class ProfileReport:
     """Canonical Report Model that assembles data from specialized engines."""
 
-    def __init__(self, raw_results: pl.DataFrame, schema: dict):
+    def __init__(
+        self, raw_results: pl.DataFrame, schema: dict, title: str = "Ibis Profiling Report"
+    ):
         self.raw_results = raw_results
         self.schema = schema
 
@@ -50,7 +52,7 @@ class ProfileReport:
         self.alerts = []
         self.samples = {}
         self.analysis = {
-            "title": "Ibis Profiling Report",
+            "title": title,
             "date_start": datetime.now().isoformat(),
         }
 
