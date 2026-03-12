@@ -18,11 +18,11 @@ def test_extreme_values():
 
 
 def test_monotonicity():
-    schema = ibis.schema({"inc": "int64", "dec": "int64", "none": "int64"})
+    schema = ibis.schema({"inc": "float64", "dec": "float64", "none": "float64"})
     data = [
-        {"inc": 1, "dec": 10, "none": 5},
-        {"inc": 2, "dec": 9, "none": 1},
-        {"inc": 3, "dec": 8, "none": 10},
+        {"inc": 1.0, "dec": 10.0, "none": 5.0},
+        {"inc": 2.0, "dec": 9.0, "none": 1.0},
+        {"inc": 3.0, "dec": 8.0, "none": 10.0},
     ]
     table = ibis.memtable(data, schema=schema)
 

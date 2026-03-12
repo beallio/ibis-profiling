@@ -49,14 +49,74 @@
 
   <!-- React Application -->
   <script type="text/babel" data-type="module">
-    import React, { useState, useMemo, useEffect } from 'react';
+    import React, { useState, useMemo, useEffect, createContext, useContext } from 'react';
     import { createRoot } from 'react-dom/client';
     import { 
       BarChart3, AlertTriangle, Table, Database, Info, Search, 
       Clock, CheckCircle2, LayoutDashboard, PieChart, ChevronRight,
       MapPin, ShieldCheck, TrendingUp, Percent,
-      Fingerprint, Lock, Copy, FileWarning, TextSelect, X, Layers
+      Fingerprint, Lock, Copy, FileWarning, TextSelect, X, Layers,
+      Sun, Moon, Contrast
     } from 'lucide-react';
+
+    const THEMES = {
+      dark: {
+        id: 'dark',
+        name: 'Dark',
+        icon: Moon,
+        bgMain: 'bg-slate-950',
+        bgSidebar: 'bg-slate-900/50',
+        bgCard: 'bg-slate-900',
+        bgCardAlt: 'bg-slate-800/20',
+        bgHeader: 'bg-slate-950/80',
+        bgInput: 'bg-slate-900',
+        border: 'border-slate-800',
+        borderAlt: 'border-slate-800/50',
+        textPrimary: 'text-slate-100',
+        textSecondary: 'text-slate-200',
+        textMuted: 'text-slate-400',
+        textSub: 'text-slate-500',
+        accent: 'blue'
+      },
+      light: {
+        id: 'light',
+        name: 'Light',
+        icon: Sun,
+        bgMain: 'bg-slate-50',
+        bgSidebar: 'bg-slate-100/80',
+        bgCard: 'bg-white',
+        bgCardAlt: 'bg-slate-100/50',
+        bgHeader: 'bg-white/80',
+        bgInput: 'bg-white',
+        border: 'border-slate-200',
+        borderAlt: 'border-slate-100',
+        textPrimary: 'text-slate-900',
+        textSecondary: 'text-slate-800',
+        textMuted: 'text-slate-600',
+        textSub: 'text-slate-500',
+        accent: 'blue'
+      },
+      contrast: {
+        id: 'contrast',
+        name: 'High Contrast',
+        icon: Contrast,
+        bgMain: 'bg-black',
+        bgSidebar: 'bg-zinc-900',
+        bgCard: 'bg-zinc-900',
+        bgCardAlt: 'bg-zinc-800',
+        bgHeader: 'bg-black/90',
+        bgInput: 'bg-zinc-900',
+        border: 'border-zinc-700',
+        borderAlt: 'border-zinc-700',
+        textPrimary: 'text-white',
+        textSecondary: 'text-zinc-100',
+        textMuted: 'text-zinc-300',
+        textSub: 'text-zinc-400',
+        accent: 'blue'
+      }
+    };
+
+    const ThemeContext = createContext();
 
     // Alert configuration for distinct styling
     const ALERT_CONFIG = {
@@ -114,28 +174,32 @@
       return { filteredBins, filteredCounts };
     };
 
-    const StatCard = ({ title, value, icon: Icon, sub, color="blue" }) => (
-      <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl hover:shadow-blue-900/10 transition-shadow">
-        <div className="flex justify-between items-start mb-3">
-          <span className="text-slate-400 text-sm font-medium">{title}</span>
-          <div className={`p-2 rounded-lg bg-${color}-500/10 text-${color}-400`}>
-            <Icon size={18} />
+    const StatCard = ({ title, value, icon: Icon, sub, color="blue" }) => {
+      const { theme } = useContext(ThemeContext);
+      return (
+        <div className={`${theme.bgCard} border ${theme.border} p-5 rounded-2xl shadow-xl hover:shadow-${color}-900/10 transition-shadow`}>
+          <div className="flex justify-between items-start mb-3">
+            <span className={`${theme.textMuted} text-sm font-medium`}>{title}</span>
+            <div className={`p-2 rounded-lg bg-${color}-500/10 text-${color}-400`}>
+              <Icon size={18} />
+            </div>
           </div>
+          <div className={`text-2xl font-mono font-bold ${theme.textPrimary}`}>{value}</div>
+          {sub && <div className={`text-xs ${theme.textSub} mt-1`}>{sub}</div>}
         </div>
-        <div className="text-2xl font-mono font-bold text-slate-100">{value}</div>
-        {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
-      </div>
-    );
+      );
+    };
 
     const NumericHistogram = ({ bins, counts, height = 60, showTooltip = true }) => {
-      if (!counts || counts.length === 0) return <div className="h-full w-full bg-slate-800/30 rounded-lg flex items-center justify-center text-xs text-slate-500">No chart data</div>;
+      const { theme } = useContext(ThemeContext);
+      if (!counts || counts.length === 0) return <div className={`h-full w-full ${theme.bgCardAlt} rounded-lg flex items-center justify-center text-xs ${theme.textSub}`}>No chart data</div>;
       
       // Ensure all counts are numbers and filter out any weirdness
       const numericCounts = counts.map(c => Number(c) || 0);
       const max = Math.max(...numericCounts, 1);
       
       return (
-        <div className="flex items-end gap-0.5 w-full bg-slate-800/50 p-2 rounded-lg" style={{ height }}>
+        <div className={`flex items-end gap-0.5 w-full ${theme.bgCardAlt} p-2 rounded-lg`} style={{ height }}>
           {numericCounts.map((c, i) => {
             let binLabel = bins?.[i];
             if (binLabel !== undefined && !String(binLabel).includes('[') && !Number.isNaN(Number(binLabel))) {
@@ -149,8 +213,8 @@
                 style={{ height: `${(c / max) * 100}%` }}
               >
                 {showTooltip && (
-                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-10 pointer-events-none shadow-xl">
-                    <div className="text-slate-400 mb-0.5">{binLabel ? `Bin: ${binLabel}` : 'Value'}</div>
+                  <div className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 ${theme.bgCard} border ${theme.border} ${theme.textPrimary} text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-10 pointer-events-none shadow-xl`}>
+                    <div className={`${theme.textMuted} mb-0.5`}>{binLabel ? `Bin: ${binLabel}` : 'Value'}</div>
                     <div className="font-mono text-blue-300">{c.toLocaleString()} count</div>
                   </div>
                 )}
@@ -162,30 +226,31 @@
     };
 
     const CategoricalChart = ({ bins, counts }) => {
-      if (!bins || !counts || counts.length === 0) return <div className="p-4 text-center text-xs text-slate-500">No categorical distribution data</div>;
+      const { theme } = useContext(ThemeContext);
+      if (!bins || !counts || counts.length === 0) return <div className={`p-4 text-center text-xs ${theme.textSub}`}>No categorical distribution data</div>;
       const max = Math.max(...counts);
       const displayLimit = 10;
       const topBins = bins.slice(0, displayLimit);
       const topCounts = counts.slice(0, displayLimit);
 
       return (
-        <div className="space-y-3 bg-slate-800/20 p-4 rounded-xl border border-slate-800/50">
+        <div className={`space-y-3 ${theme.bgCardAlt} p-4 rounded-xl border ${theme.borderAlt}`}>
           {topBins.map((bin, i) => (
             <div key={i} className="flex items-center gap-3 text-xs">
-              <div className="w-24 truncate text-slate-400 font-medium text-right" title={String(bin)}>
+              <div className={`w-24 truncate ${theme.textMuted} font-medium text-right`} title={String(bin)}>
                 {String(bin)}
               </div>
-              <div className="flex-1 h-5 bg-slate-900 rounded overflow-hidden relative group border border-slate-800">
+              <div className={`flex-1 h-5 ${theme.bgMain} rounded overflow-hidden relative group border ${theme.border}`}>
                 <div 
                   className="h-full bg-blue-500/50 group-hover:bg-blue-400/80 transition-all rounded-r"
                   style={{ width: `${(topCounts[i] / (max || 1)) * 100}%` }}
                 />
               </div>
-              <div className="w-12 font-mono text-slate-300 text-right">{topCounts[i].toLocaleString()}</div>
+              <div className={`w-12 font-mono ${theme.textSecondary} text-right`}>{topCounts[i].toLocaleString()}</div>
             </div>
           ))}
           {bins.length > displayLimit && (
-            <div className="text-center text-[10px] text-slate-500 mt-4 border-t border-slate-800/50 pt-2">
+            <div className={`text-center text-[10px] ${theme.textSub} mt-4 border-t ${theme.borderAlt} pt-2`}>
               Showing top {displayLimit} of {bins.length} distinct categories
             </div>
           )}
@@ -194,6 +259,7 @@
     };
 
     const AlertBadge = ({ alert }) => {
+      const { theme } = useContext(ThemeContext);
       const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
       const Icon = config.icon;
       return (
@@ -205,15 +271,16 @@
     };
 
     const ExtremeValuesList = ({ title, values }) => {
+      const { theme } = useContext(ThemeContext);
       if (!values || values.length === 0) return null;
       return (
         <div className="flex-1">
-          <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">{title}</h5>
+          <h5 className={`text-[10px] font-bold ${theme.textSub} uppercase tracking-widest mb-3`}>{title}</h5>
           <div className="space-y-1.5">
             {values.map((v, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs bg-slate-800/30 px-2 py-1.5 rounded border border-slate-800">
+              <div key={i} className={`flex items-center gap-2 text-xs ${theme.bgCardAlt} px-2 py-1.5 rounded border ${theme.border}`}>
                 <span className="text-slate-600 font-mono w-4">{i+1}.</span>
-                <span className="text-slate-300 font-mono truncate" title={String(v)}>{String(v)}</span>
+                <span className={`${theme.textSecondary} font-mono truncate`} title={String(v)}>{String(v)}</span>
               </div>
             ))}
           </div>
@@ -222,6 +289,7 @@
     };
 
     const MetricRow = ({ label, val, isPercent = false }) => {
+      const { theme } = useContext(ThemeContext);
       if (val === undefined || val === null || val === 'null' || val === 'N/A' || (typeof val === 'number' && Number.isNaN(val))) return null;
       
       let formattedVal = val;
@@ -238,9 +306,9 @@
       }
 
       return (
-        <div className="flex justify-between items-center py-1.5 border-b border-slate-800/50 last:border-0 hover:bg-slate-800/20 transition-all duration-200 px-1 rounded">
-          <span className="text-xs text-slate-400">{label}</span>
-          <span className="text-xs font-mono font-bold text-slate-200">
+        <div className={`flex justify-between items-center py-1.5 border-b ${theme.borderAlt} last:border-0 hover:bg-slate-800/20 transition-all duration-200 px-1 rounded`}>
+          <span className={`text-xs ${theme.textMuted}`}>{label}</span>
+          <span className={`text-xs font-mono font-bold ${theme.textSecondary}`}>
             {String(formattedVal)}
           </span>
         </div>
@@ -248,12 +316,13 @@
     };
 
     const MetricsSection = ({ title, metrics }) => {
+      const { theme } = useContext(ThemeContext);
       const validMetrics = metrics.filter(m => m.val !== undefined && m.val !== null && m.val !== 'null' && m.val !== 'N/A' && !(typeof m.val === 'number' && Number.isNaN(m.val)));
       if (validMetrics.length === 0) return null;
 
       return (
         <div>
-          <h5 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-3">{title}</h5>
+          <h5 className={`text-[10px] font-bold ${theme.textMuted} uppercase tracking-widest mb-3`}>{title}</h5>
           <div>
             {validMetrics.map((m, i) => (
               <MetricRow key={i} label={m.label} val={m.val} isPercent={m.isPercent} />
@@ -269,6 +338,7 @@
 
     // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
     const NullityMatrix = ({ data }) => {
+      const { theme } = useContext(ThemeContext);
       const parsed = parseMatrixData(data);
       const columns = parsed.columns;
       let values = parsed.matrix; // array containing booleans (true = missing data)
@@ -321,9 +391,9 @@
       const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
 
       return (
-        <div className="overflow-x-auto mt-12 pt-8 border-t border-slate-800">
-          <h3 className="font-bold text-xl mb-2">Nullity Matrix</h3>
-          <p className="text-sm text-slate-500 mb-6">Dense visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
+        <div className={`overflow-x-auto mt-12 pt-8 border-t ${theme.border}`}>
+          <h3 className={`font-bold text-xl mb-2 ${theme.textPrimary}`}>Nullity Matrix</h3>
+          <p className={`text-sm ${theme.textSub} mb-6`}>Dense visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
 
           <div className="flex gap-4 items-end min-w-[800px]">
             <div className="flex-1 relative">
@@ -331,13 +401,13 @@
               <div className="flex mb-2">
                  {columns.map((c, i) => (
                     <div key={c} style={{ width: `${100/numCols}%` }} className="flex justify-start h-24 relative overflow-visible">
-                       <span className="absolute bottom-1 left-1/2 origin-bottom-left -rotate-45 text-[10px] font-mono text-slate-400 whitespace-nowrap">{c}</span>
+                       <span className={`absolute bottom-1 left-1/2 origin-bottom-left -rotate-45 text-[10px] font-mono ${theme.textMuted} whitespace-nowrap`}>{c}</span>
                     </div>
                  ))}
               </div>
               
               {/* SVG Matrix */}
-              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className="w-full h-96 bg-slate-900 border border-slate-800 shadow-inner rounded-sm">
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-96 ${theme.bgInput} border ${theme.border} shadow-inner rounded-sm`}>
                 {columns.map((_, cIdx) => (
                    <g key={cIdx} transform={`translate(${cIdx * colWidth}, 0)`}>
                       {getBlocks(cIdx).map((block, i) => (
@@ -347,7 +417,7 @@
                             y={block.start * rowHeight}
                             width={colWidth * 0.9}
                             height={(block.end - block.start + 1) * rowHeight}
-                            fill="#cbd5e1"
+                            fill={theme.id === 'light' ? '#475569' : '#cbd5e1'}
                             className="transition-all hover:fill-blue-400"
                          />
                       ))}
@@ -358,13 +428,13 @@
 
             {/* Completeness Sparkline */}
             <div className="w-20 h-96 relative flex flex-col items-center">
-              <div className="text-[10px] text-slate-500 font-mono text-center absolute -top-8 w-full">Data<br/>Completeness</div>
-              <svg viewBox={`0 0 100 ${svgHeight}`} preserveAspectRatio="none" className="w-full h-full border-r border-t border-b border-slate-800/50 bg-slate-900/30 rounded-r-sm">
+              <div className={`text-[10px] ${theme.textSub} font-mono text-center absolute -top-8 w-full`}>Data<br/>Completeness</div>
+              <svg viewBox={`0 0 100 ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-full border-r border-t border-b ${theme.borderAlt} ${theme.bgCardAlt} rounded-r-sm`}>
                 <polygon points={sparkPoly} fill="rgba(59, 130, 246, 0.15)" />
                 <polyline points={sparklinePoints} fill="none" stroke="#3b82f6" strokeWidth="1.5" />
               </svg>
-              <div className="absolute top-2 right-2 text-xs font-mono text-slate-400">{numCols}</div>
-              <div className="absolute bottom-2 right-2 text-xs font-mono text-slate-400">0</div>
+              <div className={`absolute top-2 right-2 text-xs font-mono ${theme.textMuted}`}>{numCols}</div>
+              <div className={`absolute bottom-2 right-2 text-xs font-mono ${theme.textMuted}`}>0</div>
             </div>
           </div>
         </div>
@@ -373,10 +443,11 @@
 
     // Sub-component for rendering standardized Correlation Matrices
     const CorrelationMatrixComponent = ({ data }) => {
+      const { theme } = useContext(ThemeContext);
       const { columns, matrix } = useMemo(() => parseMatrixData(data), [data]);
       
       if (!columns || columns.length === 0 || !matrix || matrix.length === 0) {
-        return <div className="py-12 text-center text-slate-500">No data available for this metric.</div>;
+        return <div className={`py-12 text-center ${theme.textSub}`}>No data available for this metric.</div>;
       }
 
       return (
@@ -386,7 +457,7 @@
               <tr>
                 <th className="p-1"></th>
                 {columns.map(c => (
-                  <th key={c} className="p-2 font-mono font-bold text-slate-500 h-28 align-bottom">
+                  <th key={c} className={`p-2 font-mono font-bold ${theme.textMuted} h-28 align-bottom`}>
                     <div className="transform -rotate-45 origin-bottom-left ml-6 truncate w-24">
                       {c}
                     </div>
@@ -397,7 +468,7 @@
             <tbody>
               {matrix.map((row, i) => (
                 <tr key={i}>
-                  <td className="p-2 font-mono font-bold text-slate-400 text-right pr-6 whitespace-nowrap">
+                  <td className={`p-2 font-mono font-bold ${theme.textMuted} text-right pr-6 whitespace-nowrap`}>
                     {columns[i]}
                   </td>
                   {row.map((cell, j) => {
@@ -409,17 +480,17 @@
                     return (
                       <td 
                         key={j} 
-                        className="w-12 h-12 border border-slate-800 text-center hover:scale-105 transition-transform cursor-crosshair relative group" 
+                        className={`w-12 h-12 border ${theme.border} text-center hover:scale-105 transition-transform cursor-crosshair relative group`} 
                         style={{ backgroundColor: bgColor }}
                       >
                         {isMissing ? (
-                          <span className="text-slate-600 text-[10px] italic">NaN</span>
+                          <span className={`${theme.textMuted} text-[10px] italic`}>NaN</span>
                         ) : (
                           <>
-                            <span className={`font-mono text-[10px] ${bgOpacity > 0.5 ? 'text-white' : 'text-slate-400 opacity-80'}`}>
+                            <span className={`font-mono text-[10px] ${bgOpacity > 0.5 ? 'text-white' : (theme.id === 'light' ? 'text-slate-900' : 'text-slate-400')}`}>
                               {cell === 1 ? '1.0' : cell.toFixed(2)}
                             </span>
-                            <div className="absolute z-10 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded whitespace-nowrap shadow-xl">
+                            <div className={`absolute z-10 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 ${theme.bgCard} ${theme.textPrimary} text-xs rounded whitespace-nowrap shadow-xl border ${theme.border}`}>
                               {columns[i]} × {columns[j]}
                               <br/>
                               <span className="font-mono text-blue-300">{cell.toFixed(4)}</span>
@@ -437,7 +508,8 @@
       );
     };
 
-    function App() {
+    function AppContent() {
+      const { theme, setTheme } = useContext(ThemeContext);
       const [reportData, setReportData] = useState(REPORT_DATA);
       
       // Initialize activeTab from URL hash if present
@@ -529,10 +601,10 @@
       }
 
       return (
-        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans pb-20 lg:pb-0">
+        <div className={`min-h-screen ${theme.bgMain} ${theme.textSecondary} font-sans pb-20 lg:pb-0 transition-colors duration-300`}>
           
-          <aside className="fixed left-0 top-0 bottom-0 w-64 bg-slate-900/50 border-r border-slate-800 backdrop-blur-md z-20 hidden lg:block">
-            <div className="p-6">
+          <aside className={`fixed left-0 top-0 bottom-0 w-64 ${theme.bgSidebar} border-r ${theme.border} backdrop-blur-md z-20 hidden lg:block`}>
+            <div className="p-6 h-full flex flex-col">
               <div className="flex items-center gap-3 mb-10">
                 {imgError ? (
                   <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
@@ -542,16 +614,16 @@
                   <img 
                     src="ibis-profiling-icon.png" 
                     alt="Ibis Profiler Logo" 
-                    className="w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 object-cover border border-slate-700/50 bg-slate-900" 
+                    className={`w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 object-cover border ${theme.borderAlt} ${theme.bgCard} p-1`} 
                     onError={() => setImgError(true)} 
                   />
                 )}
                 <div>
-                  <h1 className="font-bold text-lg leading-tight tracking-tight">Ibis Profiler</h1>
+                  <h1 className={`font-bold text-lg leading-tight tracking-tight ${theme.textPrimary}`}>Ibis Profiler</h1>
                 </div>
               </div>
 
-              <nav className="space-y-1">
+              <nav className="space-y-1 flex-1">
                 {navItems.map(item => {
                   const Icon = item.icon;
                   return (
@@ -561,7 +633,7 @@
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                         activeTab === item.id 
                           ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                          : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                          : `${theme.textMuted} hover:${theme.bgCardAlt} hover:${theme.textPrimary}`
                       }`}
                     >
                       <Icon size={18} />
@@ -571,13 +643,37 @@
                 })}
               </nav>
 
-              <div className="absolute bottom-8 left-6 right-6">
-                <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-2 text-slate-500">
+              <div className="mt-auto pt-6 space-y-4">
+                <div className={`p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt}`}>
+                  <div className={`flex items-center gap-2 mb-3 ${theme.textSub}`}>
+                    <Sun size={14} />
+                    <span className="text-xs font-bold uppercase tracking-wider">Appearance</span>
+                  </div>
+                  <div className={`flex items-center p-1 ${theme.bgMain} rounded-lg border ${theme.border}`}>
+                    {Object.values(THEMES).map(t => {
+                      const Icon = t.icon;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => setTheme(t)}
+                          title={t.name}
+                          className={`flex-1 flex justify-center py-1.5 rounded-md transition-all ${
+                            theme.id === t.id ? 'bg-blue-600 text-white shadow-sm' : `${theme.textSub} hover:${theme.textMuted}`
+                          }`}
+                        >
+                          <Icon size={16} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={`p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt}`}>
+                  <div className={`flex items-center gap-2 mb-2 ${theme.textSub}`}>
                     <Clock size={14} />
                     <span className="text-xs">Job Duration</span>
                   </div>
-                  <div className="text-sm font-mono text-slate-300">
+                  <div className={`text-sm font-mono ${theme.textSecondary}`}>
                     {reportData.analysis.duration !== undefined ? (
                       reportData.analysis.duration > 1000 
                         ? `${(reportData.analysis.duration / 1000).toFixed(2)} s` 
@@ -586,7 +682,6 @@
                       `${Math.max(0, new Date(reportData.analysis.date_end) - new Date(reportData.analysis.date_start))} ms`
                     )}
                   </div>
-
                 </div>
               </div>
             </div>
@@ -594,24 +689,24 @@
 
           <main className="lg:pl-64">
             
-            <header className="sticky top-0 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800 z-10 px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <header className={`sticky top-0 ${theme.bgHeader} backdrop-blur-xl border-b ${theme.border} z-10 px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4`}>
               <div>
-                <h2 className="text-xl font-bold text-slate-100">{reportData.analysis.title}</h2>
-                <p className="text-xs text-slate-500 font-mono">Analysis run {new Date(reportData.analysis.date_start).toLocaleString()}</p>
+                <h2 className={`text-xl font-bold ${theme.textPrimary}`}>{reportData.analysis.title}</h2>
+                <p className={`text-xs ${theme.textSub} font-mono`}>Analysis run {new Date(reportData.analysis.date_start).toLocaleString()}</p>
               </div>
               <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${theme.textSub} pointer-events-none`} size={16} />
                 <input 
                   type="text" 
                   placeholder="Search attributes..." 
-                  className="w-full bg-slate-900 border border-slate-800 rounded-full py-2 pl-10 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
+                  className={`w-full ${theme.bgInput} border ${theme.border} rounded-full py-2 pl-10 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 ${theme.textPrimary}`}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
                 {search.length > 0 && (
                   <button 
                     onClick={() => setSearch('')} 
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1 bg-slate-800 rounded-full flex items-center justify-center cursor-pointer z-10"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${theme.textMuted} hover:${theme.textPrimary} transition-colors p-1 ${theme.bgCardAlt} rounded-full flex items-center justify-center cursor-pointer z-10`}
                     type="button"
                     aria-label="Clear search"
                   >
@@ -656,8 +751,8 @@
                     />
                   </div>
 
-                  <section className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <section className={`${theme.bgCard} border ${theme.border} p-6 rounded-2xl shadow-xl`}>
+                    <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${theme.textPrimary}`}>
                       <AlertTriangle className="text-yellow-500" size={20} /> System Alerts ({reportData.alerts?.length || 0})
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -665,7 +760,7 @@
                         const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
                         const Icon = config.icon;
                         return (
-                          <div key={idx} className={`flex items-start gap-3 p-4 bg-slate-950 border rounded-xl hover:bg-slate-800/50 transition-all duration-200 ${config.border}`}>
+                          <div key={idx} className={`flex items-start gap-3 p-4 ${theme.bgMain} border rounded-xl hover:${theme.bgCardAlt} transition-all duration-200 ${config.border}`}>
                             <div className={`mt-0.5 ${config.color}`}>
                               <Icon size={16} />
                             </div>
@@ -675,7 +770,7 @@
                                   {alert.alert_type}
                                 </span>
                               </div>
-                              <div className="text-sm font-medium text-slate-300">{generateAlertMessage(alert)}</div>
+                              <div className={`text-sm font-medium ${theme.textSecondary}`}>{generateAlertMessage(alert)}</div>
                             </div>
                           </div>
                         );
@@ -685,7 +780,7 @@
 
                   <section>
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-bold text-lg">Variable Quick View</h3>
+                      <h3 className={`font-bold text-lg ${theme.textPrimary}`}>Variable Quick View</h3>
                       <button onClick={() => setActiveTab('variables')} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors">
                         View detailed stats <ChevronRight size={14} />
                       </button>
@@ -698,26 +793,35 @@
                         return (
                           <div 
                             key={name} 
-                            className="bg-slate-900 border border-slate-800 p-4 rounded-2xl hover:border-blue-500/30 transition-colors group cursor-pointer flex flex-col h-full shadow-lg" 
+                            className={`${theme.bgCard} border ${theme.border} p-4 rounded-2xl hover:border-blue-500/30 transition-colors group cursor-pointer flex flex-col h-full shadow-lg`} 
                             onClick={() => {
                               setSearch(name);
                               setActiveTab('variables');
                             }}
                           >
                             <div className="flex justify-between items-start mb-3">
-                              <span className="font-bold text-sm text-slate-200 group-hover:text-blue-400 transition-colors truncate pr-2">{name}</span>
-                              <span className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">{meta.type}</span>
+                              <span className={`font-bold text-sm ${theme.textSecondary} group-hover:text-blue-400 transition-colors truncate pr-2`}>{name}</span>
+                              <span className={`text-[9px] ${theme.bgCardAlt} ${theme.textMuted} px-1.5 py-0.5 rounded uppercase font-bold tracking-wider`}>{meta.type}</span>
                             </div>
                             
                             <div className="flex-1 mb-3">
                               {meta.type === 'Categorical' || meta.type === 'Boolean' ? (
-                                <div className="text-xs text-slate-500 text-center h-full flex flex-col justify-center bg-slate-800/20 rounded p-2 border border-slate-800/50">
-                                  <span className="font-mono text-blue-400 mb-1 block">{qvBins.length} Categories</span>
-                                  <div className="flex gap-1 justify-center mt-1">
-                                    {qvBins.slice(0,3).map((b,i) => (
-                                      <span key={i} className="inline-block px-1 bg-slate-800 text-[9px] rounded truncate max-w-[40px]" title={String(b)}>{String(b)}</span>
-                                    ))}
-                                    {qvBins.length > 3 && <span className="text-[9px]">...</span>}
+                                <div className="h-full flex flex-col justify-center">
+                                  <div className={`h-10 w-full ${theme.bgCardAlt} rounded-lg flex items-end gap-0.5 p-1`}>
+                                    {qvCounts.slice(0, 10).map((c, i) => {
+                                      const max = Math.max(...qvCounts, 1);
+                                      return (
+                                        <div 
+                                          key={i} 
+                                          className="bg-purple-500/40 hover:bg-purple-400 transition-all rounded-t-sm flex-1"
+                                          style={{ height: `${(c / max) * 100}%` }}
+                                          title={`${qvBins[i]}: ${c.toLocaleString()}`}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                  <div className={`text-[8px] ${theme.textSub} mt-1 text-center truncate`}>
+                                    {qvBins.length} distinct categories
                                   </div>
                                 </div>
                               ) : (
@@ -725,14 +829,14 @@
                               )}
                             </div>
 
-                            <div className="flex justify-between items-center mt-auto pt-3 border-t border-slate-800/50">
+                            <div className={`flex justify-between items-center mt-auto pt-3 border-t ${theme.borderAlt}`}>
                               <div className="flex gap-1">
                                 {varAlerts.slice(0, 3).map((a, i) => {
                                    const config = ALERT_CONFIG[a.alert_type] || ALERT_CONFIG.DEFAULT;
                                    const Icon = config.icon;
                                    return <div key={i} className={`${config.color} ${config.bg} p-1 rounded`} title={a.alert_type}><Icon size={10} /></div>;
                                 })}
-                                {varAlerts.length > 3 && <span className="text-[10px] text-slate-500 self-center">+{varAlerts.length-3}</span>}
+                                {varAlerts.length > 3 && <span className={`text-[10px] ${theme.textSub} self-center`}>+{varAlerts.length-3}</span>}
                               </div>
                               <span className={`text-[10px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`}>
                                 {((meta.p_missing || 0) * 100).toFixed(1)}% null
@@ -752,9 +856,9 @@
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                       <BarChart3 className="text-blue-400" size={24} />
-                      <h2 className="text-2xl font-bold">Variable Details</h2>
+                      <h2 className={`text-2xl font-bold ${theme.textPrimary}`}>Variable Details</h2>
                     </div>
-                    <div className="text-xs font-mono text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full">
+                    <div className={`text-xs font-mono ${theme.textSub} ${theme.bgCard} border ${theme.border} px-3 py-1.5 rounded-full`}>
                       Showing {filteredVariables.length} / {reportData.table.n_var}
                     </div>
                   </div>
@@ -762,6 +866,7 @@
                   {filteredVariables.map(([name, meta]) => {
                     const varAlerts = getAlertsForVariable(name);
                     const isCategorical = meta.type === 'Categorical' || meta.type === 'Boolean';
+                    const isNumericOrDate = meta.type === 'Numeric' || meta.type === 'DateTime';
                     const hasExtremeValues = (meta.extreme_values_smallest && meta.extreme_values_smallest.length > 0) || 
                                              (meta.extreme_values_largest && meta.extreme_values_largest.length > 0);
 
@@ -822,29 +927,29 @@
                     }
 
                     return (
-                      <div key={name} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl mb-8">
+                      <div key={name} className={`${theme.bgCard} border ${theme.border} rounded-2xl overflow-hidden shadow-xl mb-8`}>
                         
-                        <div className="bg-slate-800/30 p-5 px-6 border-b border-slate-800 flex justify-between items-center flex-wrap gap-4">
+                        <div className={`${theme.bgCardAlt} p-5 px-6 border-b ${theme.border} flex justify-between items-center flex-wrap gap-4`}>
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-blue-400">
+                            <div className={`w-10 h-10 rounded-xl ${theme.bgMain} border ${theme.border} flex items-center justify-center text-blue-400`}>
                               {meta.type === 'Numeric' ? <TrendingUp size={20}/> : meta.type === 'Categorical' ? <TextSelect size={20}/> : <ShieldCheck size={20}/>}
                             </div>
                             <div>
                               <div className="flex items-center gap-3">
-                                <h3 className="font-bold text-lg text-slate-100">{name}</h3>
+                                <h3 className={`font-bold text-lg ${theme.textPrimary}`}>{name}</h3>
                                 {varAlerts.map((alert, i) => <AlertBadge key={i} alert={alert} />)}
                               </div>
                               <div className="flex gap-3 mt-1">
-                                 <span className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded uppercase font-bold tracking-wider">{meta.type}</span>
+                                 <span className={`text-[10px] ${theme.bgMain} ${theme.textMuted} border ${theme.borderAlt} px-2 py-0.5 rounded uppercase font-bold tracking-wider`}>{meta.type}</span>
                                  {meta.n_distinct !== undefined && (
-                                   <span className="text-[10px] text-slate-500 font-mono">{meta.n_distinct.toLocaleString()} distinct</span>
+                                   <span className={`text-[10px] ${theme.textSub} font-mono`}>{meta.n_distinct.toLocaleString()} distinct</span>
                                  )}
                               </div>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Missingness</div>
-                            <div className={`text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-slate-300'}`}>
+                            <div className={`text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`}>Missingness</div>
+                            <div className={`text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : theme.textSecondary}`}>
                               {((meta.p_missing || 0) * 100).toFixed(2)}% ({meta.n_missing?.toLocaleString() || 0})
                             </div>
                           </div>
@@ -855,20 +960,20 @@
                              
                              {(histBins && histCounts && histCounts.length > 0) && (
                                <>
-                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
+                                 <h4 className={`text-[10px] font-bold ${theme.textSub} uppercase mb-4 tracking-widest border-b ${theme.border} pb-2 flex items-center gap-2`}>
                                    <Percent size={14}/> Distribution Overview
                                  </h4>
                                  <div className="mb-8">
-                                   {isCategorical ? (
-                                     <CategoricalChart bins={histBins} counts={histCounts} />
-                                   ) : (
+                                   {isNumericOrDate ? (
                                      <>
                                        <NumericHistogram bins={histBins} counts={histCounts} height={140} showTooltip={true} />
-                                       <div className="flex justify-between mt-3 px-1 text-[10px] text-slate-500 font-mono">
+                                       <div className={`flex justify-between mt-3 px-1 text-[10px] ${theme.textSub} font-mono`}>
                                           <span>Min: {meta.min !== undefined && meta.min !== null ? meta.min : 'N/A'}</span>
                                           <span>Max: {meta.max !== undefined && meta.max !== null ? meta.max : 'N/A'}</span>
                                        </div>
                                      </>
+                                   ) : (
+                                     <CategoricalChart bins={histBins} counts={histCounts} />
                                    )}
                                  </div>
                                </>
@@ -876,7 +981,7 @@
 
                              {sortedLengthHistogram && sortedLengthHistogram.counts.length > 0 && (
                                <div className="mb-8">
-                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-widest flex items-center gap-2 border-b border-slate-800 pb-2">
+                                 <h4 className={`text-[10px] font-bold ${theme.textSub} uppercase mb-3 tracking-widest flex items-center gap-2 border-b ${theme.border} pb-2`}>
                                    Length Distribution (Chars)
                                  </h4>
                                  <CategoricalChart bins={sortedLengthHistogram.bins} counts={sortedLengthHistogram.counts} />
@@ -903,8 +1008,8 @@
 
                           {hasExtremeValues && (
                             <div className="space-y-6">
-                              <div className="bg-slate-950/40 p-5 rounded-2xl border border-slate-800/80">
-                                <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest border-b border-slate-800 pb-2">Extreme Values</h4>
+                              <div className={`${theme.bgMain} p-5 rounded-2xl border ${theme.borderAlt}`}>
+                                <h4 className={`text-[10px] font-bold ${theme.textSub} uppercase mb-4 tracking-widest border-b ${theme.border} pb-2`}>Extreme Values</h4>
                                 <div className="flex flex-col gap-6">
                                   <ExtremeValuesList title="Smallest" values={meta.extreme_values_smallest} />
                                   <ExtremeValuesList title="Largest" values={meta.extreme_values_largest} />
@@ -922,13 +1027,13 @@
               {/* MISSING TAB */}
               {activeTab === 'missing' && (
                 <div className="space-y-6 animate-in fade-in duration-700">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 shadow-2xl">
+                  <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`}>
                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                       <div>
-                        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
                           <FileWarning className="text-red-400" /> Missing Data Analysis
                         </h2>
-                        <p className="text-slate-500 text-sm">
+                        <p className={`${theme.textSub} text-sm`}>
                           Overview of nullity across all variables in the dataset.
                         </p>
                       </div>
@@ -952,11 +1057,11 @@
                     )}
 
                     {reportData.missing?.heatmap && Object.keys(reportData.missing.heatmap).length > 0 && (
-                      <div className="mt-16 pt-8 border-t border-slate-800/50">
-                        <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                      <div className={`mt-16 pt-8 border-t ${theme.borderAlt}`}>
+                        <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
                           <PieChart className="text-blue-500" /> Nullity Correlation Heatmap
                         </h3>
-                        <p className="text-slate-500 text-sm mb-8">
+                        <p className={`${theme.textSub} text-sm mb-8`}>
                           {reportData.missing.heatmap.caption || "Pearson correlation of nullity between variables (-1 to 1)."}
                         </p>
                         <CorrelationMatrixComponent data={reportData.missing.heatmap.matrix} />
@@ -969,25 +1074,25 @@
               {/* CORRELATIONS TAB */}
               {activeTab === 'correlations' && (
                 <div className="space-y-6 animate-in fade-in duration-700">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 shadow-2xl">
+                  <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`}>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
                       <div>
-                        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
                           <PieChart className="text-blue-500" /> Correlation Matrix
                         </h2>
-                        <p className="text-slate-500 text-sm">
+                        <p className={`${theme.textSub} text-sm`}>
                           Linear dependence overview. Coloring indicates absolute correlation strength. <span className="text-blue-400">Blue</span> is positive, <span className="text-red-400">Red</span> is negative.
                         </p>
                       </div>
                       
                       {reportData.correlations && (
-                        <div className="flex bg-slate-950 border border-slate-800 rounded-lg p-1">
+                        <div className={`flex ${theme.bgMain} border ${theme.border} rounded-lg p-1`}>
                           {Object.keys(reportData.correlations).map(type => (
                             <button
                               key={type}
                               onClick={() => setCorrType(type)}
                               className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
-                                corrType === type ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'
+                                corrType === type ? 'bg-blue-600 text-white shadow-md' : `${theme.textSub} hover:${theme.textMuted}`
                               }`}
                             >
                               {type}
@@ -1006,18 +1111,18 @@
 
               {/* DUPLICATES TAB */}
               {activeTab === 'duplicates' && (
-                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 shadow-2xl animate-in zoom-in-95 duration-500">
+                 <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl animate-in zoom-in-95 duration-500`}>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                       <div>
-                        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
                           <Layers className="text-blue-500" /> Duplicate Rows
                         </h2>
-                        <p className="text-slate-500 text-sm">
+                        <p className={`${theme.textSub} text-sm`}>
                           Records that are exactly identical across all variables.
                         </p>
                       </div>
                     </div>
-                    <div className="py-12 text-center text-slate-500 border border-slate-800/50 border-dashed rounded-xl">
+                    <div className={`py-12 text-center ${theme.textSub} border ${theme.borderAlt} border-dashed rounded-xl`}>
                       Duplicate data overview not available in current payload.
                     </div>
                  </div>
@@ -1025,33 +1130,33 @@
 
               {/* SAMPLE DATA TAB */}
               {activeTab === 'sample' && (
-                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
-                    <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/20">
-                      <h2 className="text-xl font-bold flex items-center gap-2">
+                 <div className={`${theme.bgCard} border ${theme.border} rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500`}>
+                    <div className={`p-6 border-b ${theme.border} flex justify-between items-center ${theme.bgCardAlt}`}>
+                      <h2 className={`text-xl font-bold flex items-center gap-2 ${theme.textPrimary}`}>
                         <Table className="text-blue-400" /> Sample Data Preview
                       </h2>
-                      <span className="text-xs font-mono text-slate-500 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                      <span className={`text-xs font-mono ${theme.textSub} ${theme.bgMain} px-3 py-1.5 rounded-lg border ${theme.border}`}>
                         Showing top {sampleRows.length} rows
                       </span>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-[11px] leading-tight border-collapse">
-                        <thead className="bg-slate-950/80">
+                        <thead className={`${theme.bgMain}/80`}>
                           <tr>
                             {sampleRows.length > 0 && Object.keys(sampleRows[0]).map(k => (
-                              <th key={k} className="px-5 py-4 text-left font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap border-b border-slate-800">
+                              <th key={k} className={`px-5 py-4 text-left font-bold uppercase tracking-wider ${theme.textMuted} whitespace-nowrap border-b ${theme.border}`}>
                                 {k}
                               </th>
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800">
+                        <tbody className={`divide-y ${theme.border}`}>
                           {sampleRows.map((row, i) => (
-                            <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                            <tr key={i} className={`hover:${theme.bgCardAlt} transition-colors`}>
                               {Object.values(row).map((val, j) => {
                                 const isMissing = val === 'null' || val === null || val === 'NaN' || val === 'nan' || (typeof val === 'number' && Number.isNaN(val));
                                 return (
-                                  <td key={j} className={`px-5 py-4 font-mono whitespace-nowrap ${isMissing ? 'text-red-400/80 italic font-bold' : 'text-slate-300'} ${typeof val === 'string' && val.length > 40 ? 'max-w-[200px] truncate' : ''}`} title={String(val)}>
+                                  <td key={j} className={`px-5 py-4 font-mono whitespace-nowrap ${isMissing ? 'text-red-400/80 italic font-bold' : theme.textSecondary} ${typeof val === 'string' && val.length > 40 ? 'max-w-[200px] truncate' : ''}`} title={String(val)}>
                                     {isMissing ? 'Null' : (typeof val === 'number' ? val.toLocaleString() : String(val))}
                                   </td>
                                 );
@@ -1066,14 +1171,14 @@
             </div>
           </main>
 
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 px-4 py-3 flex justify-around z-30 backdrop-blur-md">
+          <div className={`lg:hidden fixed bottom-0 left-0 right-0 ${theme.bgSidebar} border-t ${theme.border} px-4 py-3 flex justify-around z-30 backdrop-blur-md`}>
              {navItems.map(item => {
               const Icon = item.icon;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}
+                  className={`flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : `${theme.textSub} hover:${theme.textPrimary}`}`}
                 >
                   <Icon size={20} />
                   <span className="text-[9px] font-bold uppercase tracking-widest">{item.label}</span>
@@ -1083,6 +1188,33 @@
           </div>
 
         </div>
+      );
+    }
+
+    function App() {
+      const getInitialTheme = () => {
+        const saved = localStorage.getItem('ibis-profiler-theme');
+        return (saved && THEMES[saved]) ? THEMES[saved] : THEMES.dark;
+      };
+
+      const [theme, setThemeState] = useState(getInitialTheme);
+
+      const setTheme = (t) => {
+        setThemeState(t);
+        localStorage.setItem('ibis-profiler-theme', t.id);
+      };
+
+      useEffect(() => {
+        // Apply global background to body for smooth transitions
+        document.body.className = theme.bgMain;
+        // Also apply a data-theme attribute if needed for CSS
+        document.documentElement.setAttribute('data-theme', theme.id);
+      }, [theme]);
+
+      return (
+        <ThemeContext.Provider value={{ theme, setTheme }}>
+          <AppContent />
+        </ThemeContext.Provider>
       );
     }
 

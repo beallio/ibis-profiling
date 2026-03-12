@@ -45,7 +45,27 @@ def profile(
     report = InternalProfileReport(raw_results, col_types, title=title)
     report.analysis["date_start"] = start_time.isoformat()
 
-    # 4. Inject column-level static metadata (hashable)
+    # 4. Low-cardinality Reclassification (Heuristic)
+    # Perform this early so that second pass plans (histograms, top_values)
+    # respect the reclassified type.
+    # NOTE: We only reclassify INTEGERS to Categorical. Floats/Decimals stay Numeric
+    # even if low cardinality (to keep precise stats and avoid breaking tests).
+    CARDINALITY_THRESHOLD = 20
+    for col_name, stats in report.variables.items():
+        if stats.get("type") == "Numeric":
+            dtype = col_types.get(col_name)
+            if isinstance(dtype, ibis.expr.datatypes.Integer):
+                n_distinct = stats.get("n_distinct", 0)
+                if 0 < n_distinct < CARDINALITY_THRESHOLD:
+                    stats["type"] = "Categorical"
+                    # Update table-level type counts
+                    if "Numeric" in report.table["types"]:
+                        report.table["types"]["Numeric"] -= 1
+                        report.table["types"]["Categorical"] = (
+                            report.table["types"].get("Categorical", 0) + 1
+                        )
+
+    # 5. Inject column-level static metadata (hashable)
     for col_name in report.variables:
         if col_name != "_dataset":
             report.variables[col_name]["hashable"] = inspector.is_hashable(col_name)
@@ -65,25 +85,53 @@ def profile(
         second_pass_aggs = []
         histogram_plans = []
         nbins = 20
-        numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
+        # Include DateTime for histograms (epoch conversion)
+        plottable_cols = [
+            c for c, s in report.variables.items() if s.get("type") in ["Numeric", "DateTime"]
+        ]
 
-        for col_name in numeric_cols:
+        for col_name in plottable_cols:
             stats = report.variables[col_name]
-            mean = stats.get("mean")
-            std = stats.get("std")
-            v_min = stats.get("min")
-            v_max = stats.get("max")
+            v_type = stats.get("type")
             col = table[col_name]
 
-            # Skewness
-            if mean is not None and std is not None and std > 0:
-                skew_expr = ((col - mean) / std).pow(3).mean().name(f"{col_name}__skewness")
-                second_pass_aggs.append(skew_expr)
+            # For DateTime, we work with epoch seconds
+            if v_type == "DateTime":
+                col = col.epoch_seconds().cast("float64")
+                # First pass didn't calculate moments for DateTime
+                # but we need min/max which were calculated
+                v_min_raw = stats.get("min")
+                v_max_raw = stats.get("max")
 
-            # MAD
-            if mean is not None:
-                mad_expr = (col - mean).abs().mean().name(f"{col_name}__mad")
-                second_pass_aggs.append(mad_expr)
+                # Parse ISO strings back to timestamps then to epoch if needed
+                # Actually, during _build, min/max were already converted to ISO strings
+                # We should get them from raw_results if possible, or just re-calculate
+                # To be safe and simple, let's just cast them if they are in the stats
+                if v_min_raw and v_max_raw:
+                    import dateutil.parser
+
+                    try:
+                        v_min = dateutil.parser.isoparse(v_min_raw).timestamp()
+                        v_max = dateutil.parser.isoparse(v_max_raw).timestamp()
+                    except Exception:
+                        v_min, v_max = None, None
+                else:
+                    v_min, v_max = None, None
+            else:
+                mean = stats.get("mean")
+                std = stats.get("std")
+                v_min = stats.get("min")
+                v_max = stats.get("max")
+
+                # Skewness
+                if mean is not None and std is not None and std > 0:
+                    skew_expr = ((col - mean) / std).pow(3).mean().name(f"{col_name}__skewness")
+                    second_pass_aggs.append(skew_expr)
+
+                # MAD
+                if mean is not None:
+                    mad_expr = (col - mean).abs().mean().name(f"{col_name}__mad")
+                    second_pass_aggs.append(mad_expr)
 
             # Proper Histogram (Bucket Pass)
             if v_min is not None and v_max is not None and v_max > v_min:
@@ -105,15 +153,23 @@ def profile(
 
         # Execute histograms
         for col_name, plan, v_min, v_max in histogram_plans:
+            # Skip if it was reclassified to Categorical (handled by top_values)
+            if report.variables[col_name].get("type") == "Categorical":
+                continue
+
             try:
                 res = plan.execute()
                 # Find columns
                 c_key = "count" if "count" in res.columns else res.columns[1]
                 l_key = res.columns[0]
 
-                counts_dict = dict(zip(res[l_key], res[c_key]))
-                # Filter out None and ensure int keys
-                counts_dict = {int(k): v for k, v in counts_dict.items() if k is not None}
+                # Filter out None/NaN and ensure int keys
+                counts_dict = {}
+                import math
+
+                for k, v in zip(res[l_key], res[c_key]):
+                    if k is not None and not (isinstance(k, float) and math.isnan(k)):
+                        counts_dict[int(k)] = v
 
                 report.add_metric(
                     col_name,
@@ -124,7 +180,8 @@ def profile(
                 pass
 
     # 4. Handle complex metrics (e.g. n_unique, top_values)
-    complex_plans = planner.build_complex_metrics()
+    final_types = {c: s.get("type") for c, s in report.variables.items()}
+    complex_plans = planner.build_complex_metrics(override_types=final_types)
     for col_name, metric_name, expr in complex_plans:
         if isinstance(expr, ibis.expr.types.Table):
             # For table-valued metrics like top_values

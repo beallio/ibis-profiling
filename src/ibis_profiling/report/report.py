@@ -164,6 +164,24 @@ class ProfileReport:
                 # Negative Percentage
                 if "n_negative" in stats:
                     stats["p_negative"] = stats["n_negative"] / n if n > 0 else 0
+            elif stats.get("type") == "Categorical":
+                # For categoricals, we don't want continuous numeric metrics
+                # even if they were calculated in pass 1 before reclassification
+                for k in [
+                    "mean",
+                    "std",
+                    "variance",
+                    "skewness",
+                    "kurtosis",
+                    "mad",
+                    "sum",
+                    "50%",
+                    "5%",
+                    "25%",
+                    "75%",
+                    "95%",
+                ]:
+                    stats.pop(k, None)
 
             # Unique Percentage
             if "n_unique" in stats:
@@ -208,7 +226,12 @@ class ProfileReport:
 
                 if count_key and label_key:
                     counts = list(value.get(count_key, []))
-                    labels = [str(x) for x in value.get(label_key, [])]
+                    labels = []
+                    for x in value.get(label_key, []):
+                        if isinstance(x, (datetime, date)):
+                            labels.append(x.isoformat())
+                        else:
+                            labels.append(str(x))
                     self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
 
             elif metric_name == "numeric_histogram":

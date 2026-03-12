@@ -7,7 +7,7 @@ def test_two_pass_skewness():
     # Setup data with known skewness
     # Data: [1, 1, 1, 1, 10]
     # Mean: 2.8, Std: 4.02
-    data = {"val": [1, 1, 1, 1, 10]}
+    data = {"val": [1.0, 1.0, 1.0, 1.0, 10.0]}
     df = pl.DataFrame(data)
     table = ibis.memtable(df)
 

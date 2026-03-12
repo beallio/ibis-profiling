@@ -15,7 +15,7 @@ class QueryPlanner:
         for col_name, dtype in schema.items():
             col = self.table[col_name]
             for metric in self.registry.metrics.values():
-                # We skip n_unique for now as it's complex
+                # We skip n_unique (singletons) for now as it's complex (requires value_counts)
                 if metric.name == "n_unique":
                     continue
 
@@ -32,31 +32,38 @@ class QueryPlanner:
 
         return self.table.aggregate(aggs)
 
-    def build_complex_metrics(self) -> list[tuple[str, str, ibis.expr.types.Value]]:
+    def build_complex_metrics(
+        self, override_types: dict[str, str] = None
+    ) -> list[tuple[str, str, ibis.expr.types.Value]]:
         """
         Returns a list of (column_name, metric_name, expression) for metrics
         that cannot be batched in a single pass.
         """
         schema = self.table.schema()
         plans = []
+        overrides = override_types or {}
 
         for col_name, dtype in schema.items():
             col = self.table[col_name]
+            mapped_type = overrides.get(col_name)
+
             # 1. n_unique (singletons)
             metric = self.registry.metrics.get("n_unique")
             if metric and metric.supports(dtype):
                 plans.append((col_name, metric.name, metric.build_expr(col)))
 
-            # 2. Histograms / Distribution (top values) for non-numeric columns
-            # Numeric columns will be handled with true binning in a separate pass
-            if not isinstance(
+            # 2. Histograms / Distribution (top values) for Categorical/Boolean/Discrete Numeric
+            # If overridden to Categorical, OR it's not a standard continuous numeric type
+            is_discrete = mapped_type == "Categorical" or not isinstance(
                 dtype,
                 (
                     ibis.expr.datatypes.Integer,
                     ibis.expr.datatypes.Floating,
                     ibis.expr.datatypes.Decimal,
                 ),
-            ):
+            )
+
+            if is_discrete:
                 vc = col.value_counts()
                 count_col = vc.columns[1]
                 hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)
