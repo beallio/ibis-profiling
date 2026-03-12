@@ -62,9 +62,23 @@ def test_complex_profile():
 
 
 def test_profilereport_wrapper():
-    con = ibis.duckdb.connect()
-    t = con.sql("SELECT 1 AS id, 'a' AS txt").to_polars()
-    table = ibis.memtable(t)
+    import polars as pl
+    from datetime import datetime
+
+    data = {
+        "id": range(100),
+        "val_numeric": [float(i) if i % 10 != 0 else None for i in range(100)],
+        "val_zeros": [0 if i % 5 == 0 else i for i in range(100)],
+        "val_categorical": ["A" if i % 3 == 0 else "B" for i in range(100)],
+        "val_bool": [True if i % 2 == 0 else False for i in range(100)],
+        "val_datetime": [datetime(2023, 1, 1) for _ in range(100)],
+        "val_constant": ["fixed"] * 100,
+        "val_skewed": [1.0] * 95 + [1000.0] * 5,
+        "corr_base": [float(i) for i in range(100)],
+        "corr_high": [float(i) * 2 + 5 for i in range(100)],
+    }
+    df = pl.DataFrame(data)
+    table = ibis.memtable(df)
 
     from ibis_profiling import ProfileReport
 
