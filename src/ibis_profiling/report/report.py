@@ -343,10 +343,22 @@ class ProfileReport:
         if minify:
             import re
 
-            # Simple HTML minification: remove comments, then newlines and extra spaces
+            # 1. Remove HTML comments
             html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
-            html = re.sub(r"\s+", " ", html)
-            html = html.replace("> <", "><")
+
+            # 2. Remove CSS/JS multi-line comments
+            html = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
+
+            # 3. Handle single-line // comments safely by removing them before collapsing spaces
+            # We only target // that aren't inside quotes (naive but works for our template)
+            # A safer way: remove everything from // to the end of the line
+            html = re.sub(r"^[ \t]*//.*$", "", html, flags=re.MULTILINE)  # whole line comments
+            html = re.sub(r"([^\s:])\s*//.*$", r"\1", html, flags=re.MULTILINE)  # trailing comments
+
+            # 4. Collapse whitespace but be careful about ASI (Automatic Semicolon Insertion)
+            # Instead of replacing all \s+ with " ", we'll just trim lines and remove empty ones
+            lines = [line.strip() for line in html.splitlines()]
+            html = "\n".join([line for line in lines if line])
 
         return html
 
