@@ -1,4 +1,5 @@
 import ibis
+from datetime import datetime
 from .inspector import DatasetInspector
 from .metrics import registry
 from .planner import QueryPlanner
@@ -16,6 +17,7 @@ def profile(table: ibis.Table, minimal: bool = False) -> InternalProfileReport:
     3. Executes the queries in the backend.
     4. Formats the results into a structured report.
     """
+    start_time = datetime.now()
     inspector = DatasetInspector(table)
     planner = QueryPlanner(table, registry)
     engine = ExecutionEngine()
@@ -39,6 +41,7 @@ def profile(table: ibis.Table, minimal: bool = False) -> InternalProfileReport:
 
     # 3. Build base report
     report = InternalProfileReport(raw_results, col_types)
+    report.analysis["date_start"] = start_time.isoformat()
 
     # 4. Inject column-level static metadata (hashable)
     for col_name in report.variables:
@@ -193,6 +196,10 @@ def profile(table: ibis.Table, minimal: bool = False) -> InternalProfileReport:
         from .report.model.missing import MissingEngine
 
         report.missing = MissingEngine.compute(table, report.variables)
+
+    end_time = datetime.now()
+    report.analysis["date_end"] = end_time.isoformat()
+    report.analysis["duration"] = (end_time - start_time).total_seconds() * 1000
 
     return report
 

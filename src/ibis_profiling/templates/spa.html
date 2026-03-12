@@ -267,9 +267,17 @@
     const NullityMatrix = ({ data }) => {
       const parsed = parseMatrixData(data);
       const columns = parsed.columns;
-      const values = parsed.matrix; // array of rows containing booleans (true = missing data)
+      let values = parsed.matrix; // array containing booleans (true = missing data)
 
       if (!columns || !columns.length || !values || !values.length) return null;
+
+      // Ibis sends this matrix in column-oriented format [cols][rows]
+      // We detect if transposition is needed based on dimensionality
+      // or just transpose it if values.length === columns.length
+      if (values.length === columns.length && Array.isArray(values[0]) && values[0].length > columns.length) {
+          // Transpose: [cols][rows] -> [rows][cols]
+          values = values[0].map((_, rIdx) => values.map(cArr => cArr[rIdx]));
+      }
 
       const numRows = values.length;
       const numCols = columns.length;
@@ -549,8 +557,15 @@
                     <span className="text-xs">Job Duration</span>
                   </div>
                   <div className="text-sm font-mono text-slate-300">
-                    {Math.max(0, new Date(reportData.analysis.date_end) - new Date(reportData.analysis.date_start))} ms
+                    {reportData.analysis.duration !== undefined ? (
+                      reportData.analysis.duration > 1000 
+                        ? `${(reportData.analysis.duration / 1000).toFixed(2)} s` 
+                        : `${reportData.analysis.duration.toFixed(0)} ms`
+                    ) : (
+                      `${Math.max(0, new Date(reportData.analysis.date_end) - new Date(reportData.analysis.date_start))} ms`
+                    )}
                   </div>
+
                 </div>
               </div>
             </div>
