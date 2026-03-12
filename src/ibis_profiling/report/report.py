@@ -358,9 +358,9 @@ class ProfileReport:
             html = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
 
             # 3. Handle single-line // comments safely
-            # Only remove lines that are ONLY comments (possibly with leading whitespace)
-            # Avoid trailing comments as they are too risky to strip naively (e.g. inside strings)
-            html = re.sub(r"^[ \t]*//.*$", "", html, flags=re.MULTILINE)
+            # Only remove lines that are ONLY comments (no leading whitespace)
+            # This is safer for Babel/JSX which might have // inside strings or as part of logic
+            html = re.sub(r"^//.*$", "", html, flags=re.MULTILINE)
 
             # 4. Collapse whitespace
             lines = [line.strip() for line in html.splitlines()]
