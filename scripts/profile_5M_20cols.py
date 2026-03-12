@@ -113,9 +113,9 @@ def main():
 
     out_min_html = "/tmp/ibis-profiling/financial_5M_min.html"
     out_min_json = "/tmp/ibis-profiling/financial_5M_min.json"
-    report_min.to_file(out_min_html, minify=False)
+    report_min.to_file(out_min_html, minify=True)
     report_min.to_file(out_min_json)
-    print(f"Minimal HTML saved to: {out_min_html}")
+    print(f"Minimal HTML (minified) saved to: {out_min_html}")
     print(f"Minimal JSON saved to: {out_min_json}")
 
     # 2. FULL REPORT
@@ -127,9 +127,9 @@ def main():
 
     out_full_html = "/tmp/ibis-profiling/financial_5M_full.html"
     out_full_json = "/tmp/ibis-profiling/financial_5M_full.json"
-    report_full.to_file(out_full_html, minify=False)
+    report_full.to_file(out_full_html, minify=True)
     report_full.to_file(out_full_json)
-    print(f"Full HTML saved to: {out_full_html}")
+    print(f"Full HTML (minified) saved to: {out_full_html}")
     print(f"Full JSON saved to: {out_full_json}")
 
     print("\nDone!")
