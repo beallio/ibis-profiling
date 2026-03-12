@@ -327,18 +327,28 @@ class ProfileReport:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, cls=ReportEncoder)
 
-    def to_file(self, output_file: str):
-        content = self.to_json() if output_file.endswith(".json") else self.to_html()
+    def to_file(self, output_file: str, minify: bool = True):
+        content = self.to_json() if output_file.endswith(".json") else self.to_html(minify=minify)
         with open(output_file, "w") as f:
             f.write(content)
 
-    def to_html(self) -> str:
+    def to_html(self, minify: bool = True) -> str:
         template_path = os.path.join(os.path.dirname(__file__), "..", "templates", "spa.html")
         with open(template_path, "r") as f:
             html = f.read()
         # Minify JSON for embedding
         report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
-        return html.replace("{{REPORT_DATA}}", report_json)
+        html = html.replace("{{REPORT_DATA}}", report_json)
+
+        if minify:
+            import re
+
+            # Simple HTML minification: remove comments, then newlines and extra spaces
+            html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
+            html = re.sub(r"\s+", " ", html)
+            html = html.replace("> <", "><")
+
+        return html
 
     @staticmethod
     def from_excel(path: str, **kwargs) -> "ProfileReport":

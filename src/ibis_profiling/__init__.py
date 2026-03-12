@@ -320,8 +320,8 @@ class ProfileReport:
         instance._report = profile_excel(path, **kwargs)
         return instance
 
-    def to_file(self, output_file: str):
-        return self._report.to_file(output_file)
+    def to_file(self, output_file: str, minify: bool = True):
+        return self._report.to_file(output_file, minify=minify)
 
     def to_json(self) -> str:
         return self._report.to_json()
@@ -332,8 +332,8 @@ class ProfileReport:
     def get_description(self) -> dict:
         return self._report.get_description()
 
-    def to_html(self, template: str = "ydata") -> str:
-        return self._report.to_html(template=template)
+    def to_html(self, minify: bool = True) -> str:
+        return self._report.to_html(minify=minify)
 
 
 __all__ = ["profile", "registry", "ProfileReport", "profile_excel"]
