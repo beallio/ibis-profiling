@@ -14,12 +14,26 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 
 ---
 
+## 🖼️ Preview
+
+### Overview Dashboard
+![Overview Screenshot](src/ibis_profiling/assets/img/report_overview.png)
+
+### Variable Analysis
+![Variables Screenshot](src/ibis_profiling/assets/img/report_variables.png)
+
+### Missing Values (Matrix & Heatmap)
+![Missing Screenshot](src/ibis_profiling/assets/img/report_missing.png)
+
+---
+
 ## 🚀 Key Features
 
 - **Backend Pushdown:** 100% of the heavy lifting is done by the database engine.
 - **Multi-Pass Execution:** Intelligently splits computation into optimized passes to handle complex moments (Skewness, MAD) without backend "nested aggregation" errors.
 - **JSON Schema Parity:** Achieves full structural and statistical parity with `ydata-profiling`, allowing drop-in replacement for downstream automated pipelines.
 - **High-Fidelity SPA:** Generates a modern Single Page Application (SPA) report with interactive Plotly charts, SVG-based nullity matrices, and alert badges.
+- **Excel Support:** Directly profile Excel files (.xlsx, .xls, .xlsb) using high-performance Rust-based parsing.
 - **Scalability:** Profile **10 million rows in < 25 seconds** (Full mode) and **20 million rows in < 50 seconds** (Minimal mode).
 
 ---
@@ -84,12 +98,21 @@ from ibis_profiling import ProfileReport
 con = ibis.duckdb.connect()
 table = con.read_parquet("large_dataset.parquet")
 
-# 2. Generate the profile (Zero-memory overhead)
-report = ProfileReport(table)
+# 2. Generate the report with custom title
+report = ProfileReport(table, title="Loan Analysis Report")
 
 # 3. Export results
 report.to_file("report.html")
-report.to_file("report.json")
+```
+
+### Excel Ingestion
+
+```python
+from ibis_profiling import ProfileReport
+
+# Directly profile Excel files with high-performance parsing
+report = ProfileReport.from_excel("data.xlsx")
+report.to_file("excel_report.html")
 ```
 
 ### Advanced Usage
@@ -208,9 +231,3 @@ The built-in alert engine scans the calculated metrics and triggers warnings bas
 **Suppression Rules:**
 1. If a column is **CONSTANT**, all other alerts for that column are suppressed.
 2. If a column is **UNIQUE**, the **HIGH_CARDINALITY** alert is suppressed.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please ensure all pull requests pass the `uv run pytest` suite and adhere to the TDD principles defined in our `.protocol`.
