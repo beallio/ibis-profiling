@@ -16,7 +16,10 @@ class SummaryEngine:
         for col_name, dtype in schema.items():
             dt_str = str(dtype).lower()
             mapped_type = "Categorical"
-            if any(t in dt_str for t in ["int", "float", "decimal"]):
+            # Support all common numeric variants in Ibis
+            if any(
+                t in dt_str for t in ["int", "float", "decimal", "double", "int", "uint", "numeric"]
+            ):
                 mapped_type = "Numeric"
             elif "bool" in dt_str:
                 mapped_type = "Boolean"
