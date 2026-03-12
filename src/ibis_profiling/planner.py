@@ -47,9 +47,9 @@ class QueryPlanner:
             if metric and metric.supports(dtype):
                 plans.append((col_name, metric.name, metric.build_expr(col)))
 
-            # 2. Histograms / Distribution (top values) for ALL columns
-            # For numeric columns, we round to create a pseudo-histogram if continuous.
-            if isinstance(
+            # 2. Histograms / Distribution (top values) for non-numeric columns
+            # Numeric columns will be handled with true binning in a separate pass
+            if not isinstance(
                 dtype,
                 (
                     ibis.expr.datatypes.Integer,
@@ -57,17 +57,10 @@ class QueryPlanner:
                     ibis.expr.datatypes.Decimal,
                 ),
             ):
-                # Rounding helps group continuous values into "bins" for the top-value plot
-                # We sort by the second column (count) and rename it to 'count'
-                vc = col.round(2).value_counts()
-                count_col = vc.columns[1]
-                hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)
-            else:
                 vc = col.value_counts()
                 count_col = vc.columns[1]
                 hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)
-
-            plans.append((col_name, "top_values", hist_expr))
+                plans.append((col_name, "top_values", hist_expr))
 
             # 3. Extreme Values (Smallest/Largest)
             if not isinstance(

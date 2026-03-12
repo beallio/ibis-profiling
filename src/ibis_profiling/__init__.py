@@ -59,15 +59,20 @@ def profile(
         report.table["n_duplicates"] = n_total - n_distinct_rows
         report.table["p_duplicates"] = (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
 
-    # 4. Handle advanced moments (Skewness, MAD) in a second pass if possible
+    # 4. Handle advanced moments (Skewness, MAD) and Histograms in a second pass
     # We use mean/std from pass 1 to avoid nesting issues
     if not minimal:
         second_pass_aggs = []
+        histogram_plans = []
+        nbins = 20
         numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
+
         for col_name in numeric_cols:
             stats = report.variables[col_name]
             mean = stats.get("mean")
             std = stats.get("std")
+            v_min = stats.get("min")
+            v_max = stats.get("max")
             col = table[col_name]
 
             # Skewness
@@ -80,12 +85,43 @@ def profile(
                 mad_expr = (col - mean).abs().mean().name(f"{col_name}__mad")
                 second_pass_aggs.append(mad_expr)
 
+            # Proper Histogram (Bucket Pass)
+            if v_min is not None and v_max is not None and v_max > v_min:
+                range_size = v_max - v_min
+                # Floor((val - min) / range * nbins)
+                # We clip to [0, nbins-1] to handle exact max values
+                bin_expr = (
+                    (((col - v_min) / range_size) * nbins).floor().clip(lower=0, upper=nbins - 1)
+                )
+                hist_plan = bin_expr.value_counts()
+                histogram_plans.append((col_name, hist_plan, v_min, v_max))
+
         if second_pass_aggs:
             results = table.aggregate(second_pass_aggs).to_pyarrow().to_pydict()
             for k, v in results.items():
                 parts = k.split("__")
                 c_name, m_name = parts[0], parts[1]
                 report.add_metric(c_name, m_name, v[0])
+
+        # Execute histograms
+        for col_name, plan, v_min, v_max in histogram_plans:
+            try:
+                res = plan.execute()
+                # Find columns
+                c_key = "count" if "count" in res.columns else res.columns[1]
+                l_key = res.columns[0]
+
+                counts_dict = dict(zip(res[l_key], res[c_key]))
+                # Filter out None and ensure int keys
+                counts_dict = {int(k): v for k, v in counts_dict.items() if k is not None}
+
+                report.add_metric(
+                    col_name,
+                    "numeric_histogram",
+                    {"counts": counts_dict, "min": v_min, "max": v_max, "nbins": nbins},
+                )
+            except Exception:
+                pass
 
     # 4. Handle complex metrics (e.g. n_unique, top_values)
     complex_plans = planner.build_complex_metrics()

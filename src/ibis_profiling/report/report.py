@@ -212,6 +212,35 @@ class ProfileReport:
                     labels = [str(x) for x in value.get(label_key, [])]
                     self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
 
+            elif metric_name == "numeric_histogram":
+                # Data is binned: {bin_idx: count, ...} + metadata
+                # We expect value to be a dict: {'counts': {idx: count}, 'min': val, 'max': val, 'nbins': val}
+                counts_dict = value.get("counts", {})
+                v_min = value.get("min", 0)
+                v_max = value.get("max", 0)
+                nbins = value.get("nbins", 20)
+
+                if v_max == v_min:
+                    # Constant data
+                    self.variables[col_name]["histogram"] = {
+                        "bins": [str(v_min)],
+                        "counts": [sum(counts_dict.values())],
+                    }
+                    return
+
+                bin_width = (v_max - v_min) / nbins
+
+                # Reconstruct full range even for empty bins
+                all_counts = []
+                all_labels = []
+                for i in range(nbins):
+                    b_start = v_min + (i * bin_width)
+                    b_end = v_min + ((i + 1) * bin_width)
+                    all_labels.append(f"[{b_start:.2f}, {b_end:.2f}]")
+                    all_counts.append(counts_dict.get(i, 0))
+
+                self.variables[col_name]["histogram"] = {"bins": all_labels, "counts": all_counts}
+
             elif metric_name == "length_histogram":
                 # Value is a dict with two columns: the length and the count
                 keys = list(value.keys())
