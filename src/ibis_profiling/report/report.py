@@ -362,9 +362,9 @@ class ProfileReport:
             # This is safer for Babel/JSX which might have // inside strings or as part of logic
             html = re.sub(r"^//.*$", "", html, flags=re.MULTILINE)
 
-            # 4. Collapse whitespace
-            lines = [line.strip() for line in html.splitlines()]
-            html = "\n".join([line for line in lines if line])
+            # 4. Safer minification: strip leading/trailing whitespace from each line
+            # but preserve line breaks to avoid breaking JSX tags/logic
+            html = "\n".join([line.strip() for line in html.splitlines() if line.strip()])
 
         # Minify JSON for embedding (separators removes extra spaces)
         report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
