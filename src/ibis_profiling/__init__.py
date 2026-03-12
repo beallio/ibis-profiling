@@ -81,103 +81,91 @@ def profile(
 
     # 4. Handle advanced moments (Skewness, MAD) and Histograms in a second pass
     # We use mean/std from pass 1 to avoid nesting issues
-    if not minimal:
-        second_pass_aggs = []
-        histogram_plans = []
-        nbins = 20
-        # Include DateTime for histograms (epoch conversion)
-        plottable_cols = [
-            c for c, s in report.variables.items() if s.get("type") in ["Numeric", "DateTime"]
-        ]
+    second_pass_aggs = []
+    histogram_plans = []
+    nbins = 20
+    # Include DateTime for histograms (epoch conversion)
+    plottable_cols = [
+        c for c, s in report.variables.items() if s.get("type") in ["Numeric", "DateTime"]
+    ]
 
-        for col_name in plottable_cols:
-            stats = report.variables[col_name]
-            v_type = stats.get("type")
-            col = table[col_name]
+    for col_name in plottable_cols:
+        stats = report.variables[col_name]
+        v_type = stats.get("type")
+        col = table[col_name]
 
-            # For DateTime, we work with epoch seconds
-            if v_type == "DateTime":
-                col = col.epoch_seconds().cast("float64")
-                # First pass didn't calculate moments for DateTime
-                # but we need min/max which were calculated
-                v_min_raw = stats.get("min")
-                v_max_raw = stats.get("max")
+        # For DateTime, we work with epoch seconds
+        if v_type == "DateTime":
+            col = col.epoch_seconds().cast("float64")
+            v_min_raw = stats.get("min")
+            v_max_raw = stats.get("max")
+            if v_min_raw and v_max_raw:
+                import dateutil.parser
 
-                # Parse ISO strings back to timestamps then to epoch if needed
-                # Actually, during _build, min/max were already converted to ISO strings
-                # We should get them from raw_results if possible, or just re-calculate
-                # To be safe and simple, let's just cast them if they are in the stats
-                if v_min_raw and v_max_raw:
-                    import dateutil.parser
-
-                    try:
-                        v_min = dateutil.parser.isoparse(v_min_raw).timestamp()
-                        v_max = dateutil.parser.isoparse(v_max_raw).timestamp()
-                    except Exception:
-                        v_min, v_max = None, None
-                else:
+                try:
+                    v_min = dateutil.parser.isoparse(v_min_raw).timestamp()
+                    v_max = dateutil.parser.isoparse(v_max_raw).timestamp()
+                except Exception:
                     v_min, v_max = None, None
             else:
-                mean = stats.get("mean")
-                std = stats.get("std")
-                v_min = stats.get("min")
-                v_max = stats.get("max")
+                v_min, v_max = None, None
+        else:
+            mean = stats.get("mean")
+            std = stats.get("std")
+            v_min = stats.get("min")
+            v_max = stats.get("max")
 
-                # Skewness
-                if mean is not None and std is not None and std > 0:
-                    skew_expr = ((col - mean) / std).pow(3).mean().name(f"{col_name}__skewness")
-                    second_pass_aggs.append(skew_expr)
+            # Skewness (only if not minimal)
+            if not minimal and mean is not None and std is not None and std > 0:
+                skew_expr = ((col - mean) / std).pow(3).mean().name(f"{col_name}__skewness")
+                second_pass_aggs.append(skew_expr)
 
-                # MAD
-                if mean is not None:
-                    mad_expr = (col - mean).abs().mean().name(f"{col_name}__mad")
-                    second_pass_aggs.append(mad_expr)
+            # MAD (only if not minimal)
+            if not minimal and mean is not None:
+                mad_expr = (col - mean).abs().mean().name(f"{col_name}__mad")
+                second_pass_aggs.append(mad_expr)
 
-            # Proper Histogram (Bucket Pass)
-            if v_min is not None and v_max is not None and v_max > v_min:
-                range_size = v_max - v_min
-                # Floor((val - min) / range * nbins)
-                # We clip to [0, nbins-1] to handle exact max values
-                bin_expr = (
-                    (((col - v_min) / range_size) * nbins).floor().clip(lower=0, upper=nbins - 1)
-                )
-                hist_plan = bin_expr.value_counts()
-                histogram_plans.append((col_name, hist_plan, v_min, v_max))
+        # Proper Histogram (Bucket Pass) - ALWAYS computed
+        if v_min is not None and v_max is not None and v_max > v_min:
+            range_size = v_max - v_min
+            bin_expr = (((col - v_min) / range_size) * nbins).floor().clip(lower=0, upper=nbins - 1)
+            hist_plan = bin_expr.value_counts()
+            histogram_plans.append((col_name, hist_plan, v_min, v_max))
 
-        if second_pass_aggs:
-            results = table.aggregate(second_pass_aggs).to_pyarrow().to_pydict()
-            for k, v in results.items():
-                parts = k.split("__")
-                c_name, m_name = parts[0], parts[1]
-                report.add_metric(c_name, m_name, v[0])
+    if second_pass_aggs:
+        results = table.aggregate(second_pass_aggs).to_pyarrow().to_pydict()
+        for k, v in results.items():
+            parts = k.split("__")
+            c_name, m_name = parts[0], parts[1]
+            report.add_metric(c_name, m_name, v[0])
 
-        # Execute histograms
-        for col_name, plan, v_min, v_max in histogram_plans:
-            # Skip if it was reclassified to Categorical (handled by top_values)
-            if report.variables[col_name].get("type") == "Categorical":
-                continue
+    # Execute histograms
+    for col_name, plan, v_min, v_max in histogram_plans:
+        # Skip if it was reclassified to Categorical (handled by top_values)
+        if report.variables[col_name].get("type") == "Categorical":
+            continue
 
-            try:
-                res = plan.execute()
-                # Find columns
-                c_key = "count" if "count" in res.columns else res.columns[1]
-                l_key = res.columns[0]
+        try:
+            res = plan.execute()
+            # Find columns
+            c_key = "count" if "count" in res.columns else res.columns[1]
+            l_key = res.columns[0]
 
-                # Filter out None/NaN and ensure int keys
-                counts_dict = {}
-                import math
+            # Filter out None/NaN and ensure int keys
+            counts_dict = {}
+            import math
 
-                for k, v in zip(res[l_key], res[c_key]):
-                    if k is not None and not (isinstance(k, float) and math.isnan(k)):
-                        counts_dict[int(k)] = v
+            for k, v in zip(res[l_key], res[c_key]):
+                if k is not None and not (isinstance(k, float) and math.isnan(k)):
+                    counts_dict[int(k)] = v
 
-                report.add_metric(
-                    col_name,
-                    "numeric_histogram",
-                    {"counts": counts_dict, "min": v_min, "max": v_max, "nbins": nbins},
-                )
-            except Exception:
-                pass
+            report.add_metric(
+                col_name,
+                "numeric_histogram",
+                {"counts": counts_dict, "min": v_min, "max": v_max, "nbins": nbins},
+            )
+        except Exception:
+            pass
 
     # 4. Handle complex metrics (e.g. n_unique, top_values)
     final_types = {c: s.get("type") for c, s in report.variables.items()}
@@ -291,6 +279,12 @@ def profile(
         from .report.model.missing import MissingEngine
 
         report.missing = MissingEngine.compute(table, report.variables)
+
+    # 7. Handle Pairwise Interactions (Scatter Plots)
+    if not minimal:
+        from .report.model.interactions import InteractionEngine
+
+        report.interactions = InteractionEngine.compute(table, report.variables)
 
     end_time = datetime.now()
     report.analysis["date_end"] = end_time.isoformat()
