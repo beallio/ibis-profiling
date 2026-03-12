@@ -64,8 +64,8 @@
     }
     
     section {
-      padding-top: 1.5rem;
-      margin-top: 2rem;
+      padding-top: 1rem;
+      margin-top: 1.5rem;
       border-top: 1px solid #e5e7eb;
     }
     section:first-of-type {
@@ -189,25 +189,30 @@
       }
 
       return (
-        <div className="flex items-end h-40 gap-1.5 w-full max-w-md mt-6 mb-4">
-          {chartData.map((d, i) => (
-            <div key={i} className="flex-1 flex flex-col justify-end group relative h-full">
-              <div 
-                className="w-full bg-blue-500 hover:bg-blue-600 transition-colors rounded-t-sm" 
-                style={{ height: `${Math.max((d.count / maxCount) * 100, 2)}%` }}
-                title={`${d.label}: ${d.count}`}
-              ></div>
-              <div className="text-[10px] text-center truncate text-gray-500 mt-2 absolute -bottom-6 w-full px-0.5">
-                {String(d.label).replace(/[[\]()]/g, '').split(',')[0]}
+        <div className="flex items-end h-40 gap-1.5 w-full max-w-md mt-6 mb-10">
+          {chartData.map((d, i) => {
+            const showLabel = i === 0 || i === chartData.length - 1 || i % 5 === 0;
+            return (
+              <div key={i} className="flex-1 flex flex-col justify-end group relative h-full">
+                <div 
+                  className="w-full bg-blue-500 hover:bg-blue-600 transition-colors rounded-t-sm" 
+                  style={{ height: `${Math.max((d.count / maxCount) * 100, 2)}%` }}
+                  title={`${d.label}: ${d.count}`}
+                ></div>
+                {showLabel && (
+                  <div className="text-[11px] text-gray-500 absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    {String(d.label).replace(/[[\]()]/g, '').split(',')[0]}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     };
 
-    const StatRow = ({ label, value, subValue = null, alert = false }) => (
-      <div className="flex justify-between py-1.5 border-b border-gray-100 last:border-0 text-sm">
+    const StatRow = ({ label, value, subValue = null, alert = false, compact = false }) => (
+      <div className={`flex justify-between ${compact ? 'py-0' : 'py-1.5'} ${compact ? '' : 'border-b border-gray-100'} last:border-0 text-sm`}>
         <span className="text-gray-600">{label}</span>
         <div className="text-right">
           <span className={`font-medium ${alert ? 'text-red-600' : 'text-gray-800'}`}>{value}</span>
@@ -215,6 +220,19 @@
         </div>
       </div>
     );
+
+    const getAlertColor = (type) => {
+      const colors = {
+        'CONSTANT': 'bg-gray-100 text-gray-800 border-gray-200',
+        'ZEROS': 'bg-orange-100 text-orange-800 border-orange-200',
+        'HIGH_CARDINALITY': 'bg-purple-100 text-purple-800 border-purple-200',
+        'SKEWED': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        'MISSING': 'bg-red-100 text-red-800 border-red-200',
+        'UNIQUE': 'bg-blue-100 text-blue-800 border-blue-200',
+        'REJECTED': 'bg-slate-200 text-slate-900 border-slate-300'
+      };
+      return colors[type] || 'bg-blue-100 text-blue-800 border-blue-200';
+    };
 
     // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
     const NullityMatrix = ({ data }) => {
@@ -263,7 +281,7 @@
       const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
 
       return (
-        <div className="overflow-x-auto mt-12 pt-8 border-t border-gray-100">
+        <div className="overflow-x-auto mt-8 pt-4 border-t border-gray-100">
           <h3 className="text-lg font-medium text-gray-800 mb-2">Matrix</h3>
           <p className="text-sm text-gray-500 mb-6">Visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
 
@@ -378,68 +396,74 @@
       const types = Object.entries(table.types || {});
 
       return (
-        <div id="overview" className="space-y-6 animate-fadeIn section-top">
-          <h2 className="text-2xl font-bold text-gray-800">Overview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-5">
-              <h3 className="text-lg font-medium text-gray-800 border-b pb-3 mb-3">Dataset statistics</h3>
-              <div className="grid grid-cols-1 gap-1">
-                <StatRow label="Number of variables" value={formatNum(table.n_var)} />
-                <StatRow label="Number of observations" value={formatNum(table.n)} />
-                <StatRow label="Missing cells" value={formatNum(table.n_cells_missing)} />
-                <StatRow label="Missing cells (%)" value={formatPct(table.p_cells_missing)} />
+        <div id="overview" className="space-y-2 animate-fadeIn section-top">
+          <div className="flex items-center gap-2 mb-4">
+            <Info size={24} className="text-slate-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Overview</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-6">
+              <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider">Dataset statistics</h3>
+              <div className="grid grid-cols-1 gap-0 flex-1">
+                <StatRow label="Number of variables" value={formatNum(table.n_var)} compact={true} />
+                <StatRow label="Number of observations" value={formatNum(table.n)} compact={true} />
+                <StatRow label="Missing cells" value={formatNum(table.n_cells_missing)} compact={true} />
+                <StatRow label="Missing cells (%)" value={formatPct(table.p_cells_missing)} compact={true} />
                 {table.n_duplicates !== undefined && (
                   <>
-                    <StatRow label="Duplicate rows" value={formatNum(table.n_duplicates)} />
-                    <StatRow label="Duplicate rows (%)" value={formatPct(table.p_duplicates)} />
+                    <StatRow label="Duplicate rows" value={formatNum(table.n_duplicates)} compact={true} />
+                    <StatRow label="Duplicate rows (%)" value={formatPct(table.p_duplicates)} compact={true} />
                   </>
                 )}
-                <StatRow label="Total size in memory" value={formatBytes(table.memory_size)} />
-                <StatRow label="Average record size in memory" value={`${formatNum(table.record_size)} B`} />
+                <StatRow label="Total size in memory" value={formatBytes(table.memory_size)} compact={true} />
+                <StatRow label="Average record size in memory" value={`${formatNum(table.record_size)} B`} compact={true} />
               </div>
             </div>
 
-            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-5">
-              <h3 className="text-lg font-medium text-gray-800 border-b pb-3 mb-3">Variable types</h3>
-              <div className="grid grid-cols-1 gap-1">
+            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-2">
+              <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider">Variable types</h3>
+              <div className="grid grid-cols-1 gap-0 flex-1">
                 {types.length > 0 ? types.map(([type, count]) => (
-                  <StatRow key={type} label={type} value={count} />
+                  <StatRow key={type} label={type} value={count} compact={true} />
                 )) : (
                   <span className="text-gray-400 text-sm italic">No type data available.</span>
                 )}
               </div>
             </div>
-          </div>
 
-          {data.alerts && data.alerts.length > 0 && (
-            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-0 overflow-hidden">
-              <div className="bg-gray-50 p-4 border-b border-gray-200 flex items-center">
-                <AlertTriangle size={18} className="text-yellow-500 mr-2" />
-                <h3 className="text-lg font-medium text-gray-800">Alerts</h3>
+            {data.alerts && data.alerts.length > 0 ? (
+              <div className="bg-white rounded-md shadow-sm border border-gray-200 flex flex-col overflow-hidden lg:col-span-4">
+                <div className="bg-gray-50 p-2 border-b border-gray-200 flex items-center shrink-0">
+                  <AlertTriangle size={16} className="text-yellow-500 mr-2" />
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Alerts</h3>
+                </div>
+                <div className="p-0 overflow-y-auto max-h-[300px] flex-1">
+                  <ul className="divide-y divide-gray-100">
+                    {data.alerts.map((alert, idx) => {
+                      return (
+                        <li key={idx} className="p-2 hover:bg-gray-50 transition-colors flex items-start gap-3 text-xs">
+                          <span className={`
+                            inline-block px-1.5 py-0.5 text-[10px] rounded border font-medium whitespace-nowrap mt-0.5
+                            ${getAlertColor(alert.alert_type)}
+                          `}>
+                            {alert.alert_type.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-gray-700">
+                            <strong>{alert.fields.join(', ')}</strong> has a {alert.alert_type.toLowerCase().replace(/_/g, ' ')} condition
+                            {alert.value !== undefined ? ` (${typeof alert.value === 'number' && alert.value < 1 ? formatPct(alert.value) : formatNum(alert.value)})` : ''}.
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               </div>
-              <div className="p-0">
-                <ul className="divide-y divide-gray-100">
-                  {data.alerts.map((alert, idx) => {
-                    const isWarning = alert.level === 'warning';
-                    return (
-                      <li key={idx} className="p-4 hover:bg-gray-50 transition-colors flex items-start gap-3 text-sm">
-                        <span className={`
-                          inline-block px-2 py-0.5 text-xs rounded border font-medium whitespace-nowrap mt-0.5
-                          ${isWarning ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : 'bg-blue-100 text-blue-800 border-blue-200'}
-                        `}>
-                          {alert.alert_type.replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-gray-700">
-                          <strong>{alert.fields.join(', ')}</strong> has a {alert.alert_type.toLowerCase().replace(/_/g, ' ')} condition
-                          {alert.value !== undefined ? ` (${typeof alert.value === 'number' && alert.value < 1 ? formatPct(alert.value) : formatNum(alert.value)})` : ''}.
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
+            ) : (
+              <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 flex items-center justify-center lg:col-span-4 text-gray-400 italic text-sm">
+                No alerts detected.
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       );
     };
@@ -522,7 +546,7 @@
       const isHighCardinality = variable.type === 'Categorical' && variable.p_distinct > 0.5;
 
       return (
-        <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4">
           <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
             <div className="flex items-center gap-3">
               <TypeIcon type={variable.type} />
@@ -549,7 +573,7 @@
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-                  <div className="col-span-2 mb-2"><h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Overview</h4></div>
+                  <div className="col-span-2 mb-3"><h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Overview</h4></div>
                   
                   <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Distinct</div>
                   <div className="text-sm font-medium text-right py-1 border-b border-gray-50">{formatNum(variable.n_distinct)} <span className="text-gray-400 text-xs font-normal">({formatPct(variable.p_distinct)})</span></div>
@@ -637,16 +661,19 @@
       }
 
       return (
-        <div id="missing" className="space-y-6 animate-fadeIn section">
-          <h2 className="text-2xl font-bold text-gray-800">Missing values</h2>
+        <div id="missing" className="space-y-4 animate-fadeIn section">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle size={24} className="text-slate-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Missing values</h2>
+          </div>
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
             {missingData.length > 0 && (
-              <div className="mb-12">
-                <h3 className="text-lg font-medium text-gray-800 mb-12">Count</h3>
-                <div className="flex gap-1 overflow-x-auto pb-48 no-scrollbar justify-center">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-800 mb-8">Count</h3>
+                <div className="flex gap-1 overflow-x-auto pb-32 no-scrollbar justify-center">
                   {missingData.map((d, i) => (
                     <div key={i} className="flex flex-col items-center min-w-[60px] group">
-                      <div className="h-72 w-full flex flex-col justify-end relative border-b border-gray-300">
+                      <div className="h-48 w-full flex flex-col justify-end relative border-b border-gray-300">
                         <div className="text-[10px] text-center text-gray-500 mb-2 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-6 w-full">{formatNum(d.present)}</div>
                         <div 
                           className="w-full bg-slate-700 hover:bg-slate-800 transition-colors rounded-t-sm" 
@@ -668,7 +695,7 @@
             {data.missing?.matrix && <NullityMatrix data={data.missing.matrix} />}
             
             {data.missing?.heatmap && (
-              <div className="mt-16 pt-8 border-t border-gray-100">
+              <div className="mt-8 pt-8 border-t border-gray-100">
                 <h3 className="text-lg font-medium text-gray-800 mb-10">Heatmap</h3>
                 <div className="flex justify-center">
                    <CorrelationMatrixComponent data={data.missing.heatmap.matrix} />
@@ -685,8 +712,11 @@
       const [corrType, setCorrType] = useState(Object.keys(data.correlations)[0]);
 
       return (
-        <div id="correlations" className="space-y-6 animate-fadeIn section">
-          <h2 className="text-2xl font-bold text-gray-800">Correlations</h2>
+        <div id="correlations" className="space-y-4 animate-fadeIn section">
+          <div className="flex items-center gap-2 mb-4">
+            <PieChart size={24} className="text-slate-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Correlations</h2>
+          </div>
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
             <div className="flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar">
               {Object.keys(data.correlations).map(type => (
@@ -732,8 +762,11 @@
       }
 
       return (
-        <div id="sample" className="space-y-6 animate-fadeIn section">
-          <h2 className="text-2xl font-bold text-gray-800">Sample</h2>
+        <div id="sample" className="space-y-4 animate-fadeIn section">
+          <div className="flex items-center gap-2 mb-4">
+            <AlignLeft size={24} className="text-slate-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Sample</h2>
+          </div>
           <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-800">First rows</h3>
@@ -847,11 +880,14 @@
             </div>
           </header>
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
             <OverviewSection data={REPORT_DATA} />
             
-            <div id="variables" className="space-y-6 section">
-              <h2 className="text-2xl font-bold text-gray-800">Variables</h2>
+            <div id="variables" className="space-y-4 section">
+              <div className="flex items-center gap-2 mb-4">
+                <Hash size={24} className="text-slate-600" />
+                <h2 className="text-2xl font-bold text-gray-800">Variables</h2>
+              </div>
               <div className="animate-fadeIn">
                 {Object.entries(REPORT_DATA.variables).map(([colName, variableData]) => (
                   <VariableCard key={colName} name={colName} variable={variableData} />
