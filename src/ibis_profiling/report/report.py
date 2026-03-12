@@ -6,7 +6,6 @@ import math
 from typing import Any
 from .model.summary import SummaryEngine
 from .model.alerts import AlertEngine
-from .structure.report import Report
 
 
 class ReportEncoder(json.JSONEncoder):
@@ -302,10 +301,6 @@ class ProfileReport:
                 return None
             return obj
         return obj
-
-    def get_structure(self) -> Any:
-        """Returns the logical structure of the report."""
-        return Report(self.to_dict()).get_structure()
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, cls=ReportEncoder)

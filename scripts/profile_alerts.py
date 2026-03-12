@@ -36,7 +36,7 @@ def main():
     alerts = report.to_dict()["alerts"]
     print(f"Alerts found: {len(alerts)}")
     for a in alerts:
-        print(f" - {a['type']} on {a['fields']}")
+        print(f" - {a['alert_type']} on {a['fields']}")
 
 
 if __name__ == "__main__":
