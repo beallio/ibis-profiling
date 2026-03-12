@@ -292,6 +292,12 @@ def profile(
 
         report.missing = MissingEngine.compute(table, report.variables)
 
+    # 7. Handle Pairwise Interactions (Scatter Plots)
+    if not minimal:
+        from .report.model.interactions import InteractionEngine
+
+        report.interactions = InteractionEngine.compute(table, report.variables)
+
     end_time = datetime.now()
     report.analysis["date_end"] = end_time.isoformat()
     report.analysis["duration"] = (end_time - start_time).total_seconds() * 1000

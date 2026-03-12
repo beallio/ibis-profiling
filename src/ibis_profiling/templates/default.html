@@ -153,6 +153,77 @@
       return { columns: [], matrix: [] };
     };
 
+    const ScatterPlot = ({ data, xLabel, yLabel }) => {
+      const { theme } = useContext(ThemeContext);
+      if (!data || data.length === 0) return <div className={`h-96 flex items-center justify-center ${theme.textSub} italic border ${theme.border} rounded-xl`}>No interaction data for this pair</div>;
+
+      const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+      const width = 800;
+      const height = 400;
+
+      const xValues = data.map(d => d.x);
+      const yValues = data.map(d => d.y);
+      const xMin = Math.min(...xValues);
+      const xMax = Math.max(...xValues);
+      const yMin = Math.min(...yValues);
+      const yMax = Math.max(...yValues);
+
+      // Add 5% padding to scales
+      const xRange = xMax - xMin || 1;
+      const yRange = yMax - yMin || 1;
+      const xSMin = xMin - xRange * 0.05;
+      const xSMax = xMax + xRange * 0.05;
+      const ySMin = yMin - yRange * 0.05;
+      const ySMax = yMax + yRange * 0.05;
+
+      const xScale = (val) => margin.left + ((val - xSMin) / (xSMax - xSMin)) * (width - margin.left - margin.right);
+      const yScale = (val) => height - margin.bottom - ((val - ySMin) / (ySMax - ySMin)) * (height - margin.top - margin.bottom);
+
+      return (
+        <div className="relative">
+          <svg viewBox={`0 0 ${width} ${height}`} className={`w-full h-auto ${theme.bgCardAlt} rounded-xl border ${theme.border}`}>
+            {/* Grid lines */}
+            {[0, 0.25, 0.5, 0.75, 1].map(v => (
+              <React.Fragment key={v}>
+                <line 
+                  x1={margin.left} y1={yScale(ySMin + v * (ySMax - ySMin))} 
+                  x2={width - margin.right} y2={yScale(ySMin + v * (ySMax - ySMin))} 
+                  stroke={theme.border} strokeDasharray="4"
+                />
+                <line 
+                  x1={xScale(xSMin + v * (xSMax - xSMin))} y1={margin.top} 
+                  x2={xScale(xSMin + v * (xSMax - xSMin))} y2={height - margin.bottom} 
+                  stroke={theme.border} strokeDasharray="4"
+                />
+              </React.Fragment>
+            ))}
+
+            {/* Axes */}
+            <line x1={margin.left} y1={height - margin.bottom} x2={width - margin.right} y2={height - margin.bottom} stroke={theme.textMuted} strokeWidth="2" />
+            <line x1={margin.left} y1={margin.top} x2={margin.left} y2={height - margin.bottom} stroke={theme.textMuted} strokeWidth="2" />
+
+            {/* Points */}
+            {data.map((d, i) => (
+              <circle 
+                key={i} 
+                cx={xScale(d.x)} 
+                cy={yScale(d.y)} 
+                r="3" 
+                fill="rgba(59, 130, 246, 0.6)" 
+                className="hover:fill-blue-400 transition-colors"
+              >
+                <title>{`(${d.x.toFixed(4)}, ${d.y.toFixed(4)})`}</title>
+              </circle>
+            ))}
+
+            {/* Labels */}
+            <text x={width / 2} y={height - 5} textAnchor="middle" className={`text-xs font-bold fill-current ${theme.textMuted}`}>{xLabel}</text>
+            <text x={15} y={height / 2} textAnchor="middle" transform={`rotate(-90, 15, ${height / 2})`} className={`text-xs font-bold fill-current ${theme.textMuted}`}>{yLabel}</text>
+          </svg>
+        </div>
+      );
+    };
+
     // Filter helper to remove None/Null/NaN bins from histogram charts
     const filterMissingBins = (bins, counts) => {
       if (!bins || !counts || !Array.isArray(bins) || !Array.isArray(counts)) {
@@ -515,13 +586,33 @@
       // Initialize activeTab from URL hash if present
       const getInitialTab = () => {
         const hash = window.location.hash.slice(1);
-        const validTabs = ['overview', 'variables', 'correlations', 'missing', 'alerts', 'sample'];
+        const validTabs = ['overview', 'variables', 'interactions', 'correlations', 'missing', 'alerts', 'sample'];
         return validTabs.includes(hash) ? hash : 'overview';
       };
 
       const [activeTab, setActiveTab] = useState(getInitialTab);
       const [search, setSearch] = useState('');
       const [imgError, setImgError] = useState(false);
+
+      const numericCols = useMemo(() => {
+        return Object.entries(reportData.variables)
+          .filter(([_, meta]) => meta.type === 'Numeric')
+          .map(([name]) => name);
+      }, [reportData]);
+
+      const [interX, setInterX] = useState('');
+      const [interY, setInterY] = useState('');
+
+      useEffect(() => {
+        if (!interX && numericCols.length > 0) setInterX(numericCols[0]);
+        if (!interY && numericCols.length > 1) setInterY(numericCols[1]);
+        else if (!interY && numericCols.length > 0) setInterY(numericCols[0]);
+      }, [numericCols]);
+
+      const interactionData = useMemo(() => {
+        if (!reportData.interactions || !interX || !interY) return [];
+        return reportData.interactions[interX]?.[interY] || [];
+      }, [reportData.interactions, interX, interY]);
 
       // Support hash-based switching for deep linking
       useEffect(() => {
@@ -580,6 +671,11 @@
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'variables', label: 'Variables', icon: BarChart3 }
       ];
+
+      const hasInteractions = reportData.interactions && Object.keys(reportData.interactions).length > 0;
+      if (hasInteractions) {
+        navItems.push({ id: 'interactions', label: 'Interactions', icon: TrendingUp });
+      }
       
       const hasMissing = reportData.missing && Object.keys(reportData.missing).length > 0;
       if (hasMissing) {
@@ -1021,6 +1117,60 @@
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* INTERACTIONS TAB */}
+              {activeTab === 'interactions' && (
+                <div className="space-y-6 animate-in fade-in duration-700">
+                  <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                      <div>
+                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
+                          <TrendingUp className="text-blue-400" /> Variable Interactions
+                        </h2>
+                        <p className={`${theme.textSub} text-sm`}>
+                          Pairwise scatter plots of numeric variables (sampled up to 1,000 points).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                      <div className="space-y-2">
+                        <label className={`text-xs font-bold uppercase tracking-widest ${theme.textSub}`}>X-Axis Variable</label>
+                        <select 
+                          value={interX} 
+                          onChange={(e) => setInterX(e.target.value)}
+                          className={`w-full ${theme.bgInput} border ${theme.border} rounded-lg p-2.5 text-sm font-mono ${theme.textPrimary} focus:ring-2 focus:ring-blue-500/50 outline-none`}
+                        >
+                          {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className={`text-xs font-bold uppercase tracking-widest ${theme.textSub}`}>Y-Axis Variable</label>
+                        <select 
+                          value={interY} 
+                          onChange={(e) => setInterY(e.target.value)}
+                          className={`w-full ${theme.bgInput} border ${theme.border} rounded-lg p-2.5 text-sm font-mono ${theme.textPrimary} focus:ring-2 focus:ring-blue-500/50 outline-none`}
+                        >
+                          {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center">
+                      <div className="w-full max-w-4xl">
+                        <ScatterPlot data={interactionData} xLabel={interX} yLabel={interY} />
+                      </div>
+                    </div>
+
+                    <div className={`mt-10 p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt} text-center`}>
+                       <p className={`text-xs ${theme.textSub}`}>
+                         <Info size={14} className="inline mr-1 mb-0.5" /> 
+                         Scatter plots help identify non-linear relationships, clusters, and outliers that correlation coefficients might miss.
+                       </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
