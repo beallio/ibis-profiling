@@ -32,7 +32,10 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 - **Backend Pushdown:** 100% of the heavy lifting is done by the database engine.
 - **Multi-Pass Execution:** Intelligently splits computation into optimized passes to handle complex moments (Skewness, MAD) without backend "nested aggregation" errors.
 - **JSON Schema Parity:** Achieves full structural and statistical parity with `ydata-profiling`, allowing drop-in replacement for downstream automated pipelines.
-- **High-Fidelity SPA:** Generates a modern Single Page Application (SPA) report with interactive Plotly charts, SVG-based nullity matrices, and alert badges.
+- **Modern SPA Report:** Generates a lightweight Single Page Application (SPA) with a modern React-based UI.
+- **Adjustable Themes:** Includes built-in support for **Dark**, **Light**, and **High Contrast** modes with persistent user settings.
+- **Auto-Categorical Detection:** Intelligent heuristics automatically reclassify low-cardinality integers (e.g., status codes, term months) as categorical for better visualization.
+- **DateTime Distribution:** Full support for temporal histograms and distribution analysis.
 - **Excel Support:** Directly profile Excel files (.xlsx, .xls, .xlsb) using high-performance Rust-based parsing.
 - **Scalability:** Profile **10 million rows in < 25 seconds** (Full mode) and **20 million rows in < 50 seconds** (Minimal mode).
 
@@ -189,7 +192,7 @@ These are computed in a single global aggregation pass using Ibis primitives.
 | `n` | Total number of observations (rows) in the table. | All |
 | `n_missing` | Count of `NULL` or `NaN` values. | All |
 | `p_missing` | `n_missing / n` | All |
-| `n_distinct` | Count of unique values (excluding `NULL`). | All |
+| `n_distinct` | Count of unique values (excluding `NULL`). Used for auto-categorical detection. | All |
 | `p_distinct` | `n_distinct / n` | All |
 | `count` | `n - n_missing` (Total non-missing values) | All |
 | `mean` | `sum(x) / count` (NaNs treated as NULL) | Numeric |
@@ -199,6 +202,7 @@ These are computed in a single global aggregation pass using Ibis primitives.
 | `zeros` | Count of values exactly equal to `0`. | Numeric |
 | `n_negative` | Count of values `< 0`. | Numeric |
 | `infinite` | Count of `+/- inf` values (Float only). | Numeric |
+| `histogram` | Binned distribution (Numeric/DateTime) or Top Values (Categorical). | All |
 
 #### Advanced Statistics (Pass 2)
 To avoid "Nested Aggregation" errors in SQL backends, these are computed using values from Pass 1 as constants.

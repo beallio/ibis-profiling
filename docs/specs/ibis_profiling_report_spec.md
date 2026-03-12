@@ -14,9 +14,13 @@ The Ibis Profiling Dashboard is a modern, interactive, and self-contained web ap
 
 ## 2. Design System & UI/UX
 
-The application utilizes a dark-mode-first design, emphasizing data legibility and modern aesthetics.
+The application utilizes a multi-theme design system, allowing users to toggle between different visual modes.
 
-- **Color Palette:** Tailwind's slate scale (`slate-950` for app background, `slate-900` for cards/surfaces, `slate-800` for borders).
+- **Adjustable Themes:**
+    - **Dark (Default):** Tailwind's slate scale (`slate-950` background, `slate-900` cards).
+    - **Light:** Clean, high-contrast light mode (`slate-50` background, `white` cards).
+    - **High Contrast:** Strictly black and zinc palette for maximum accessibility.
+- **Persistence:** User theme selection is stored in `localStorage` and persists across sessions.
 - **Typography:** Sans-serif for general UI and reading text; strictly `font-mono` for all statistical values, table data, and labels to ensure vertical alignment of digits.
 - **Semantic Colors:**
     - **Blue:** Primary interactions, positive correlations, standard distributions.
