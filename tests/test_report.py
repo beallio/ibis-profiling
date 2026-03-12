@@ -4,7 +4,7 @@ from datetime import date
 from ibis_profiling.report import ProfileReport
 
 
-def test_profile_report_building():
+def test_report_building():
     raw_results = pl.DataFrame([{"a__mean": 10.0, "_dataset__row_count": 5}])
     schema = {"a": dt.Int64()}
 
@@ -16,7 +16,7 @@ def test_profile_report_building():
     assert result["variables"]["a"]["type"] == "Numeric"
 
 
-def test_profile_report_empty_results():
+def test_report_empty_results():
     raw_results = pl.DataFrame([])
     schema = {"a": dt.Int64()}
 
@@ -27,7 +27,7 @@ def test_profile_report_empty_results():
     assert result["variables"] == {}
 
 
-def test_profile_report_to_html():
+def test_report_to_html():
     raw_results = pl.DataFrame([{"a__mean": 10.0, "a__zeros": 0, "_dataset__row_count": 5}])
     schema = {"a": dt.Int64()}
 
@@ -39,7 +39,7 @@ def test_profile_report_to_html():
     assert "5" in html
 
 
-def test_profile_report_date_serialization():
+def test_report_date_serialization():
     d = date(2023, 1, 1)
     raw_results = pl.DataFrame([{"a__min": d}])
     schema = {"a": dt.Date()}

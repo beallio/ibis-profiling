@@ -77,7 +77,7 @@ def test_report_encoder():
     assert encoder.default(mock_val) == 10
 
 
-def test_profile_report_from_excel(tmp_path):
+def test_report_from_excel(tmp_path):
     from ibis_profiling.report.report import ProfileReport
 
     excel_path = tmp_path / "test.xlsx"
@@ -88,12 +88,12 @@ def test_profile_report_from_excel(tmp_path):
     assert "a" in report.variables
 
 
-def test_profile_report_to_file_json(tmp_path):
+def test_report_to_file_json(tmp_path):
     import json
     import ibis.expr.datatypes as dt
     from ibis_profiling.report.report import ProfileReport
 
-    json_path = tmp_path / "profile_report.json"
+    json_path = tmp_path / "report.json"
     report = ProfileReport(pl.DataFrame([{"_dataset__row_count": 1}]), {"dummy": dt.Int64()})
     report.to_file(str(json_path))
 
