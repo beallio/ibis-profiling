@@ -235,7 +235,14 @@
       for (let i = 0; i < bins.length; i++) {
         const binVal = bins[i];
         if (binVal === null || binVal === undefined) continue;
-        const binStr = String(binVal).toLowerCase().trim();
+        
+        let binStr = "";
+        try {
+          binStr = String(binVal).toLowerCase().trim();
+        } catch (e) {
+          binStr = "";
+        }
+        
         // Don't filter out range labels like "[10.0, 20.0]"
         if (!missingLabels.includes(binStr)) {
           filteredBins.push(binVal);
