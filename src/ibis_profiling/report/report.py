@@ -336,9 +336,6 @@ class ProfileReport:
         template_path = os.path.join(os.path.dirname(__file__), "..", "templates", "spa.html")
         with open(template_path, "r") as f:
             html = f.read()
-        # Minify JSON for embedding
-        report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
-        html = html.replace("{{REPORT_DATA}}", report_json)
 
         if minify:
             import re
@@ -349,18 +346,20 @@ class ProfileReport:
             # 2. Remove CSS/JS multi-line comments
             html = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
 
-            # 3. Handle single-line // comments safely by removing them before collapsing spaces
-            # We only target // that aren't inside quotes (naive but works for our template)
-            # A safer way: remove everything from // to the end of the line
-            html = re.sub(r"^[ \t]*//.*$", "", html, flags=re.MULTILINE)  # whole line comments
-            html = re.sub(r"([^\s:])\s*//.*$", r"\1", html, flags=re.MULTILINE)  # trailing comments
+            # 3. Handle single-line // comments safely
+            # Only remove lines that are ONLY comments (possibly with leading whitespace)
+            # Avoid trailing comments as they are too risky to strip naively (e.g. inside strings)
+            html = re.sub(r"^[ \t]*//.*$", "", html, flags=re.MULTILINE)
 
-            # 4. Collapse whitespace but be careful about ASI (Automatic Semicolon Insertion)
-            # Instead of replacing all \s+ with " ", we'll just trim lines and remove empty ones
+            # 4. Collapse whitespace
             lines = [line.strip() for line in html.splitlines()]
             html = "\n".join([line for line in lines if line])
 
-        return html
+        # Minify JSON for embedding (separators removes extra spaces)
+        report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
+
+        # Inject data AFTER minifying the template to protect data integrity
+        return html.replace("{{REPORT_DATA}}", report_json)
 
     @staticmethod
     def from_excel(path: str, **kwargs) -> "ProfileReport":

@@ -153,6 +153,23 @@ The `ProfileReport` supports a `minimal` flag (default `False`) to toggle betwee
 | **Duplicates** | Skipped. | Dataset-wide duplicate row count. |
 | **Performance** | **Ultra-Fast.** Recommended for datasets > 50M rows. | **Detailed.** Recommended for deep data quality audits. |
 
+## 📦 Report Export & Minification
+
+By default, `ibis-profiling` minifies the generated HTML report to reduce file size (typically by 15-20%) without compromising functionality. Minification includes:
+- Stripping HTML, CSS, and JS comments.
+- Removing redundant whitespace and empty lines from the template.
+- Compact JSON embedding (removing internal whitespace in the data payload).
+
+To generate a human-readable (non-minified) report, set `minify=False` in `to_file` or `to_html`:
+
+```python
+# Save as formatted HTML
+report.to_file("report.html", minify=False)
+
+# Get the formatted HTML string
+html = report.to_html(minify=False)
+```
+
 ## Feature Gaps & Roadmap
 
 `ibis-profiling` is designed for scale, prioritizing metrics that can be pushed down to SQL engines. As a result, some "linguistic" or high-complexity features from `ydata-profiling` are currently missing or implemented as approximations:
