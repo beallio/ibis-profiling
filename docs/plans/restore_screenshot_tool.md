@@ -4,13 +4,13 @@
 Restore `scripts/take_screenshots.py` as a maintainable tool for future documentation updates. Improve the SPA template to allow deep-linking to tabs via URL hashes, enabling the screenshot script to work without manual code modifications.
 
 ## Key Files
-- `src/ibis_profiling/templates/spa.html`: Update React state initialization.
+- `src/ibis_profiling/templates/default.html`: Update React state initialization.
 - `scripts/take_screenshots.py`: Re-implement using `chromium-browser` CLI and URL hashes.
 
 ## Implementation Steps
 
 ### 1. Update SPA Template
-- Modify `src/ibis_profiling/templates/spa.html`:
+- Modify `src/ibis_profiling/templates/default.html`:
     - Initialize `activeTab` using `window.location.hash.slice(1)` with a fallback to `'overview'`.
     - Add a `useEffect` to listen for `hashchange` events to allow dynamic switching if needed.
 

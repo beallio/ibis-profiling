@@ -1,0 +1,13 @@
+{
+  "date": "2026-03-12",
+  "task_objective": "Left-align Heatmap title in Missing values section",
+  "files_modified": [
+    "src/ibis_profiling/templates/ydata-like.html"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Removed 'text-center' from the div wrapping the missing values heatmap title to allow default left-alignment of the <h3> element.",
+    "Maintained 'flex justify-center' on the matrix container to keep the visualization itself centered."
+  ],
+  "results": "Heatmap title is now left-aligned as requested."
+}

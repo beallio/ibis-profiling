@@ -327,13 +327,24 @@ class ProfileReport:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, cls=ReportEncoder)
 
-    def to_file(self, output_file: str, minify: bool = True):
-        content = self.to_json() if output_file.endswith(".json") else self.to_html(minify=minify)
+    def to_file(self, output_file: str, theme: str = "default", minify: bool = True):
+        content = (
+            self.to_json()
+            if output_file.endswith(".json")
+            else self.to_html(theme=theme, minify=minify)
+        )
         with open(output_file, "w") as f:
             f.write(content)
 
-    def to_html(self, minify: bool = True) -> str:
-        template_path = os.path.join(os.path.dirname(__file__), "..", "templates", "spa.html")
+    def to_html(self, theme: str = "default", minify: bool = True) -> str:
+        template_name = f"{theme}.html"
+        template_path = os.path.join(os.path.dirname(__file__), "..", "templates", template_name)
+        if not os.path.exists(template_path):
+            # Fallback to default if theme not found
+            template_path = os.path.join(
+                os.path.dirname(__file__), "..", "templates", "default.html"
+            )
+
         with open(template_path, "r") as f:
             html = f.read()
 

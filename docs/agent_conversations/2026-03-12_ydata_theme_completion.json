@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-12",
+  "task_objective": "Add missing graphs and correlations to YData-like theme",
+  "files_modified": [
+    "src/ibis_profiling/templates/ydata-like.html"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Ported NullityMatrix and CorrelationMatrixComponent from the default theme to ydata-like theme.",
+    "Integrated the missing values heatmap and matrix into the MissingValuesSection.",
+    "Added a dedicated CorrelationsSection that supports multiple correlation types (Pearson, etc.) via tabs.",
+    "Updated the single-page navigation to dynamically include 'Correlations' and 'Missing values' links when data is available."
+  ],
+  "results": "YData-like theme now has functional parity with the default theme regarding missing values and correlations visualization."
+}

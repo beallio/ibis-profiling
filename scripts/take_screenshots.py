@@ -21,8 +21,8 @@ def take_screenshots(report_path, output_dir, width=1440):
         # 1. Full Page Preview (Auto-resizing to content)
         print("Capturing full preview...")
         page.goto(abs_url)
-        # Wait for the main title to ensure React has rendered
-        page.wait_for_selector("text=Ibis Profiler", state="attached", timeout=15000)
+        # Wait for the root to be populated to ensure React has rendered
+        page.wait_for_selector("#root:not(:empty)", timeout=15000)
         # Small sleep for any final animations or chart rendering
         page.wait_for_timeout(3000)
 

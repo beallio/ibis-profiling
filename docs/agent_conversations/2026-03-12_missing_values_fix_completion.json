@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-12",
+  "task_objective": "Fix missing values visuals and test with larger dataset",
+  "files_modified": [
+    "src/ibis_profiling/templates/ydata-like.html",
+    "scripts/generate_full_ydata_report.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Updated parseMatrixData in the template to handle nested 'matrix' and 'values' keys used by the MissingEngine.",
+    "Fixed MissingValuesSection to correctly resolve missingBar data for the count histogram.",
+    "Implemented column-oriented to row-oriented transposition in NullityMatrix to handle raw 'values' input.",
+    "Enhanced the complex data generator to 10,000 rows with correlated missingness patterns to verify heatmap logic.",
+    "Ensured the heatmap properly displays 'Null' for missing correlations."
+  ],
+  "results": "Missing values section now correctly renders the Count histogram, Nullity Matrix, and Correlation Heatmap."
+}

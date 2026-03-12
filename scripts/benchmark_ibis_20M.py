@@ -31,12 +31,12 @@ def main():
     duration = time.time() - start_time
     print(f"Profile completed in {duration:.2f} seconds.")
 
-    # Generate SPA report
-    html_path = os.path.join(output_dir, "profile_spa.html")
-    print("Generating SPA HTML report...")
+    # Generate Default theme report
+    html_path = os.path.join(output_dir, "profile_default.html")
+    print("Generating Default HTML report...")
     report.to_file(html_path)
 
-    json_path = os.path.join(output_dir, "profile_spa.json")
+    json_path = os.path.join(output_dir, "profile_default.json")
     report.to_file(json_path)
 
     print(f"Saved to {html_path} and {json_path}")

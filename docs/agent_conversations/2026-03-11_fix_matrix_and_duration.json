@@ -3,7 +3,7 @@
   "task_objective": "Fix Nullity Matrix transposition and populate Job Duration in report.",
   "files_modified": [
     "src/ibis_profiling/__init__.py",
-    "src/ibis_profiling/templates/spa.html"
+    "src/ibis_profiling/templates/default.html"
   ],
   "tests_added": [],
   "design_decisions": [

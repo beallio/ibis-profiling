@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-12",
+  "task_objective": "Center visual components and fix missing values alignment",
+  "files_modified": [
+    "src/ibis_profiling/templates/ydata-like.html",
+    "scripts/generate_full_ydata_report.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Centered CorrelationMatrixComponent and Correlation type buttons using Flexbox utility classes.",
+    "Refactored the Missing Count Chart to use a single Flex container where each bar and its label are wrapped together, ensuring perfect vertical alignment regardless of label length.",
+    "Improved missing chart label rotation and positioning for better readability.",
+    "Added a dashed background line to each column in the Nullity Matrix SVG to show the dataset structure even when columns are 100% missing.",
+    "Randomized missing value injection in the test script to prevent 'head-only' sampling bias in the Missing Matrix."
+  ],
+  "results": "Visual components are now centered, and the missing values visualizations correctly represent the dataset distribution."
+}

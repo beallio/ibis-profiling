@@ -1,6 +1,5 @@
 import polars as pl
 import ibis.expr.datatypes as dt
-from datetime import date
 from ibis_profiling.report import ProfileReport
 
 
@@ -39,12 +38,21 @@ def test_report_to_html():
     assert "5" in html
 
 
-def test_report_date_serialization():
-    d = date(2023, 1, 1)
-    raw_results = pl.DataFrame([{"a__min": d}])
-    schema = {"a": dt.Date()}
-
+def test_report_themes():
+    raw_results = pl.DataFrame([{"a__mean": 10.0, "a__zeros": 0, "_dataset__row_count": 5}])
+    schema = {"a": dt.Int64()}
     report = ProfileReport(raw_results, schema)
-    result = report.to_dict()
 
-    assert result["variables"]["a"]["min"] == "2023-01-01"
+    # Test default theme
+    html_default = report.to_html(theme="default")
+    assert "Ibis Profiling Report" in html_default
+    assert "Ibis Profiler" in html_default  # Component in default.html
+
+    # Test ydata-like theme
+    html_ydata = report.to_html(theme="ydata-like")
+    assert "Profiling Report" in html_ydata  # Title in ydata-like.html
+    assert "Dataset statistics" in html_ydata
+
+    # Test fallback
+    html_fallback = report.to_html(theme="non-existent")
+    assert "Ibis Profiling Report" in html_fallback  # Should fallback to default

@@ -2,7 +2,7 @@
   "date": "2026-03-11",
   "task_objective": "Restore and improve screenshot automation tool.",
   "files_modified": [
-    "src/ibis_profiling/templates/spa.html",
+    "src/ibis_profiling/templates/default.html",
     "scripts/take_screenshots.py",
     "pyproject.toml"
   ],
