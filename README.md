@@ -82,8 +82,16 @@ Projections for `ydata-profiling` on larger datasets are derived from observed s
 
 ## 🛠 Installation
 
+Since **Ibis Profiling** is in active development and not yet on PyPI, you can install it directly from GitHub:
+
+### Using [uv](https://github.com/astral-sh/uv) (Recommended)
 ```bash
-uv add ibis-profiling
+uv add git+https://github.com/beallio/ibis-profiling.git
+```
+
+### Using pip
+```bash
+pip install git+https://github.com/beallio/ibis-profiling.git
 ```
 
 ---
@@ -199,9 +207,9 @@ These are computed in a single global aggregation pass using Ibis primitives.
 | `std` | Sample standard deviation (Bessel's correction). | Numeric |
 | `variance` | `std^2` | Numeric |
 | `min` / `max` | Minimum and maximum values. | Numeric, DateTime |
-| `zeros` | Count of values exactly equal to `0`. | Numeric |
+| `n_zeros` | Count of values exactly equal to `0`. | Numeric |
 | `n_negative` | Count of values `< 0`. | Numeric |
-| `infinite` | Count of `+/- inf` values (Float only). | Numeric |
+| `n_infinite` | Count of `+/- inf` values (Float only). | Numeric |
 | `histogram` | Binned distribution (Numeric/DateTime) or Top Values (Categorical). | All |
 
 #### Advanced Statistics (Pass 2)
@@ -211,7 +219,7 @@ To avoid "Nested Aggregation" errors in SQL backends, these are computed using v
 | :--- | :--- | :--- |
 | `skewness` | `mean( ((x - μ) / σ)^3 )` | Standardized 3rd moment. |
 | `mad` | `mean( abs(x - μ) )` | Mean Absolute Deviation. |
-| `duplicates` | `n - count(distinct_rows)` | Dataset-wide duplicate row count. |
+| `n_duplicates` | `n - count(distinct_rows)` | Dataset-wide duplicate row count. |
 
 #### Quantiles
 Calculated via `col.quantile(p)`.
@@ -230,8 +238,7 @@ The built-in alert engine scans the calculated metrics and triggers warnings bas
 | **HIGH_CARDINALITY** | `p_distinct > 0.5` (and not `UNIQUE`, Categorical only) | warning |
 | **MISSING** | `p_missing > 0.05` | info |
 | **ZEROS** | `p_zeros > 0.10` | info |
-| **SKEWED** | `abs(skewness) > 20` | info |
-
+| **SKEWED** | `abs(skewness) > 10` | info |
 **Suppression Rules:**
 1. If a column is **CONSTANT**, all other alerts for that column are suppressed.
 2. If a column is **UNIQUE**, the **HIGH_CARDINALITY** alert is suppressed.
