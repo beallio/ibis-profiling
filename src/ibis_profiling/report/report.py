@@ -12,6 +12,7 @@ from .structure.report import Report
 class ReportEncoder(json.JSONEncoder):
     def default(self, obj):
         import ibis.expr.types as ir
+        # print(f"DEBUG: Encoding {type(obj)}, is_scalar={isinstance(obj, ir.Scalar)}")
 
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
@@ -19,7 +20,7 @@ class ReportEncoder(json.JSONEncoder):
             try:
                 val = obj.to_pyarrow().as_py()
             except Exception:
-                return str(obj)
+                val = str(obj)
         else:
             val = obj
 
@@ -31,7 +32,11 @@ class ReportEncoder(json.JSONEncoder):
                 return None
             return val
 
-        return super().default(obj)
+        # Final check if val is same as obj and it's not a primitive, we might still fail
+        if val is obj and not isinstance(val, (str, int, float, bool, list, dict, type(None))):
+            return super().default(obj)
+
+        return val
 
 
 class ProfileReport:
@@ -172,7 +177,9 @@ class ProfileReport:
         if self.table:
             self.table["n_cells_missing"] = n_cells_missing
             self.table["p_cells_missing"] = (
-                n_cells_missing / (n * self.table["n_var"]) if n > 0 else 0
+                n_cells_missing / (n * self.table["n_var"])
+                if n > 0 and self.table["n_var"] > 0
+                else 0
             )
 
         # 4. Generate Alerts
