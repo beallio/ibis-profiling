@@ -11,7 +11,7 @@ if "src" not in sys.path:
 from ibis_profiling import profile
 
 
-def test_new_theme_generation():
+def test_material_theme_generation():
     # 1. Create dummy data
     df = pd.DataFrame(
         {
@@ -23,14 +23,14 @@ def test_new_theme_generation():
     )
     t = ibis.memtable(df)
 
-    # 2. Profile with new theme and custom title
-    custom_title = "Custom New Theme Report"
+    # 2. Profile with material theme and custom title
+    custom_title = "Custom Material Theme Report"
     report = profile(t, title=custom_title)
 
-    output_path = "/tmp/ibis-profiling/test_new_theme.html"
+    output_path = "/tmp/ibis-profiling/test_material_theme.html"
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    report.to_file(output_path, theme="new_theme")
+    report.to_file(output_path, theme="material")
 
     # 3. Verify output
     assert os.path.exists(output_path)
@@ -50,8 +50,8 @@ def test_new_theme_generation():
     assert "{{REPORT_DATA}}" not in html
     assert "REPORT_DATA =" in html
 
-    print(f"Successfully generated and verified new theme report at {output_path}")
+    print(f"Successfully generated and verified material theme report at {output_path}")
 
 
 if __name__ == "__main__":
-    test_new_theme_generation()
+    test_material_theme_generation()
