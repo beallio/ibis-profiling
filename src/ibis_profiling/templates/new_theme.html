@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ibis Profiling Report</title>
+    
+    <!-- Google Fonts & Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #3949ab;
+            --primary-light: #e8eaf6;
+            --secondary-color: #ff4081;
+            --bg-color: #f4f6f8;
+            --text-color: #37474f;
+            --text-muted: #78909c;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Roboto', sans-serif;
+            color: var(--text-color);
+        }
+        
+        /* Layout */
+        header, main, footer {
+            padding-left: 300px;
+        }
+        @media only screen and (max-width : 992px) {
+            header, main, footer {
+                padding-left: 0;
+            }
+        }
+        main {
+            padding-top: 1rem;
+            padding-bottom: 4rem;
+            padding-right: 2rem;
+        }
+        .sidenav-fixed { width: 300px; border-right: 1px solid var(--border-color); }
+
+        /* Typography & Custom Utilities */
+        .mono-text { font-family: 'Space Mono', monospace; }
+        .weight-500 { font-weight: 500; }
+        .weight-700 { font-weight: 700; }
+        .mb-0 { margin-bottom: 0 !important; }
+        .mt-0 { margin-top: 0 !important; }
+        .mb-2 { margin-bottom: 2rem !important; }
+        .mb-4 { margin-bottom: 4rem !important; }
+        .p-2 { padding: 1rem !important; }
+        .d-flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .align-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .flex-1 { flex: 1; }
+        .gap-1 { gap: 0.5rem; }
+        .gap-2 { gap: 1rem; }
+        .w-100 { width: 100%; }
+        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Custom Scrollbar for Matrices & Tables */
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #eceff1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #b0bec5; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #90a4ae; }
+        
+        /* Section Offsets for smooth anchor scrolling */
+        .scrollspy-section { scroll-margin-top: 5rem; }
+
+        /* Card Customizations */
+        .card { border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .card-panel { border-radius: 12px; }
+        .stat-card {
+            padding: 24px;
+            border-radius: 16px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card i {
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            font-size: 100px;
+            opacity: 0.15;
+            transform: rotate(-15deg);
+        }
+        .stat-value { font-size: 2.2rem; font-weight: 700; line-height: 1.1; margin-top: 8px; font-family: 'Space Mono', monospace; }
+        .stat-label { font-size: 0.9rem; font-weight: 500; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Variable Quick View Card */
+        .quick-view-card {
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            height: 100%;
+        }
+        .quick-view-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(57, 73, 171, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        /* React Custom Tabs */
+        .react-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; }
+        .react-tab { 
+            padding: 12px 24px; 
+            cursor: pointer; 
+            font-weight: 500; 
+            color: var(--text-muted); 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .react-tab:hover { color: var(--primary-color); background-color: rgba(57, 73, 171, 0.05); }
+        .react-tab.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); }
+
+        /* Histograms */
+        .hist-bar-vertical {
+            background-color: var(--primary-color);
+            transition: background-color 0.2s ease, height 0.4s ease;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            margin: 0 1px;
+        }
+        .hist-bar-vertical:hover { background-color: #303f9f; }
+        
+        .hist-bar-horizontal { background-color: #26a69a; border-radius: 4px; height: 100%; }
+
+        /* Table Overrides */
+        table.highlight > tbody > tr:hover { background-color: #f5f5f5; }
+        .matrix-table th { font-weight: 500; color: var(--text-muted); padding: 12px; }
+        
+        /* Pills & Badges */
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-weight: 500;
+            margin: 4px;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .pill-count {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        
+        .type-badge {
+            background-color: #00bcd4; /* cyan */
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .alert-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+        .alert-warning { background-color: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
+        .alert-info { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { color: var(--text-muted); font-size: 0.9rem; }
+        .metric-val { font-weight: 700; color: var(--text-color); font-family: 'Space Mono', monospace; font-size: 0.9rem; }
+
+        /* Sticky Search */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: rgba(244, 246, 248, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 1rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Matrix Tooltip */
+        .matrix-cell {
+            position: relative;
+            cursor: pointer;
+        }
+        .matrix-cell:hover .matrix-tooltip {
+            display: block;
+        }
+        .matrix-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #263238;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 10;
+            margin-bottom: 4px;
+            pointer-events: none;
+        }
+
+        /* Responsive Fixes */
+        .nav-header { padding: 32px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-footer { padding: 24px; border-top: 1px solid var(--border-color); margin-top: auto; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <!-- Injecting Payload -->
+    <script>
+        window.REPORT_DATA = {{REPORT_DATA}};
+    </script>
+
+    <!-- React Application Logic -->
+    <script type="text/babel">
+        const { useState, useMemo, useEffect, useRef } = React;
+        const data = window.REPORT_DATA;
+
+        // --- Constants ---
+        const ALERT_CONFIG = {
+            UNIQUE: { icon: 'fingerprint', color: 'alert-info' },
+            CONSTANT: { icon: 'lock', color: 'alert-warning' },
+            HIGH_CARDINALITY: { icon: 'content_copy', color: 'alert-warning' },
+            MISSING: { icon: 'error_outline', color: 'alert-info' },
+            SKEWED: { icon: 'trending_up', color: 'alert-info' },
+            ZEROS: { icon: 'adjust', color: 'alert-info' },
+            DEFAULT: { icon: 'info_outline', color: 'alert-info' }
+        };
+
+        // --- Utility formatters ensuring Null Safety and Graceful Fallback ---
+        const isNull = (v) => v === null || v === undefined || Number.isNaN(v) || v === "NaN" || v === "Inf";
+        
+        const Formats = {
+            NullEl: () => <span style={{fontStyle: 'italic', color: '#b0bec5'}}>Null</span>,
+            StrNull: () => <span style={{color: '#b0bec5'}}>-</span>,
+            Int: (v) => isNull(v) ? Formats.StrNull() : new Intl.NumberFormat().format(Math.round(v)),
+            Float: (v) => isNull(v) ? Formats.StrNull() : new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(v),
+            Pct: (v) => isNull(v) ? Formats.StrNull() : new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 }).format(v),
+            Mem: (bytes) => {
+                if (isNull(bytes)) return Formats.StrNull();
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            },
+            Val: (v) => isNull(v) ? Formats.NullEl() : typeof v === 'boolean' ? (v ? 'True' : 'False') : String(v),
+            Duration: (ms) => {
+                if (isNull(ms)) return Formats.StrNull();
+                if (ms < 1000) return `${ms.toFixed(0)}ms`;
+                return `${(ms / 1000).toFixed(2)}s`;
+            }
+        };
+
+        const getCorrColor = (val) => {
+            if (isNull(val)) return 'transparent';
+            if (val > 0) return `rgba(57, 73, 171, ${val})`; // Indigo 600
+            return `rgba(233, 30, 99, ${Math.abs(val)})`;    // Pink 500
+        };
+
+        const filterMissingBins = (bins, counts) => {
+            if (!bins || !counts) return { filteredBins: [], filteredCounts: [] };
+            const missingLabels = ['none', 'null', 'nan', 'undefined', ''];
+            const filteredBins = [];
+            const filteredCounts = [];
+            for (let i = 0; i < bins.length; i++) {
+                const b = bins[i];
+                if (b === null || b === undefined) continue;
+                const s = String(b).toLowerCase().trim();
+                if (!missingLabels.includes(s)) {
+                    filteredBins.push(b);
+                    filteredCounts.push(counts[i]);
+                }
+            }
+            return { filteredBins, filteredCounts };
+        };
+
+        // --- Core Components ---
+
+        const NavSidebar = ({ sections, activeId }) => {
+            const sidenavRef = useRef(null);
+
+            useEffect(() => {
+                if (sidenavRef.current) {
+                    M.Sidenav.init(sidenavRef.current);
+                }
+            }, []);
+
+            const duration = data.analysis?.duration || (new Date(data.analysis?.date_end) - new Date(data.analysis?.date_start));
+
+            return (
+                <ul ref={sidenavRef} id="slide-out" className="sidenav sidenav-fixed z-depth-2 flex flex-col">
+                    <li className="no-padding">
+                        <div className="nav-header indigo darken-2 white-text">
+                            <h5 className="weight-700 mt-0 truncate" title={data.analysis?.title}>{data.analysis?.title || 'Data Profile'}</h5>
+                            <div className="d-flex align-center gap-1" style={{opacity: 0.8, fontSize: '0.8rem'}}>
+                                <i className="material-icons tiny">calendar_today</i>
+                                {data.analysis?.date_start ? new Date(data.analysis.date_start).toLocaleDateString() : 'Unknown Date'}
+                            </div>
+                        </div>
+                    </li>
+                    <div className="flex-1 overflow-y-auto">
+                        {sections.map(sec => (
+                            <li key={sec.id} className={activeId === sec.id ? 'active' : ''}>
+                                <a href={`#${sec.id}`} className="waves-effect">
+                                    <i className="material-icons">{sec.icon}</i>
+                                    {sec.label}
+                                </a>
+                            </li>
+                        ))}
+                    </div>
+                    <li className="no-padding sidebar-footer grey lighten-4">
+                        <div className="grey-text text-darken-1" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px'}}>Profiling Runtime</div>
+                        <div className="d-flex align-center gap-1 weight-700 indigo-text">
+                            <i className="material-icons tiny">timer</i>
+                            {Formats.Duration(duration)}
+                        </div>
+                        <div className="mt-2 grey-text text-lighten-1" style={{fontSize: '0.65rem'}}>
+                            ibis-profiling v0.1.0
+                        </div>
+                    </li>
+                </ul>
+            );
+        };
+
+        const StatCard = ({ label, value, colorClass, icon, subValue }) => (
+            <div className={`col s12 m6 l3`}>
+                <div className={`stat-card ${colorClass} hoverable z-depth-2`}>
+                    <i className="material-icons">{icon}</i>
+                    <div className="stat-label">{label}</div>
+                    <div className="stat-value">{value}</div>
+                    {subValue && <div className="stat-sub" style={{fontSize: '0.8rem', opacity: 0.8, marginTop: '4px'}}>{subValue}</div>}
+                </div>
+            </div>
+        );
+
+        const AlertBadge = ({ type }) => {
+            const config = ALERT_CONFIG[type] || ALERT_CONFIG.DEFAULT;
+            return (
+                <span className={`alert-badge ${config.color}`}>
+                    <i className="material-icons tiny">{config.icon}</i>
+                    {type}
+                </span>
+            );
+        };
+
+        const VariableQuickCard = ({ name, info, onClick }) => {
+            const { filteredBins, filteredCounts } = filterMissingBins(info.histogram?.bins, info.histogram?.counts);
+            const alerts = (data.alerts || []).filter(a => a.fields.includes(name));
+
+            return (
+                <div className="col s12 m4 l3 mb-2">
+                    <div className="quick-view-card d-flex flex-col" onClick={() => onClick(name)}>
+                        <div className="d-flex justify-between align-center mb-1">
+                            <span className="weight-700 truncate indigo-text text-darken-4" style={{maxWidth: '70%'}} title={name}>{name}</span>
+                            <span className="type-badge" style={{fontSize: '0.6rem', padding: '2px 6px'}}>{info.type}</span>
+                        </div>
+                        
+                        <div className="flex-1 d-flex flex-col justify-center" style={{minHeight: '60px', margin: '12px 0'}}>
+                            {filteredCounts.length > 0 ? (
+                                <div className="d-flex align-end" style={{height: '40px', gap: '1px'}}>
+                                    {filteredCounts.slice(0, 20).map((c, i) => {
+                                        const max = Math.max(...filteredCounts);
+                                        return <div key={i} className="flex-1 grey lighten-2" style={{height: `${(c/max)*100}%`, backgroundColor: '#c5cae9', borderRadius: '1px'}}></div>
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="center-align grey-text" style={{fontSize: '0.7rem', fontStyle: 'italic'}}>No distribution</div>
+                            )}
+                        </div>
+
+                        <div className="d-flex justify-between align-center mt-1 pt-2" style={{borderTop: '1px solid #f5f5f5'}}>
+                             <div className="d-flex">
+                                {alerts.slice(0, 3).map((a, i) => {
+                                    const cfg = ALERT_CONFIG[a.alert_type] || ALERT_CONFIG.DEFAULT;
+                                    return <i key={i} className="material-icons tiny" style={{color: cfg.color === 'alert-warning' ? '#ef6c00' : '#1565c0', marginRight: '2px'}} title={a.alert_type}>{cfg.icon}</i>
+                                })}
+                             </div>
+                             <span className={`weight-700 ${info.p_missing > 0.05 ? 'red-text' : 'green-text'}`} style={{fontSize: '0.75rem'}}>
+                                {Formats.Pct(info.p_missing)} null
+                             </span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Overview = ({ onVariableClick, searchTerm, setSearchTerm }) => {
+            const t = data.table || {};
+            const types = t.types || {};
+            const vars = data.variables || {};
+            
+            const filteredVars = useMemo(() => {
+                return Object.entries(vars).filter(([name]) => name.toLowerCase().includes(searchTerm.toLowerCase()));
+            }, [vars, searchTerm]);
+
+            return (
+                <section id="overview" className="scrollspy-section mb-4">
+                    <h4 className="weight-700 d-flex align-center gap-1"><i className="material-icons medium">dashboard</i> Overview</h4>
+                    
+                    <div className="row">
+                        <StatCard label="Variables" value={Formats.Int(t.n_var)} colorClass="indigo lighten-1" icon="view_column" />
+                        <StatCard label="Observations" value={Formats.Int(t.n)} colorClass="deep-purple lighten-1" icon="format_list_bulleted" subValue={`${Formats.Int(t.n_distinct_rows || t.n)} distinct`} />
+                        <StatCard label="Missing (%)" value={Formats.Pct(t.p_cells_missing)} colorClass="pink accent-2" icon="warning" subValue={`${Formats.Int(t.n_cells_missing)} total cells`} />
+                        <StatCard label="Memory" value={Formats.Mem(t.memory_size)} colorClass="teal lighten-1" icon="memory" subValue={`${Formats.Int(t.record_size)} B / row`} />
+                    </div>
+
+                    {/* Variable Types Summary */}
+                    <div className="card-panel white mb-4">
+                        <span className="grey-text text-darken-2 weight-700" style={{fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px'}}>Dataset Composition</span>
+                        <div className="mt-2">
+                            {Object.entries(types).map(([type, count]) => (
+                                <div key={type} className="pill">
+                                    {type}
+                                    <span className="pill-count">{Formats.Int(count)}</span>
+                                </div>
+                            ))}
+                            {t.p_duplicates > 0 && (
+                                <div className="pill pink lighten-5 pink-text text-darken-2">
+                                    Duplicates
+                                    <span className="pill-count pink darken-2">{Formats.Pct(t.p_duplicates)}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Quick View Search & Grid */}
+                    <div className="mt-4">
+                        <div className="d-flex justify-between align-center mb-2">
+                            <h5 className="weight-700 mt-0 mb-0 indigo-text text-darken-3">Variables Quick View</h5>
+                            <div className="input-field mb-0 mt-0" style={{width: '300px'}}>
+                                <i className="material-icons prefix tiny">search</i>
+                                <input id="qv_search" type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                <label htmlFor="qv_search">Search variables...</label>
+                            </div>
+                        </div>
+                        <div className="row">
+                            {filteredVars.map(([name, info]) => (
+                                <VariableQuickCard key={name} name={name} info={info} onClick={onVariableClick} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Alerts = () => {
+            const alerts = data.alerts || [];
+            if (!alerts.length) return null;
+            
+            const [filter, setFilter] = useState('');
+            const filtered = useMemo(() => {
+                return alerts.filter(a => a.fields?.some(f => f.toLowerCase().includes(filter.toLowerCase())));
+            }, [alerts, filter]);
+
+            return (
+                <section id="alerts" className="scrollspy-section mb-4">
+                    <h4 className="weight-700 d-flex align-center gap-1"><i className="material-icons medium">notifications_active</i> System Alerts</h4>
+                    
+                    <div className="card hoverable z-depth-1">
+                        <div className="card-content" style={{paddingBottom: 0}}>
+                            <div className="input-field mt-0">
+                                <i className="material-icons prefix">search</i>
+                                <input id="alert_search" type="text" value={filter} onChange={e => setFilter(e.target.value)} />
+                                <label htmlFor="alert_search">Filter alerts by column...</label>
+                            </div>
+                        </div>
+                        
+                        <ul className="collection custom-scrollbar" style={{maxHeight: '400px', overflowY: 'auto', borderBottom: 'none'}}>
+                            {filtered.length === 0 ? (
+                                <li className="collection-item center-align p-2 grey-text">No alerts found for the selected criteria.</li>
+                            ) : (
+                                filtered.map((alert, idx) => (
+                                    <li key={idx} className="collection-item avatar">
+                                        <i className={`material-icons circle ${alert.level === 'warning' ? 'amber darken-2' : 'blue'}`}>
+                                            {ALERT_CONFIG[alert.alert_type]?.icon || 'info'}
+                                        </i>
+                                        <span className="title weight-700">{alert.alert_type}</span>
+                                        <p className="grey-text text-darken-1 mt-1">
+                                            Columns: <span className="mono-text black-text">{alert.fields?.join(', ')}</span>
+                                        </p>
+                                        <p className="grey-text" style={{fontSize: '0.85rem'}}>{alert.message}</p>
+                                    </li>
+                                ))
+                            )}
+                        </ul>
+                    </div>
+                </section>
+            );
+        };
+
+        const MetricRow = ({ label, val, isPct, isInt, isMem }) => (
+            <div className="metric-row">
+                <span className="metric-label">{label}</span>
+                <span className="metric-val">
+                    {isMem ? Formats.Mem(val) : isPct ? Formats.Pct(val) : isInt ? Formats.Int(val) : Formats.Float(val)}
+                </span>
+            </div>
+        );
+
+        const VariableCard = ({ name, info }) => {
+            const [tab, setTab] = useState('overview');
+            const hasQuantiles = info['5%'] !== undefined || info.min !== undefined;
+            const hasMoments = info.mean !== undefined;
+            const hasShape = info.skewness !== undefined || info.iqr !== undefined;
+            const hasExtremes = info.extreme_values_smallest && info.extreme_values_smallest.length > 0;
+            const hasLengths = info.mean_length !== undefined;
+            
+            const alerts = (data.alerts || []).filter(a => a.fields.includes(name));
+
+            return (
+                <div id={`var-${name}`} className="card hoverable mb-4 z-depth-2" style={{borderRadius: '16px'}}>
+                    {/* Header */}
+                    <div className="card-content grey lighten-4 d-flex justify-between align-center flex-wrap" style={{padding: '16px 24px', borderBottom: '1px solid #e0e0e0'}}>
+                        <div className="d-flex flex-col">
+                            <span className="card-title mono-text weight-700 mb-0 d-flex align-center gap-1" style={{fontSize: '1.4rem'}}>
+                                {name} <span className="type-badge">{info.type}</span>
+                            </span>
+                            <div className="mt-1">
+                                {alerts.map((a, i) => <AlertBadge key={i} type={a.alert_type} />)}
+                            </div>
+                        </div>
+                        <div className="d-flex gap-2 text-right right-align">
+                            <div>
+                                <div className="grey-text" style={{fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Distinct</div>
+                                <div className="weight-700 indigo-text text-darken-2">{Formats.Int(info.n_distinct)} <span className="grey-text" style={{fontSize: '0.8rem'}}>({Formats.Pct(info.p_distinct)})</span></div>
+                            </div>
+                            <div>
+                                <div className="grey-text" style={{fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Missing</div>
+                                <div className="weight-700 pink-text text-darken-2">{Formats.Int(info.n_missing)} <span className="grey-text" style={{fontSize: '0.8rem'}}>({Formats.Pct(info.p_missing)})</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card-content row mb-0" style={{padding: '0'}}>
+                        {/* Left Side: Stats / Tabs */}
+                        <div className="col s12 m6" style={{padding: '24px', borderRight: '1px solid #eeeeee'}}>
+                            
+                            <div className="react-tabs custom-scrollbar" style={{overflowX: 'auto'}}>
+                                <div className={`react-tab waves-effect ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>Overview</div>
+                                {hasQuantiles && <div className={`react-tab waves-effect ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>Statistics</div>}
+                                {hasExtremes && <div className={`react-tab waves-effect ${tab === 'extremes' ? 'active' : ''}`} onClick={() => setTab('extremes')}>Extremes</div>}
+                            </div>
+
+                            <div style={{minHeight: '280px'}}>
+                                {tab === 'overview' && (
+                                    <div>
+                                        {info.mean !== undefined && <MetricRow label="Mean" val={info.mean} />}
+                                        {info.min !== undefined && <MetricRow label="Minimum" val={info.min} />}
+                                        {info.max !== undefined && <MetricRow label="Maximum" val={info.max} />}
+                                        {info.n_zeros !== undefined && <MetricRow label="Zeros" val={info.p_zeros} isPct />}
+                                        {info.n_negative !== undefined && <MetricRow label="Negatives" val={info.p_negative} isPct />}
+                                        {info.memory_size !== undefined && <MetricRow label="Memory" val={info.memory_size} isMem />}
+                                        {info.is_unique !== undefined && <MetricRow label="Unique" val={info.is_unique ? "Yes" : "No"} />}
+                                    </div>
+                                )}
+
+                                {tab === 'stats' && (
+                                    <div className="row mb-0">
+                                        <div className="col s6 pl-0">
+                                            {hasQuantiles && (
+                                                <div style={{marginBottom: '1.5rem'}}>
+                                                    <div className="grey-text weight-700 mb-1" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Quantiles</div>
+                                                    <MetricRow label="5%" val={info['5%']} />
+                                                    <MetricRow label="Q1" val={info['25%']} />
+                                                    <MetricRow label="Median" val={info['50%']} />
+                                                    <MetricRow label="Q3" val={info['75%']} />
+                                                    <MetricRow label="95%" val={info['95%']} />
+                                                    <MetricRow label="IQR" val={info.iqr} />
+                                                </div>
+                                            )}
+                                            {hasLengths && (
+                                                <div>
+                                                    <div className="grey-text weight-700 mb-1" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Lengths</div>
+                                                    <MetricRow label="Mean" val={info.mean_length} />
+                                                    <MetricRow label="Min" val={info.min_length} isInt />
+                                                    <MetricRow label="Max" val={info.max_length} isInt />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="col s6 pr-0">
+                                            {hasMoments && (
+                                                <div style={{marginBottom: '1.5rem'}}>
+                                                    <div className="grey-text weight-700 mb-1" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Descriptive</div>
+                                                    <MetricRow label="Std. Dev" val={info.std} />
+                                                    <MetricRow label="Variance" val={info.variance} />
+                                                    <MetricRow label="Kurtosis" val={info.kurtosis} />
+                                                </div>
+                                            )}
+                                            {hasShape && (
+                                                <div>
+                                                    <div className="grey-text weight-700 mb-1" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Shape & Scale</div>
+                                                    <MetricRow label="Skewness" val={info.skewness} />
+                                                    <MetricRow label="MAD" val={info.mad} />
+                                                    <MetricRow label="CV" val={info.cv} />
+                                                    <MetricRow label="Range" val={info.range} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tab === 'extremes' && hasExtremes && (
+                                    <div className="row mb-0">
+                                        <div className="col s6 pl-0">
+                                            <div className="grey-text weight-700 mb-1" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Minimum 5</div>
+                                            <div className="card-panel grey lighten-4 mono-text p-2" style={{lineHeight: '1.8', margin: 0, fontSize: '0.8rem'}}>
+                                                {info.extreme_values_smallest.map((v, i) => <div key={i} className="truncate" title={Formats.Val(v)}>{Formats.Val(v)}</div>)}
+                                            </div>
+                                        </div>
+                                        <div className="col s6 pr-0">
+                                            <div className="grey-text weight-700 mb-1" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Maximum 5</div>
+                                            <div className="card-panel grey lighten-4 mono-text p-2" style={{lineHeight: '1.8', margin: 0, fontSize: '0.8rem'}}>
+                                                {info.extreme_values_largest.map((v, i) => <div key={i} className="truncate" title={Formats.Val(v)}>{Formats.Val(v)}</div>)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right Side: Visualizations */}
+                        <div className="col s12 m6 d-flex align-center flex-col" style={{padding: '24px', minHeight: '320px'}}>
+                            {info.histogram && info.histogram.counts && info.histogram.counts.length > 0 ? (
+                                <div className="w-100 flex-1 d-flex flex-col">
+                                    <div className="grey-text text-darken-1 weight-700 mb-3" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Value Distribution</div>
+                                    {info.type === 'Categorical' || info.type === 'Boolean' ? (
+                                        <div className="custom-scrollbar flex-1" style={{maxHeight: '260px', overflowY: 'auto', paddingRight: '10px'}}>
+                                            {info.histogram.bins.slice(0, 20).map((bin, i) => {
+                                                const count = info.histogram.counts[i];
+                                                const maxC = Math.max(...info.histogram.counts);
+                                                const pct = (count / maxC) * 100;
+                                                return (
+                                                    <div key={i} className="d-flex align-center mb-1">
+                                                        <div className="truncate weight-500" style={{width: '40%', paddingRight: '10px', fontSize: '0.85rem'}} title={bin}>{bin}</div>
+                                                        <div className="d-flex align-center" style={{width: '60%'}}>
+                                                            <div className="grey lighten-3" style={{flex: 1, height: '24px', borderRadius: '4px', overflow: 'hidden'}}>
+                                                                <div className="hist-bar-horizontal" style={{width: `${pct}%`, backgroundColor: '#3949ab'}}></div>
+                                                            </div>
+                                                            <div className="mono-text" style={{width: '60px', textAlign: 'right', fontSize: '0.8rem', marginLeft: '8px'}}>{Formats.Int(count)}</div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {info.histogram.bins.length > 20 && <div className="center-align grey-text mt-1" style={{fontSize: '0.7rem'}}>Showing top 20 of {info.histogram.bins.length}</div>}
+                                        </div>
+                                    ) : (
+                                        <div className="d-flex flex-col flex-1">
+                                            <div className="d-flex align-end flex-1" style={{height: '200px', width: '100%', gap: '1px'}}>
+                                                {info.histogram.counts.map((c, i) => {
+                                                    const maxC = Math.max(...info.histogram.counts);
+                                                    const pct = maxC === 0 ? 0 : (c / maxC) * 100;
+                                                    const title = `${info.histogram.bins[i]}: ${c}`;
+                                                    return (
+                                                        <div key={i} title={title} className="flex-1 hist-bar-vertical" style={{ height: `${Math.max(pct, 1)}%` }}></div>
+                                                    )
+                                                })}
+                                            </div>
+                                            <div className="d-flex justify-between mt-2 grey-text mono-text" style={{fontSize: '0.7rem'}}>
+                                                <span>{info.min}</span>
+                                                <span>{info.max}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="center-align grey-text w-100 flex-1 d-flex align-center justify-center" style={{fontStyle: 'italic'}}>No histogram data available.</div>
+                            )}
+
+                            {info.length_histogram && (
+                                <div className="w-100 mt-4 pt-4" style={{borderTop: '1px solid #f5f5f5'}}>
+                                    <div className="grey-text text-darken-1 weight-700 mb-2" style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Length Distribution</div>
+                                    <div className="d-flex align-end" style={{height: '40px', gap: '1px'}}>
+                                        {info.length_histogram.counts.map((c, i) => {
+                                            const max = Math.max(...info.length_histogram.counts);
+                                            return <div key={i} title={`Length ${info.length_histogram.bins[i]}: ${c}`} className="flex-1" style={{height: `${(c/max)*100}%`, backgroundColor: '#ff80ab'}}></div>
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Variables = ({ searchTerm, setSearchTerm }) => {
+            const vars = data.variables || {};
+            if (Object.keys(vars).length === 0) return null;
+
+            const filteredVars = useMemo(() => {
+                return Object.entries(vars).filter(([name]) => name.toLowerCase().includes(searchTerm.toLowerCase()));
+            }, [vars, searchTerm]);
+
+            return (
+                <section id="variables" className="scrollspy-section mb-4">
+                    <div className="sticky-header d-flex justify-between align-center">
+                        <h4 className="weight-700 d-flex align-center gap-1 mt-0 mb-0"><i className="material-icons medium">insert_chart</i> Variables</h4>
+                        <div className="input-field mb-0 mt-0" style={{width: '300px'}}>
+                            <i className="material-icons prefix">search</i>
+                            <input id="var_search_main" type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            <label htmlFor="var_search_main">Search variables...</label>
+                        </div>
+                    </div>
+                    {filteredVars.map(([name, info]) => (
+                        <VariableCard key={name} name={name} info={info} />
+                    ))}
+                    {filteredVars.length === 0 && <div className="card-panel center-align grey-text">No variables found matching "{searchTerm}"</div>}
+                </section>
+            );
+        };
+
+        const Correlations = () => {
+            const corrs = data.correlations || {};
+            const keys = Object.keys(corrs);
+            if (keys.length === 0) return null;
+
+            const [activeCorr, setActiveCorr] = useState(keys[0]);
+            
+            const activeMatrix = corrs[activeCorr];
+            const cols = activeMatrix && activeMatrix.length > 0 ? Object.keys(activeMatrix[0]) : [];
+
+            return (
+                <section id="correlations" className="scrollspy-section mb-4">
+                    <h4 className="weight-700 d-flex align-center gap-1"><i className="material-icons medium">apps</i> Correlations</h4>
+                    <div className="card hoverable z-depth-2">
+                        {keys.length > 1 && (
+                            <div className="react-tabs" style={{margin: 0, padding: '0 16px', backgroundColor: '#fafafa'}}>
+                                {keys.map(k => (
+                                    <div key={k} onClick={() => setActiveCorr(k)} className={`react-tab waves-effect ${activeCorr === k ? 'active' : ''}`}>{k}</div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="card-content" style={{padding: 0}}>
+                            <div className="custom-scrollbar" style={{overflowX: 'auto'}}>
+                                <table className="matrix-table centered" style={{minWidth: 'max-content'}}>
+                                    <thead>
+                                        <tr>
+                                            <th style={{borderRight: '1px solid #e0e0e0', backgroundColor: '#fafafa'}}></th>
+                                            {cols.map(c => <th key={c} className="mono-text truncate" style={{maxWidth: '120px'}} title={c}>{c}</th>)}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {activeMatrix.map((rowObj, i) => (
+                                            <tr key={i}>
+                                                <td className="mono-text left-align truncate" style={{borderRight: '1px solid #e0e0e0', backgroundColor: '#fafafa', padding: '12px', fontWeight: 500, maxWidth: '150px'}} title={cols[i]}>{cols[i]}</td>
+                                                {cols.map(c => {
+                                                    const val = rowObj[c];
+                                                    return (
+                                                        <td key={c} className="matrix-cell" style={{ padding: 0, backgroundColor: getCorrColor(val), border: '1px solid white' }}>
+                                                            <div className="d-flex align-center justify-between center-align" style={{width: '60px', height: '60px', margin: '0 auto', color: val > 0.4 || val < -0.4 ? 'white' : '#37474f', fontWeight: 700, fontSize: '0.8rem'}}>
+                                                                <span style={{width: '100%'}}>{isNull(val) ? '' : val.toFixed(2)}</span>
+                                                            </div>
+                                                            {!isNull(val) && <div className="matrix-tooltip">{cols[i]} × {c}: {val.toFixed(4)}</div>}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const MissingValues = () => {
+            const missing = data.missing || {};
+            const keys = Object.keys(missing);
+            if (keys.length === 0) return null;
+
+            const [activeTab, setActiveTab] = useState(keys[0]);
+
+            const renderBar = (barData) => {
+                if (!barData || !barData.matrix) return null;
+                const { columns, counts } = barData.matrix;
+                const maxCount = Math.max(...counts, 1);
+                
+                return (
+                    <div style={{maxWidth: '800px', margin: '0 auto'}}>
+                        {columns.map((col, i) => (
+                            <div key={col} className="d-flex align-center mb-1">
+                                <div className="mono-text truncate" style={{width: '30%', paddingRight: '16px', fontSize: '0.85rem'}}>{col}</div>
+                                <div className="d-flex align-center" style={{width: '70%'}}>
+                                    <div className="grey lighten-3" style={{flex: 1, height: '24px', borderRadius: '4px', overflow: 'hidden'}}>
+                                        <div className="indigo lighten-2" style={{width: `${(counts[i]/maxCount)*100}%`, height: '100%', transition: 'width 0.5s ease'}}></div>
+                                    </div>
+                                    <div className="mono-text weight-700" style={{width: '80px', textAlign: 'right', fontSize: '0.85rem'}}>{Formats.Int(counts[i])}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                );
+            };
+
+            const renderMatrix = (matrixData) => {
+                if (!matrixData || !matrixData.matrix) return null;
+                const { columns, values } = matrixData.matrix;
+                return (
+                    <div className="custom-scrollbar" style={{overflowX: 'auto', padding: '10px 0'}}>
+                        <div className="d-flex mb-1" style={{minWidth: 'max-content'}}>
+                             <div style={{width: '50px', flexShrink: 0}}></div>
+                             {columns.map((c, i) => <div key={i} className="flex-1 mono-text grey-text" style={{fontSize: '0.7rem', writingMode: 'vertical-rl', transform: 'rotate(180deg)', textAlign: 'center', padding: '0 4px', minWidth: '15px'}}>{c}</div>)}
+                        </div>
+                        {values.map((row, rIdx) => (
+                            <div key={rIdx} className="d-flex" style={{height: '10px', marginBottom: '1px', minWidth: 'max-content'}}>
+                                <div className="grey-text right-align mono-text" style={{width: '50px', flexShrink: 0, fontSize: '0.65rem', paddingRight: '8px', lineHeight: '10px'}}>{rIdx+1}</div>
+                                {row.map((cell, cIdx) => (
+                                    <div key={cIdx} className="flex-1" style={{margin: '0 1px', backgroundColor: cell ? '#e0e0e0' : '#263238', minWidth: '15px'}} title={`Row ${rIdx+1}, Col ${columns[cIdx]}: ${cell ? 'Missing' : 'Present'}`}></div>
+                                ))}
+                            </div>
+                        ))}
+                        <div className="d-flex align-center justify-between mt-4 right" style={{gap: '16px', fontSize: '0.85rem', color: '#546e7a'}}>
+                            <div className="d-flex align-center gap-1"><div style={{width: '16px', height: '16px', backgroundColor: '#263238', borderRadius: '2px'}}></div> Present Data</div>
+                            <div className="d-flex align-center gap-1"><div style={{width: '16px', height: '16px', backgroundColor: '#e0e0e0', borderRadius: '2px'}}></div> Missing (Null)</div>
+                        </div>
+                        <div style={{clear: 'both'}}></div>
+                    </div>
+                );
+            };
+
+            const renderHeatmap = (heatmapData) => {
+                 if (!heatmapData || !heatmapData.matrix) return null;
+                 const mat = heatmapData.matrix;
+                 const cols = Object.keys(mat[0] || {});
+                 
+                 return (
+                     <div className="custom-scrollbar" style={{overflowX: 'auto'}}>
+                            <table className="matrix-table centered" style={{minWidth: 'max-content'}}>
+                                <thead>
+                                    <tr>
+                                        <th style={{borderRight: '1px solid #e0e0e0'}}></th>
+                                        {cols.map(c => <th key={c} className="mono-text">{c}</th>)}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {mat.map((rowObj, i) => (
+                                        <tr key={i}>
+                                            <td className="mono-text left-align truncate" style={{borderRight: '1px solid #e0e0e0', padding: '12px', maxWidth: '150px'}} title={cols[i]}>{cols[i]}</td>
+                                            {cols.map(c => {
+                                                const val = rowObj[c];
+                                                return (
+                                                    <td key={c} className="matrix-cell" style={{ padding: 0, backgroundColor: getCorrColor(val), border: '1px solid white' }}>
+                                                        <div className="d-flex align-center justify-between center-align" style={{width: '60px', height: '60px', margin: '0 auto', color: val > 0.4 || val < -0.4 ? 'white' : '#37474f', fontWeight: 700, fontSize: '0.8rem'}}>
+                                                            <span style={{width: '100%'}}>{isNull(val) ? '' : val.toFixed(2)}</span>
+                                                        </div>
+                                                        {!isNull(val) && <div className="matrix-tooltip">{cols[i]} × {c}: {val.toFixed(4)}</div>}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                     </div>
+                 );
+            };
+
+            return (
+                <section id="missing" className="scrollspy-section mb-4">
+                    <h4 className="weight-700 d-flex align-center gap-1"><i className="material-icons medium">border_clear</i> Missing Values</h4>
+                    <div className="card hoverable z-depth-2">
+                        {keys.length > 1 && (
+                            <div className="react-tabs" style={{margin: 0, padding: '0 16px', backgroundColor: '#fafafa'}}>
+                                {keys.map(k => (
+                                    <div key={k} onClick={() => setActiveTab(k)} className={`react-tab waves-effect ${activeTab === k ? 'active' : ''}`}>
+                                        {missing[k].name || k}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="card-content">
+                            {missing[activeTab]?.caption && <p className="grey-text mb-4" style={{fontStyle: 'italic'}}>{missing[activeTab].caption}</p>}
+                            {activeTab === 'bar' && renderBar(missing.bar)}
+                            {activeTab === 'matrix' && renderMatrix(missing.matrix)}
+                            {activeTab === 'heatmap' && renderHeatmap(missing.heatmap)}
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const SampleData = () => {
+            const sample = data.sample?.head;
+            if (!sample || Object.keys(sample).length === 0) return null;
+
+            const cols = Object.keys(sample);
+            const numRows = sample[cols[0]]?.length || 0;
+            const rows = Array.from({ length: numRows }).map((_, i) => {
+                const row = {};
+                cols.forEach(c => row[c] = sample[c][i]);
+                return row;
+            });
+
+            return (
+                <section id="sample" className="scrollspy-section mb-4">
+                    <h4 className="weight-700 d-flex align-center gap-1"><i className="material-icons medium">view_list</i> Sample Data</h4>
+                    <div className="card hoverable z-depth-2" style={{overflowX: 'auto'}}>
+                        <table className="highlight responsive-table custom-scrollbar">
+                            <thead className="grey lighten-4">
+                                <tr>
+                                    {cols.map(c => <th key={c} className="mono-text" style={{padding: '16px'}}>{c}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((r, i) => (
+                                    <tr key={i}>
+                                        {cols.map(c => <td key={c} className="mono-text" style={{padding: '12px 16px', fontSize: '0.85rem'}}>{Formats.Val(r[c])}</td>)}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            );
+        };
+
+        const App = () => {
+            const [activeSection, setActiveSection] = useState('overview');
+            const [searchTerm, setSearchTerm] = useState('');
+
+            const sections = useMemo(() => [
+                { id: 'overview', label: 'Overview', icon: 'dashboard', show: true },
+                { id: 'variables', label: 'Variables', icon: 'insert_chart', show: Object.keys(data.variables || {}).length > 0 },
+                { id: 'alerts', label: 'Alerts', icon: 'notifications_active', show: (data.alerts || []).length > 0 },
+                { id: 'correlations', label: 'Correlations', icon: 'apps', show: Object.keys(data.correlations || {}).length > 0 },
+                { id: 'missing', label: 'Missing Values', icon: 'border_clear', show: Object.keys(data.missing || {}).length > 0 },
+                { id: 'sample', label: 'Sample', icon: 'view_list', show: Object.keys(data.sample || {}).length > 0 }
+            ].filter(s => s.show), []);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    const scrollY = window.scrollY;
+                    for (const sec of sections.slice().reverse()) {
+                        const el = document.getElementById(sec.id);
+                        if (el && scrollY >= el.offsetTop - 250) {
+                            setActiveSection(sec.id);
+                            break;
+                        }
+                    }
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, [sections]);
+
+            const scrollToVariable = (name) => {
+                setActiveSection('variables');
+                window.location.hash = `var-${name}`;
+                setTimeout(() => {
+                    const el = document.getElementById(`var-${name}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            };
+
+            return (
+                <div>
+                    <header>
+                        {/* Mobile Nav Trigger */}
+                        <div className="hide-on-large-only indigo darken-2 p-2 d-flex justify-between align-center shadow-1">
+                            <a href="#" data-target="slide-out" className="sidenav-trigger white-text"><i className="material-icons">menu</i></a>
+                            <h5 className="white-text mt-0 mb-0 truncate" style={{marginLeft: '1rem'}}>{data.analysis?.title || 'Data Profile'}</h5>
+                        </div>
+                    </header>
+                    
+                    <NavSidebar sections={sections} activeId={activeSection} />
+                    
+                    <main>
+                        <Overview onVariableClick={scrollToVariable} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+                        <Alerts />
+                        <Variables searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+                        <Correlations />
+                        <MissingValues />
+                        <SampleData />
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
