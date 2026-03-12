@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-11",
+  "task_objective": "Fix blank screenshots and excessive vertical space in report previews.",
+  "files_modified": [
+    "src/ibis_profiling/templates/spa.html",
+    "scripts/take_screenshots.py",
+    "pyproject.toml"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Switched to Playwright for screenshot automation to ensure robust waiting for React component rendering, which fixed the 'blank screenshot' issue.",
+    "Used Playwright's 'full_page=True' feature for report_preview.png, which automatically crops to content and eliminates excessive empty vertical space.",
+    "Fixed a React bug in spa.html where useEffect was used without being imported, which prevented the SPA from initializing correctly in headless browsers.",
+    "Integrated hash-based routing in the SPA to allow the screenshot tool to reliably deep-link into specific tabs like #missing and #variables."
+  ],
+  "results": "Documentation screenshots are now high-fidelity and correctly captured. The SPA is more robust with deep-linking support."
+}
