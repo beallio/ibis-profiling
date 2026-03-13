@@ -14,7 +14,6 @@ class CorrelationEngine:
         spearman = CorrelationEngine._compute_spearman(table, numeric_cols)
 
         return {
-            "auto": pearson,  # ydata often uses 'auto'
             "pearson": pearson,
             "spearman": spearman,
             # placeholders for others

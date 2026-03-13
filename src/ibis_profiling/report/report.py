@@ -279,16 +279,11 @@ class ProfileReport:
                 self.variables[col_name][metric_name] = self._to_json_serializable(value)
 
     def to_dict(self) -> dict:
-        # ydata uses 'auto' as the primary correlation entry
-        corrs = self.correlations.copy()
-        if "pearson" in corrs and "auto" not in corrs:
-            corrs["auto"] = corrs["pearson"]
-
         d = {
             "analysis": self.analysis,
             "table": self.table,
             "variables": self.variables,
-            "correlations": corrs,
+            "correlations": self.correlations,
             "interactions": self.interactions,
             "missing": self.missing,
             "alerts": self.alerts,

@@ -1,0 +1,13 @@
+{
+  "date": "2026-03-13",
+  "task_objective": "Remove redundant 'auto' correlation matrix for cleaner reporting",
+  "files_modified": [
+    "src/ibis_profiling/report/model/correlations.py",
+    "src/ibis_profiling/report/report.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Removed 'auto' correlation from CorrelationEngine and ProfileReport as it was a simple duplicate of the Pearson matrix, reducing redundancy in the HTML report and JSON output."
+  ],
+  "results": "Correlations section now only displays unique matrices (Pearson and Spearman)."
+}
