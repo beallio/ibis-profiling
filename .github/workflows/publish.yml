@@ -1,0 +1,35 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-n-publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      # Required for Trusted Publishing
+      id-token: write
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required for hatch-vcs
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Build package
+      run: uv build
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1

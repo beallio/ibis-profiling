@@ -1,0 +1,13 @@
+{
+  "date": "2026-03-13",
+  "task_objective": "Update .gitignore to properly ignore build artifacts and environment files",
+  "files_modified": [
+    ".gitignore"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Updated .gitignore to include .venv and .venv/ to correctly handle symlinks or directory-based environments.",
+    "Added .coverage to ignored files to prevent tracking local test coverage data."
+  ],
+  "results": ".gitignore now correctly excludes .venv, .coverage, and standard build artifacts."
+}

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/ibis_profiling/assets/img/ibis-profiling-logo.png" width="400" alt="Ibis Profiling Logo">
+  <img src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-logo.png" width="400" alt="Ibis Profiling Logo">
 </p>
 
 # Ibis Profiling
@@ -17,13 +17,14 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 ## 🖼️ Preview
 
 ### Overview Dashboard
-![Overview Screenshot](src/ibis_profiling/assets/img/report_overview.png)
+![Overview Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_overview.png)
 
-### Variable Analysis
-![Variables Screenshot](src/ibis_profiling/assets/img/report_variables.png)
+### Variable Detail View
+![Variables Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_variables.png)
 
-### Missing Values (Matrix & Heatmap)
-![Missing Screenshot](src/ibis_profiling/assets/img/report_missing.png)
+### Missing Values Analysis
+![Missing Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_missing.png)
+
 
 ---
 
