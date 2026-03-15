@@ -51,10 +51,10 @@ registry.register(
     Metric("mean", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).mean())
 )
 registry.register(
-    Metric("min", MetricCategory.COLUMN, [dt.Numeric, dt.Temporal], lambda col: col.min())
+    Metric("min", MetricCategory.COLUMN, [dt.Numeric, dt.Temporal], lambda col: safe_col(col).min())
 )
 registry.register(
-    Metric("max", MetricCategory.COLUMN, [dt.Numeric, dt.Temporal], lambda col: col.max())
+    Metric("max", MetricCategory.COLUMN, [dt.Numeric, dt.Temporal], lambda col: safe_col(col).max())
 )
 registry.register(
     Metric("std", MetricCategory.COLUMN, [dt.Numeric], lambda col: safe_col(col).std(how="sample"))

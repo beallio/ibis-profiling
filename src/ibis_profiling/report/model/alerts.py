@@ -10,9 +10,9 @@ class AlertEngine:
         n = table_stats.get("n", 0)
 
         for col, stats in variables.items():
-            n_distinct = stats.get("n_distinct", 0)
-            p_missing = stats.get("p_missing", 0)
-            n_zeros = stats.get("n_zeros", 0)
+            n_distinct = stats.get("n_distinct") or 0
+            p_missing = stats.get("p_missing") or 0.0
+            n_zeros = stats.get("n_zeros") or 0
             v_type = stats.get("type")
 
             # 1. Constant (High Priority)

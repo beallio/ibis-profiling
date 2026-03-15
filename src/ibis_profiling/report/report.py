@@ -141,7 +141,7 @@ class ProfileReport:
                     stats["range"] = stats["max"] - stats["min"]
 
                 # IQR
-                if "75%" in stats and "25%" in stats:
+                if stats.get("75%") is not None and stats.get("25%") is not None:
                     stats["iqr"] = stats["75%"] - stats["25%"]
 
                 # CV
@@ -153,15 +153,15 @@ class ProfileReport:
                     stats["cv"] = stats["std"] / stats["mean"]
 
                 # Zeros Percentage
-                if "n_zeros" in stats:
+                if stats.get("n_zeros") is not None:
                     stats["p_zeros"] = stats["n_zeros"] / n if n > 0 else 0
 
                 # Infinite Percentage
-                if "n_infinite" in stats:
+                if stats.get("n_infinite") is not None:
                     stats["p_infinite"] = stats["n_infinite"] / n if n > 0 else 0
 
                 # Negative Percentage
-                if "n_negative" in stats:
+                if stats.get("n_negative") is not None:
                     stats["p_negative"] = stats["n_negative"] / n if n > 0 else 0
             elif stats.get("type") == "Categorical":
                 # For categoricals, we don't want continuous numeric metrics
@@ -183,7 +183,7 @@ class ProfileReport:
                     stats.pop(k, None)
 
             # Unique Percentage
-            if "n_unique" in stats:
+            if stats.get("n_unique") is not None:
                 stats["p_unique"] = stats["n_unique"] / n if n > 0 else 0
 
             # Ensure other stats are serializable

@@ -4,11 +4,14 @@
 
 # Ibis Profiling
 
+[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg)](https://badge.fury.io/py/ibis-profiling)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An ultra-high-performance data profiling system built natively for **Ibis**.
 
 ## Core Principle: Profiling as Query Compilation
 
-Unlike traditional profiling tools (e.g., `ydata-profiling`) that iterate over columns or load data into local memory (Pandas), **Ibis Profiling** treats profiling as a **query planning problem**. 
+Unlike traditional profiling tools (e.g., `ydata-profiling`) that load data into local memory (Pandas), **Ibis Profiling** treats profiling as a **query planning problem**. 
 
 It compiles dozens of statistical metrics into a **minimal set of optimized SQL queries** that execute directly in your remote backend (DuckDB, BigQuery, Snowflake, ClickHouse, etc.). This ensures that computation happens where the data lives, enabling the profiling of multi-billion row datasets in seconds rather than hours.
 
@@ -84,16 +87,16 @@ Projections for `ydata-profiling` on larger datasets are derived from observed s
 
 ## 🛠 Installation
 
-Since **Ibis Profiling** is in active development and not yet on PyPI, you can install it directly from GitHub:
+Install **Ibis Profiling** directly from PyPI:
 
 ### Using [uv](https://github.com/astral-sh/uv) (Recommended)
 ```bash
-uv add git+https://github.com/beallio/ibis-profiling.git
+uv add ibis-profiling
 ```
 
 ### Using pip
 ```bash
-pip install git+https://github.com/beallio/ibis-profiling.git
+pip install ibis-profiling
 ```
 
 ---
@@ -155,107 +158,108 @@ The `ProfileReport` supports a `minimal` flag (default `False`) to toggle betwee
 | **Duplicates** | Skipped. | Dataset-wide duplicate row count. |
 | **Performance** | **Ultra-Fast.** Recommended for datasets > 50M rows. | **Detailed.** Recommended for deep data quality audits. |
 
-## 📦 Report Export & Minification
+## 📦 Report Export & Layouts
 
-By default, `ibis-profiling` minifies the generated HTML report to reduce file size (typically by 15-20%) without compromising functionality. Minification includes:
-- Stripping HTML, CSS, and JS comments.
-- Removing redundant whitespace and empty lines from the template.
-- Compact JSON embedding (removing internal whitespace in the data payload).
+By default, `ibis-profiling` minifies the generated HTML report to reduce file size (typically by 15-20%) without compromising functionality.
 
-To generate a human-readable (non-minified) report, set `minify=False` in `to_file` or `to_html`:
+### Custom Themes & Themes
+The `to_file` method supports a `theme` parameter to choose between different report layouts:
+
+```python
+# Modern React SPA (Default)
+report.to_file("report.html", theme="default")
+
+# Classic layout for ydata-profiling parity
+report.to_file("report.html", theme="ydata-like")
+```
+
+### Minification
+To generate a human-readable (non-minified) report, set `minify=False`:
 
 ```python
 # Save as formatted HTML
 report.to_file("report.html", minify=False)
-
-# Get the formatted HTML string
-html = report.to_html(minify=False)
 ```
 
-## Feature Gaps & Roadmap
+## 🎨 Interactive React SPA
 
-`ibis-profiling` is designed for scale, prioritizing metrics that can be pushed down to SQL engines. As a result, some "linguistic" or high-complexity features from `ydata-profiling` are currently missing or implemented as approximations:
+The default report is a fully interactive React Single Page Application (SPA) providing a modern user experience:
 
-1.  **Linguistic Analysis:** Unicode script detection and character-level distributions are missing (require complex UDFs).
-2.  **Advanced Correlations:** `phi_k`, `kendall`, and `cramers_v` are currently placeholders (higher computational complexity).
-3.  **Memory Footprint:** While Ibis uses backend-specific commands (like DuckDB's `PRAGMA storage_info`) where possible, it falls back to schema-based estimation for others.
+- **Instant Search:** Quickly filter variables by name or type.
+- **Theme Toggle:** Switch between **Dark**, **Light**, and **High Contrast** modes with persistent settings.
+- **Alert Filtering:** Interactive dashboard to filter data quality alerts by severity (Warning vs. Info).
+- **Responsive Charts:** High-fidelity SVG and Canvas-based visualizations (Histograms, Heatmaps, Scatter Plots).
 
 ---
 
-## 🏗 Architecture
+## 🏗 Architecture & Backend Support
 
-The system is decoupled into five core modules:
+The system is decoupled into five core modules designed for maximum backend compatibility:
 1. **Dataset Inspector:** Zero-execution schema analysis.
 2. **Metric Registry:** Declarative metric definitions as Ibis expressions.
 3. **Query Planner:** The "compiler" that batches compatible expressions into minimal execution plans.
 4. **Execution Engine:** Multi-pass dispatcher that handles simple vs. complex aggregations.
-5. **Report Builder:** Aggregates and formats raw backend results into high-fidelity JSON/HTML following the canonical YData schema.
+5. **Report Builder:** Aggregates and formats raw backend results into high-fidelity JSON/HTML.
+
+**Supported Backends:** 100% compatibility with all **Ibis** backends including DuckDB, Snowflake, BigQuery, ClickHouse, Postgres, Polars, and more.
 
 ---
 
 ## 📊 Missing Values Analysis
 
-Move beyond simple counts with advanced pattern detection:
-- **Matrix:** A vertical sparkline grid (SVG) visualizing the location of missing values across rows.
-- **Heatmap:** Pearson correlation of "nullity" between variables, revealing structural dependencies.
+Move beyond simple counts with advanced pattern detection and visualization:
+- **Missing Matrix:** A vertical sparkline grid (SVG) visualizing the exact location of missing values across rows, allowing you to spot temporal or structural gaps.
+- **Nullity Heatmap:** Pearson correlation of "nullity" between variables, revealing structural dependencies (e.g., when Column A is missing, Column B is also 90% likely to be missing).
+
+---
+
+## 🔍 Pairwise Interactions
+
+Explore dependencies between numeric variables with high-performance scatter plots:
+- **Automatic Selection:** Intelligently samples the dataset to maintain 60FPS interactivity even with millions of rows.
+- **Correlation-Driven:** Highlights pairs with high statistical significance to surface hidden patterns.
+- **Canvas-Optimized:** Uses HTML5 Canvas for smooth rendering of thousands of data points directly in the browser.
 
 ---
 
 ## 📏 Metrics & Calculation Reference
 
-This section provides a detailed breakdown of how metrics are calculated and how the alert engine identifies potential data quality issues.
-
 ### 1. Variable Calculations
 
-The profiler uses a multi-pass execution engine to compute statistics efficiently across massive datasets while remaining compatible with SQL-based backends (like DuckDB).
+The profiler uses a multi-pass execution engine to compute statistics efficiently across massive datasets while remaining compatible with SQL-based backends.
 
 #### Core Statistics (Pass 1)
-These are computed in a single global aggregation pass using Ibis primitives.
-
 | Metric | Calculation | Type |
 | :--- | :--- | :--- |
 | `n` | Total number of observations (rows) in the table. | All |
 | `n_missing` | Count of `NULL` or `NaN` values. | All |
 | `p_missing` | `n_missing / n` | All |
-| `n_distinct` | Count of unique values (excluding `NULL`). Used for auto-categorical detection. | All |
-| `p_distinct` | `n_distinct / n` | All |
-| `count` | `n - n_missing` (Total non-missing values) | All |
+| `n_distinct` | Count of unique values (excluding `NULL`). | All |
 | `mean` | `sum(x) / count` (NaNs treated as NULL) | Numeric |
 | `std` | Sample standard deviation (Bessel's correction). | Numeric |
-| `variance` | `std^2` | Numeric |
 | `min` / `max` | Minimum and maximum values. | Numeric, DateTime |
-| `n_zeros` | Count of values exactly equal to `0`. | Numeric |
-| `n_negative` | Count of values `< 0`. | Numeric |
-| `n_infinite` | Count of `+/- inf` values (Float only). | Numeric |
 | `histogram` | Binned distribution (Numeric/DateTime) or Top Values (Categorical). | All |
 
 #### Advanced Statistics (Pass 2)
 To avoid "Nested Aggregation" errors in SQL backends, these are computed using values from Pass 1 as constants.
-
 | Metric | Calculation | Logic |
 | :--- | :--- | :--- |
 | `skewness` | `mean( ((x - μ) / σ)^3 )` | Standardized 3rd moment. |
 | `mad` | `mean( abs(x - μ) )` | Mean Absolute Deviation. |
 | `n_duplicates` | `n - count(distinct_rows)` | Dataset-wide duplicate row count. |
 
-#### Quantiles
-Calculated via `col.quantile(p)`.
-- `5%`, `25%` (Q1), `50%` (Median), `75%` (Q3), `95%`.
-
----
-
 ### 2. Alert Engine Logic
-
-The built-in alert engine scans the calculated metrics and triggers warnings based on industry-standard thresholds (aligned with `ydata-profiling`).
 
 | Alert Type | Logic / Threshold | Severity |
 | :--- | :--- | :--- |
 | **CONSTANT** | `n_distinct == 1` | warning |
 | **UNIQUE** | `n_distinct == n` | warning |
-| **HIGH_CARDINALITY** | `p_distinct > 0.5` (and not `UNIQUE`, Categorical only) | warning |
+| **HIGH_CARDINALITY** | `p_distinct > 0.5` (Categorical only) | warning |
 | **MISSING** | `p_missing > 0.05` | info |
 | **ZEROS** | `p_zeros > 0.10` | info |
 | **SKEWED** | `abs(skewness) > 10` | info |
-**Suppression Rules:**
-1. If a column is **CONSTANT**, all other alerts for that column are suppressed.
-2. If a column is **UNIQUE**, the **HIGH_CARDINALITY** alert is suppressed.
+
+---
+
+## 📄 License
+Ibis Profiling is licensed under the **MIT License**. See `LICENSE` for details.

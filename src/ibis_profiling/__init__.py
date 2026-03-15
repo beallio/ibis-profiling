@@ -1,7 +1,7 @@
 import ibis
 from datetime import datetime
 from .inspector import DatasetInspector
-from .metrics import registry
+from .metrics import registry, safe_col
 from .planner import QueryPlanner
 from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
@@ -93,6 +93,7 @@ def profile(
         stats = report.variables[col_name]
         v_type = stats.get("type")
         col = table[col_name]
+        safe_c = safe_col(col)
 
         # For DateTime, we work with epoch seconds
         if v_type == "DateTime":
@@ -117,13 +118,16 @@ def profile(
 
             # Skewness (only if not minimal)
             if not minimal and mean is not None and std is not None and std > 0:
-                skew_expr = ((col - mean) / std).pow(3).mean().name(f"{col_name}__skewness")
+                skew_expr = ((safe_c - mean) / std).pow(3).mean().name(f"{col_name}__skewness")
                 second_pass_aggs.append(skew_expr)
 
             # MAD (only if not minimal)
             if not minimal and mean is not None:
-                mad_expr = (col - mean).abs().mean().name(f"{col_name}__mad")
+                mad_expr = (safe_c - mean).abs().mean().name(f"{col_name}__mad")
                 second_pass_aggs.append(mad_expr)
+
+            # Important: use safe_c for histogram calculation too
+            col = safe_c
 
         # Proper Histogram (Bucket Pass) - ALWAYS computed
         if v_min is not None and v_max is not None and v_max > v_min:
