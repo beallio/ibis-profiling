@@ -1,0 +1,22 @@
+{
+  "date": "2026-03-15",
+  "task_objective": "Update README for PyPI release, refresh screenshots with varied data, and fix related reporting bugs.",
+  "files_modified": [
+    "README.md",
+    "src/ibis_profiling/report/report.py",
+    "src/ibis_profiling/report/model/alerts.py",
+    "src/ibis_profiling/assets/img/report_overview.png",
+    "src/ibis_profiling/assets/img/report_variables.png",
+    "src/ibis_profiling/assets/img/report_missing.png",
+    "src/ibis_profiling/assets/img/report_preview.png"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Updated README to reflect PyPI status ('ibis-profiling') and documented new interactive features (themes, search, alert filtering).",
+    "Fixed 'NoneType' errors in 'ProfileReport' when processing columns with 100% missing values (IQR, CV, percentage calculations).",
+    "Enhanced 'AlertEngine' to safely handle 'None' values for 'n_distinct', 'p_missing', and 'n_zeros'.",
+    "Refreshed all project screenshots using a new synthetic dataset with diverse statistical distributions (Normal, Skewed, Zeros-heavy, Concentrated Missingness) to better showcase analytical capabilities.",
+    "Ensured all image links in README use absolute GitHub URLs for correct rendering on PyPI."
+  ],
+  "results": "README updated and polished for PyPI. Reporting engine is now more robust against empty/missing data. UI visuals updated with high-variance data."
+}
