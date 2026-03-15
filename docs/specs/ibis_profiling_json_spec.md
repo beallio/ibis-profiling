@@ -17,6 +17,7 @@ The report generator supports two execution modes:
 | `variables` | `Object` | Keyed by column name; contains per-variable stats and histograms. |
 | `alerts` | `Array` | List of data quality warnings (Unique, Constant, Skewed, etc.). |
 | `correlations` | `Object` | Correlation matrices (Pearson, Spearman). |
+| `interactions` | `Object` | Pairwise scatter plot data (Full Mode only). |
 | `missing` | `Object` | Data completeness visualizations (Bar, Matrix, Heatmap). |
 | `sample` | `Object` | Data previews (e.g., `head`). |
 | `package` | `Object` | Versioning information (`ibis-profiling: 0.1.0`). |
@@ -42,6 +43,8 @@ The report generator supports two execution modes:
 | `record_size` | `Number` | Both | Average memory usage per row. |
 | `n_cells_missing` | `Int` | Both | Total missing values across all cells. |
 | `p_cells_missing` | `Float` | Both | Global missingness percentage (0.0 - 1.0). |
+| `n_vars_with_missing`| `Int` | Both | Count of variables containing at least one missing value. |
+| `n_vars_all_missing` | `Int` | Both | Count of variables that are 100% missing. |
 | `types` | `Object` | Both | Counts of detected types (e.g., `{"Numeric": 10, "Categorical": 5}`). |
 | `n_distinct_rows` | `Int` | **Full** | Count of unique rows in the dataset. |
 | `n_duplicates` | `Int` | **Full** | Number of exact duplicate rows. |
@@ -93,9 +96,10 @@ Contains matrices (e.g., `pearson`, `spearman`) formatted as a list of dictionar
 ```
 
 ### 3.5. `missing` (**Full Only**)
-- `bar`: `{ "col1": count, "col2": count }` - Total missing counts per column.
-- `matrix`: `{ "columns": [...], "matrix": [[bool]] }` - Boolean nullity matrix (sampled).
-- `heatmap`: Pearson correlation of nullity between columns.
+Contains specialized structures for rendering different completeness views:
+- **`bar`**: `{ "name": "Count", "caption": "...", "matrix": { "columns": [], "counts": [] } }`
+- **`matrix`**: `{ "name": "Matrix", "caption": "...", "matrix": { "columns": [], "values": [[boolean]] } }`
+- **`heatmap`**: Pearson correlation of "nullity" between columns.
 
 ### 3.6. `alerts`
 List of JSON objects representing data quality issues.
@@ -114,6 +118,22 @@ List of JSON objects representing data quality issues.
 - `fields`: `Array` containing the affected column name(s).
 - `level`: `warning` (High) or `info` (Normal).
 - `value`: (Optional) The metric that triggered the alert.
+
+---
+
+### 3.7. `interactions` (**Full Only**)
+An object keyed by variable names. Each entry contains a nested object of target variables, mapping to an array of coordinate objects for scatter plot rendering:
+```json
+"interactions": {
+  "age": {
+    "salary": [
+      { "x": 25, "y": 55000 },
+      { "x": 30, "y": 62000 }
+    ]
+  }
+}
+```
+*Note: Interactions are limited to a high-density sample (e.g., 500-1000 points) to ensure UI performance.*
 
 ---
 

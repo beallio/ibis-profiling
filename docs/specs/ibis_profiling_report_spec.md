@@ -111,9 +111,14 @@ To render without errors, the `REPORT_DATA` object must adhere to the following 
       "...stats": "number | boolean"
     }
   },
+  "interactions": {
+    "col1": {
+      "col2": [ { "x": "number", "y": "number" } ]
+    }
+  },
   "missing": {
-    "bar": { "matrix": { "columns": [], "counts": [] } },
-    "matrix": { "columns": [], "values": [[boolean]] },
+    "bar": { "name": "Count", "caption": "...", "matrix": { "columns": [], "counts": [] } },
+    "matrix": { "name": "Matrix", "caption": "...", "matrix": { "columns": [], "values": [[boolean]] } },
     "heatmap": { "matrix": [ { "col1": "number" } ] }
   },
   "correlations": {
