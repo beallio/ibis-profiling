@@ -103,6 +103,30 @@ pip install ibis-profiling
 
 ## 💻 Usage
 
+### Command Line Interface (CLI)
+
+You can profile datasets directly from the terminal without writing any Python code.
+
+#### Basic Usage
+```bash
+# If installed locally
+uv run ProfileReport --file-path data.csv --output report.html
+
+# One-off run (no installation required)
+uv run --with ibis-profiling ProfileReport --file-path data.parquet
+```
+
+#### CLI Options
+| Option | Shortcut | Description |
+| :--- | :--- | :--- |
+| `--file-path` | `-f` | **(Required)** Path to input file (CSV, Parquet, Excel). |
+| `--output` | `-o` | Path to output file (default: `report.html`). |
+| `--title` | `-t` | Custom report title. |
+| `--minimal` | | Generate a minimal report (faster). |
+| `--theme` | | Report theme: `default` or `ydata-like`. |
+| `--format` | | Force output format: `html` or `json`. |
+
+---
 
 ### Quick Start (ydata-style API)
 

@@ -21,6 +21,7 @@ classifiers = [
 ]
 keywords = ["ibis", "profiling", "eda", "data-analysis", "sql", "duckdb", "polars", "pandas"]
 dependencies = [
+    "click>=8.0.0",
     "duckdb>=1.5.0",
     "fastexcel>=0.11.5",
     "ibis-framework>=12.0.0",
@@ -30,6 +31,9 @@ dependencies = [
     "pyarrow-hotfix>=0.7",
     "pydantic>=2.12.5",
 ]
+
+[project.scripts]
+ProfileReport = "ibis_profiling.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/beallio/ibis-profiling"

@@ -279,6 +279,13 @@ class ProfileReport:
                 self.variables[col_name][metric_name] = self._to_json_serializable(value)
 
     def to_dict(self) -> dict:
+        try:
+            from importlib.metadata import version
+
+            pkg_version = version("ibis-profiling")
+        except Exception:
+            pkg_version = "0.1.2"
+
         d = {
             "analysis": self.analysis,
             "table": self.table,
@@ -288,7 +295,7 @@ class ProfileReport:
             "missing": self.missing,
             "alerts": self.alerts,
             "sample": self.samples,
-            "package": {"name": "ibis-profiling", "version": "0.1.0"},
+            "package": {"name": "ibis-profiling", "version": pkg_version},
         }
         # Standardize matrices to list-of-dicts for ydata compatibility
         d = self._format_matrices(d)
@@ -374,10 +381,16 @@ class ProfileReport:
         import ibis
         from .. import profile
 
+        # Separate read_excel kwargs from profile kwargs
+        # This is a bit heuristic but ydata-like
+        profile_keys = ["minimal", "title"]
+        profile_kwargs = {k: v for k, v in kwargs.items() if k in profile_keys}
+        read_kwargs = {k: v for k, v in kwargs.items() if k not in profile_keys}
+
         # Use calamine for high performance (requires fastexcel)
-        df = pl.read_excel(path, engine="calamine", **kwargs)
+        df = pl.read_excel(path, engine="calamine", **read_kwargs)
         table = ibis.memtable(df)
-        return profile(table)
+        return profile(table, **profile_kwargs)
 
     def get_description(self) -> dict:
         return self.to_dict()
