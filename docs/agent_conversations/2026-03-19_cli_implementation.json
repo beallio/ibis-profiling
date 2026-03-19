@@ -1,0 +1,21 @@
+{
+  "date": "2026-03-19",
+  "task_objective": "Add CLI feature to run ProfileReport from command line",
+  "files_modified": [
+    "pyproject.toml",
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/cli.py",
+    "src/ibis_profiling/report/report.py",
+    "tests/test_cli.py"
+  ],
+  "tests_added": [
+    "tests/test_cli.py"
+  ],
+  "design_decisions": [
+    "Used Click for the CLI interface.",
+    "Integrated with Ibis's native read functions (duckdb default).",
+    "Updated compatibility wrapper to match CLI features (theme, title, minimal).",
+    "Mandated /tmp/.venv location as per project protocol."
+  ],
+  "results": "CLI successfully implemented and verified with tests. All protocol mandates (venv location, caching) followed."
+}

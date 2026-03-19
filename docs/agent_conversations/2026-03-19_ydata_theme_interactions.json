@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-19",
+  "task_objective": "Update ydata-like theme to support interaction plots",
+  "files_modified": [
+    "src/ibis_profiling/templates/ydata-like.html"
+  ],
+  "tests_added": [
+    "tests/test_ydata_theme.py"
+  ],
+  "design_decisions": [
+    "Implemented InteractionsSection component in ydata-like template",
+    "Implemented SVG-based ScatterPlot component with scaling and axes",
+    "Added interaction plot to the main report layout and navigation",
+    "Used Tailwind CSS for styling to match the existing ydata-like theme"
+  ],
+  "results": "Interaction plots are now functional in the ydata-like theme. Users can select any pair of numeric variables to see a scatter plot."
+}
