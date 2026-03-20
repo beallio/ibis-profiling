@@ -3,37 +3,37 @@ from datetime import datetime, date
 import json
 import os
 import math
-from typing import Any
+from typing import Any, cast
 from .model.summary import SummaryEngine
 from .model.alerts import AlertEngine
 
 
 class ReportEncoder(json.JSONEncoder):
-    def default(self, obj):
+    def default(self, o: Any) -> Any:
         import ibis.expr.types as ir
-        # print(f"DEBUG: Encoding {type(obj)}, is_scalar={isinstance(obj, ir.Scalar)}")
+        # print(f"DEBUG: Encoding {type(o)}, is_scalar={isinstance(o, ir.Scalar)}")
 
-        if isinstance(obj, (datetime, date)):
-            return obj.isoformat()
-        if isinstance(obj, ir.Scalar):
+        if isinstance(o, (datetime, date)):
+            return o.isoformat()
+        if isinstance(o, ir.Scalar):
             try:
-                val = obj.to_pyarrow().as_py()
+                val = o.to_pyarrow().as_py()
             except Exception:
-                val = str(obj)
+                val = str(o)
         else:
-            val = obj
+            val = o
 
-        if hasattr(val, "item"):
-            val = val.item()
+        if hasattr(val, "item") and callable(getattr(val, "item", None)):
+            val = cast(Any, val).item()
 
         if isinstance(val, float):
             if math.isnan(val) or math.isinf(val):
                 return None
             return val
 
-        # Final check if val is same as obj and it's not a primitive, we might still fail
-        if val is obj and not isinstance(val, (str, int, float, bool, list, dict, type(None))):
-            return super().default(obj)
+        # Final check if val is same as o and it's not a primitive, we might still fail
+        if val is o and not isinstance(val, (str, int, float, bool, list, dict, type(None))):
+            return super().default(o)
 
         return val
 
@@ -130,9 +130,13 @@ class ProfileReport:
 
             n_cells_missing += m_count
             if m_count > 0:
-                self.table["n_vars_with_missing"] += 1
+                current_wm = self.table.get("n_vars_with_missing", 0)
+                if isinstance(current_wm, int):
+                    self.table["n_vars_with_missing"] = current_wm + 1
             if m_count == n and n > 0:
-                self.table["n_vars_all_missing"] += 1
+                current_am = self.table.get("n_vars_all_missing", 0)
+                if isinstance(current_am, int):
+                    self.table["n_vars_all_missing"] = current_am + 1
 
             # Derived Numeric Stats
             if stats.get("type") == "Numeric":
@@ -192,16 +196,16 @@ class ProfileReport:
 
         if self.table:
             self.table["n_cells_missing"] = n_cells_missing
-            self.table["p_cells_missing"] = (
-                n_cells_missing / (n * self.table["n_var"])
-                if n > 0 and self.table["n_var"] > 0
-                else 0
-            )
+            n_var = self.table.get("n_var", 0)
+            if isinstance(n_var, int) and n > 0 and n_var > 0:
+                self.table["p_cells_missing"] = n_cells_missing / (n * n_var)
+            else:
+                self.table["p_cells_missing"] = 0
 
         # 4. Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
 
-    def add_metric(self, col_name: str, metric_name: str, value: any):
+    def add_metric(self, col_name: str, metric_name: str, value: Any):
         """Adds extra data like samples or histograms to the model."""
         if metric_name in ["head", "tail"]:
             self.samples[metric_name] = value

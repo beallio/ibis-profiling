@@ -1,15 +1,18 @@
 import ibis
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 import polars as pl
+from typing import cast
 
 
 class ExecutionEngine:
-    def execute(self, plan: ibis.expr.types.Table) -> pl.DataFrame:
+    def execute(self, plan: ir.Table) -> pl.DataFrame:
         """
         Executes the optimized Ibis expression graph.
         Returns a Polars DataFrame.
         Computation is pushed down to the backend engine.
         """
-        return pl.from_arrow(plan.to_pyarrow())
+        return cast(pl.DataFrame, pl.from_arrow(plan.to_pyarrow()))
 
     def get_storage_size(self, table: ibis.Table) -> int | None:
         """
@@ -27,9 +30,9 @@ class ExecutionEngine:
                 # DuckDB storage info only works on base tables
                 # If it's a view or expression, we'll get an error
                 # We try to find the base table name if possible
-                if isinstance(table.op(), ibis.expr.operations.relations.UnboundTable):
+                if isinstance(table.op(), ops.relations.UnboundTable):
                     table_name = table.op().name
-                elif isinstance(table.op(), ibis.expr.operations.relations.DatabaseTable):
+                elif isinstance(table.op(), ops.relations.DatabaseTable):
                     table_name = table.op().name
                 else:
                     return None

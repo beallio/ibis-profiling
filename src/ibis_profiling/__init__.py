@@ -1,4 +1,6 @@
 import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 from datetime import datetime
 from .inspector import DatasetInspector
 from .metrics import registry, safe_col
@@ -36,7 +38,9 @@ def profile(
 
     col_types = inspector.get_column_types()
     # Inject dataset metadata into schema for the Report model to pick up
-    col_types["_dataset"] = {
+    # Use a cast or temporary storage if ty complains about dict[str, dt.DataType]
+    # In this case, we'll use the dict's flexibility but we might need to cast for ty
+    col_types["_dataset"] = {  # type: ignore
         "memory_size": mem_size,
         "record_size": mem_size / row_count if row_count > 0 else 0,
     }
@@ -54,16 +58,15 @@ def profile(
     for col_name, stats in report.variables.items():
         if stats.get("type") == "Numeric":
             dtype = col_types.get(col_name)
-            if isinstance(dtype, ibis.expr.datatypes.Integer):
+            if isinstance(dtype, dt.Integer):
                 n_distinct = stats.get("n_distinct", 0)
                 if 0 < n_distinct < CARDINALITY_THRESHOLD:
                     stats["type"] = "Categorical"
                     # Update table-level type counts
-                    if "Numeric" in report.table["types"]:
-                        report.table["types"]["Numeric"] -= 1
-                        report.table["types"]["Categorical"] = (
-                            report.table["types"].get("Categorical", 0) + 1
-                        )
+                    types_dict = report.table.get("types", {})
+                    if isinstance(types_dict, dict) and "Numeric" in types_dict:
+                        types_dict["Numeric"] -= 1
+                        types_dict["Categorical"] = types_dict.get("Categorical", 0) + 1
 
     # 5. Inject column-level static metadata (hashable)
     for col_name in report.variables:
@@ -76,8 +79,11 @@ def profile(
         n_distinct_rows = table.distinct().count().execute()
         report.table["n_distinct_rows"] = n_distinct_rows
         n_total = report.table.get("n", 0)
-        report.table["n_duplicates"] = n_total - n_distinct_rows
-        report.table["p_duplicates"] = (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
+        if isinstance(n_total, (int, float)):
+            report.table["n_duplicates"] = n_total - n_distinct_rows
+            report.table["p_duplicates"] = (
+                (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
+            )
 
     # 4. Handle advanced moments (Skewness, MAD) and Histograms in a second pass
     # We use mean/std from pass 1 to avoid nesting issues
@@ -175,7 +181,7 @@ def profile(
     final_types = {c: s.get("type") for c, s in report.variables.items()}
     complex_plans = planner.build_complex_metrics(override_types=final_types)
     for col_name, metric_name, expr in complex_plans:
-        if isinstance(expr, ibis.expr.types.Table):
+        if isinstance(expr, ir.Table):
             # For table-valued metrics like top_values
             val = expr.to_pyarrow().to_pydict()
         else:
@@ -194,7 +200,7 @@ def profile(
             flat_exprs = []
             for i, row in enumerate(corr_results["matrix"]):
                 for j, item in enumerate(row):
-                    if isinstance(item, ibis.expr.types.Scalar):
+                    if isinstance(item, ir.Scalar):
                         flat_exprs.append(item.name(f"corr_pearson_{i}_{j}"))
 
             if flat_exprs:
@@ -217,7 +223,7 @@ def profile(
             spearman_meta = CorrelationEngine._compute_spearman(table, numeric_cols)
             rank_exprs = [spearman_meta["rank_exprs"][c].name(f"rank_{c}") for c in numeric_cols]
             # Create a CTE-like table with ranks
-            rank_table = table.mutate(rank_exprs)
+            rank_table = table.mutate(*rank_exprs)
 
             flat_spearman = []
             for i, c1 in enumerate(numeric_cols):
@@ -256,7 +262,7 @@ def profile(
             mono_checks.append(((col <= prev) | prev.isnull()).name(f"dec_{col_name}"))
 
         if mono_checks:
-            check_table = table.mutate(mono_checks)
+            check_table = table.mutate(*mono_checks)
             final_aggs = []
             for col_name in numeric_cols:
                 final_aggs.append(
@@ -292,7 +298,8 @@ def profile(
 
     end_time = datetime.now()
     report.analysis["date_end"] = end_time.isoformat()
-    report.analysis["duration"] = (end_time - start_time).total_seconds() * 1000
+    # Explicit cast to str for analysis dict if ty complains
+    report.analysis["duration"] = str((end_time - start_time).total_seconds() * 1000)
 
     return report
 

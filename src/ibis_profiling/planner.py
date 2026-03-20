@@ -1,4 +1,6 @@
 import ibis
+import ibis.expr.types as ir
+import ibis.expr.datatypes as dt
 from .metrics import MetricRegistry, MetricCategory
 
 
@@ -7,7 +9,7 @@ class QueryPlanner:
         self.table = table
         self.registry = registry
 
-    def build_global_aggregation(self) -> ibis.expr.types.Table:
+    def build_global_aggregation(self) -> ir.Table:
         """Batches all applicable simple COLUMN metrics into a single aggregation query."""
         schema = self.table.schema()
         aggs = []
@@ -33,8 +35,8 @@ class QueryPlanner:
         return self.table.aggregate(aggs)
 
     def build_complex_metrics(
-        self, override_types: dict[str, str] = None
-    ) -> list[tuple[str, str, ibis.expr.types.Value]]:
+        self, override_types: dict[str, str] | None = None
+    ) -> list[tuple[str, str, ir.Value]]:
         """
         Returns a list of (column_name, metric_name, expression) for metrics
         that cannot be batched in a single pass.
@@ -57,9 +59,9 @@ class QueryPlanner:
             is_discrete = mapped_type == "Categorical" or not isinstance(
                 dtype,
                 (
-                    ibis.expr.datatypes.Integer,
-                    ibis.expr.datatypes.Floating,
-                    ibis.expr.datatypes.Decimal,
+                    dt.Integer,
+                    dt.Floating,
+                    dt.Decimal,
                 ),
             )
 
@@ -72,7 +74,7 @@ class QueryPlanner:
             # 3. Extreme Values (Smallest/Largest)
             if not isinstance(
                 dtype,
-                (ibis.expr.datatypes.Array, ibis.expr.datatypes.Map, ibis.expr.datatypes.Struct),
+                (dt.Array, dt.Map, dt.Struct),
             ):
                 # Smallest
                 small_expr = (
@@ -90,7 +92,7 @@ class QueryPlanner:
                 plans.append((col_name, "extreme_values_largest", large_expr))
 
             # 4. String Length Histogram
-            if isinstance(dtype, ibis.expr.datatypes.String):
+            if isinstance(dtype, dt.String):
                 # value_counts() returns a table with columns [col_name, f"{col_name}_count"]
                 # For lengths, the col_name will be 'StringLength(s)' or similar
                 len_hist = col.length().value_counts().limit(10)
