@@ -59,6 +59,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 cache-dir = "/tmp/ibis-profiling/.uv_cache"
+dev-venv = "/tmp/ibis-profiling/.venv"
 
 [tool.ruff]
 line-length = 100

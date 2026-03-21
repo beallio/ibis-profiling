@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Enforce .venv and cache redirection to /tmp",
+  "files_modified": [
+    "pyproject.toml",
+    ".geminiignore"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Added [tool.uv] dev-venv = \"/tmp/ibis-profiling/.venv\" to pyproject.toml to explicitly direct uv environment creation.",
+    "Created .geminiignore to prevent indexing of project-root venvs/caches if they are accidentally created.",
+    "Cleaned up existing project-root .venv and cache directories."
+  ],
+  "results": "Project root is clean, and uv is now configured to use /tmp for its environment even if UV_PROJECT_ENVIRONMENT is not explicitly set in the shell."
+}
