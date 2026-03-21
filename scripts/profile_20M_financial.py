@@ -88,9 +88,15 @@ def main():
     print(f"Starting profile of {total_rows:,} rows x 20 columns...")
     start_time = time.time()
 
-    # Use full profile
-    print("Starting FULL profile...")
-    report = profile(table, minimal=False, title="20M Financial Transactions Audit")
+    # Use full profile with explicit overrides to force expensive checks on 20M rows
+    print("Starting FULL profile with correlations=True, monotonicity=True (FORCED)...")
+    report = profile(
+        table,
+        minimal=False,
+        title="20M Financial Transactions Audit (Forced)",
+        correlations=True,
+        monotonicity=True,
+    )
 
     duration = time.time() - start_time
     print(f"Profile completed in {duration:.2f} seconds.")

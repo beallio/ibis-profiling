@@ -1,0 +1,16 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Replace hardcoded 1M limit with user-controllable flags",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/cli.py",
+    "scripts/profile_20M_financial.py"
+  ],
+  "design_decisions": [
+    "Added 'correlations' and 'monotonicity' boolean flags to profile() and ProfileReport().",
+    "Maintained 1M row threshold as a default safety measure, but allow manual override if the user explicitly passes True.",
+    "Updated CLI with --correlations/--no-correlations and --monotonicity/--no-monotonicity flags.",
+    "Determined that the 20M x 20col OOM was primarily driven by Spearman ranking (O(N log N) memory/compute) and Monotonicity window functions (full table scan with lag), combined with the O(C^2) correlation matrix size."
+  ],
+  "results": "Users now have full control over expensive computations while retaining sensible defaults for massive datasets."
+}

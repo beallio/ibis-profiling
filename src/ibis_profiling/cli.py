@@ -13,6 +13,16 @@ from ibis_profiling import ProfileReport
 @click.option("--title", "-t", default="Ibis Profiling Report", help="Title of the report.")
 @click.option("--minimal", is_flag=True, help="Generate a minimal report.")
 @click.option(
+    "--correlations/--no-correlations",
+    default=None,
+    help="Explicitly enable or disable correlations.",
+)
+@click.option(
+    "--monotonicity/--no-monotonicity",
+    default=None,
+    help="Explicitly enable or disable monotonicity checks.",
+)
+@click.option(
     "--theme",
     type=click.Choice(["default", "ydata-like"]),
     default="default",
@@ -24,7 +34,7 @@ from ibis_profiling import ProfileReport
     type=click.Choice(["html", "json"]),
     help="Force output format (overrides extension).",
 )
-def main(file_path, output, title, minimal, theme, output_format):
+def main(file_path, output, title, minimal, correlations, monotonicity, theme, output_format):
     """Profile a dataset using Ibis and generate a report."""
     if not os.path.exists(file_path):
         click.echo(f"Error: File not found: {file_path}", err=True)
@@ -36,15 +46,33 @@ def main(file_path, output, title, minimal, theme, output_format):
         report = None
         if ext in [".xlsx", ".xls"]:
             click.echo(f"Loading Excel file: {file_path}...")
-            report = ProfileReport.from_excel(file_path, title=title, minimal=minimal)
+            report = ProfileReport.from_excel(
+                file_path,
+                title=title,
+                minimal=minimal,
+                correlations=correlations,
+                monotonicity=monotonicity,
+            )
         elif ext == ".parquet":
             click.echo(f"Loading Parquet file: {file_path}...")
             table = ibis.read_parquet(file_path)
-            report = ProfileReport(table, minimal=minimal, title=title)
+            report = ProfileReport(
+                table,
+                minimal=minimal,
+                title=title,
+                correlations=correlations,
+                monotonicity=monotonicity,
+            )
         elif ext == ".csv":
             click.echo(f"Loading CSV file: {file_path}...")
             table = ibis.read_csv(file_path)
-            report = ProfileReport(table, minimal=minimal, title=title)
+            report = ProfileReport(
+                table,
+                minimal=minimal,
+                title=title,
+                correlations=correlations,
+                monotonicity=monotonicity,
+            )
         else:
             # Fallback/Attempt to load as Parquet or CSV
             try:
@@ -53,7 +81,13 @@ def main(file_path, output, title, minimal, theme, output_format):
             except Exception:
                 click.echo(f"Attempting to load {file_path} as CSV...")
                 table = ibis.read_csv(file_path)
-            report = ProfileReport(table, minimal=minimal, title=title)
+            report = ProfileReport(
+                table,
+                minimal=minimal,
+                title=title,
+                correlations=correlations,
+                monotonicity=monotonicity,
+            )
 
         if not output_format:
             output_format = "json" if output.endswith(".json") else "html"

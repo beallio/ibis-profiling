@@ -17,6 +17,8 @@ def profile(
     minimal: bool = False,
     title: str = "Ibis Profiling Report",
     on_progress: Callable[[int, str | None], None] | None = None,
+    correlations: bool | None = None,
+    monotonicity: bool | None = None,
 ) -> InternalProfileReport:
     """
     Main entrypoint for profiling an Ibis table.
@@ -26,12 +28,24 @@ def profile(
     2. Plans a minimal set of batched aggregation queries.
     3. Executes the queries in the backend.
     4. Formats the results into a structured report.
+
+    Args:
+        table: Ibis Table to profile.
+        minimal: If True, skips expensive computations (correlations, interactions, etc.).
+        title: Title of the report.
+        on_progress: Optional callback for progress updates.
+        correlations: Explicitly enable/disable correlations. If None, enabled when minimal=False.
+        monotonicity: Explicitly enable/disable monotonicity checks. If None, enabled when minimal=False.
     """
     start_time = datetime.now()
 
     def update_progress(inc, label=None):
         if on_progress:
             on_progress(inc, label)
+
+    # Determine which sections to compute
+    compute_correlations = not minimal if correlations is None else correlations
+    compute_monotonicity = not minimal if monotonicity is None else monotonicity
 
     update_progress(0, "Analyzing dataset...")
     inspector = DatasetInspector(table)
@@ -220,7 +234,7 @@ def profile(
         report.add_metric(col_name, metric_name, val)
 
     # 4. Handle Correlations
-    if not minimal:
+    if compute_correlations:
         update_progress(10, "Correlations pass...")
         from .report.model.correlations import CorrelationEngine
 
@@ -261,9 +275,10 @@ def profile(
                     final_matrix.append(new_row)
                 report.correlations["pearson"] = {"columns": numeric_cols, "matrix": final_matrix}
 
-            # 4b. Spearman (Rank Pass) - Limit to 1M rows for performance
+            # 4b. Spearman (Rank Pass) - Threshold protection unless explicitly enabled
             n_total = report.table.get("n", 0)
-            if isinstance(n_total, int) and n_total <= 1_000_000:
+            force_spearman = correlations is True
+            if isinstance(n_total, int) and (n_total <= 1_000_000 or force_spearman):
                 spearman_meta = CorrelationEngine._compute_spearman(table, numeric_cols)
                 rank_exprs = [
                     spearman_meta["rank_exprs"][c].name(f"rank_{c}") for c in numeric_cols
@@ -297,15 +312,16 @@ def profile(
                         "columns": numeric_cols,
                         "matrix": final_matrix,
                     }
-            else:
+            elif isinstance(n_total, int) and n_total > 1_000_000:
                 report.analysis.setdefault("warnings", []).append(
-                    "Spearman correlation skipped for large dataset (>1M rows)."
+                    "Spearman correlation skipped for large dataset (>1M rows). Use correlations=True to force."
                 )
 
     # 5. Handle Monotonicity and other column-wise complex checks
-    if not minimal:
+    if compute_monotonicity:
         n_total = report.table.get("n", 0)
-        if isinstance(n_total, int) and n_total <= 1_000_000:
+        force_monotonicity = monotonicity is True
+        if isinstance(n_total, int) and (n_total <= 1_000_000 or force_monotonicity):
             update_progress(5, "Monotonicity checks...")
             numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
             # Monotonicity check requires a window pass
@@ -337,9 +353,9 @@ def profile(
                     parts = k.split("__")
                     c_name, m_name = parts[0], parts[1]
                     report.add_metric(c_name, m_name, v[0])
-        else:
+        elif isinstance(n_total, int) and n_total > 1_000_000:
             report.analysis.setdefault("warnings", []).append(
-                "Monotonicity checks skipped for large dataset (>1M rows)."
+                "Monotonicity checks skipped for large dataset (>1M rows). Use monotonicity=True to force."
             )
 
     # 6. Capture Samples (Head)
@@ -387,10 +403,19 @@ class ProfileReport:
         table: ibis.Table,
         minimal: bool = False,
         on_progress: Callable[[int, str | None], None] | None = None,
+        correlations: bool | None = None,
+        monotonicity: bool | None = None,
         **kwargs,
     ):
         title = kwargs.get("title", "Ibis Profiling Report")
-        self._report = profile(table, minimal=minimal, title=title, on_progress=on_progress)
+        self._report = profile(
+            table,
+            minimal=minimal,
+            title=title,
+            on_progress=on_progress,
+            correlations=correlations,
+            monotonicity=monotonicity,
+        )
 
     @classmethod
     def from_excel(cls, path: str, **kwargs) -> "ProfileReport":
