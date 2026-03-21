@@ -12,7 +12,8 @@ def generate_5M_data(n=5_000_000):
         "id": np.arange(n),
         "val_numeric": rng.normal(100, 15, n),
         "val_monotonic": np.sort(rng.uniform(0, 1000, n)),
-        "val_with_nulls": [None if i % 10 == 0 else i for i in range(n)],
+        "val_with_nulls": [None if i % 10 == 0 else float(i) for i in range(n)],
+        "val_also_nulls": [None if i % 7 == 0 else float(i) for i in range(n)],
         "category": rng.choice(["A", "B", "C", "D", "E"], size=n),
     }
     return ibis.memtable(pd.DataFrame(data))
@@ -30,6 +31,7 @@ def main():
     start = time.time()
     report_full = profile(table, minimal=False, title="5M Full Default")
     report_full.to_file(os.path.join(output_dir, "full_default.html"))
+    report_full.to_file(os.path.join(output_dir, "full_default.json"))
     print(f"   Done in {time.time() - start:.2f}s")
 
     # 2. Minimal Profile

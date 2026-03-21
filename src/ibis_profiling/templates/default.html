@@ -133,28 +133,27 @@
     // Helper: Safely parse different matrix JSON structures
     const parseMatrixData = (data) => {
       if (!data) return { columns: [], matrix: [] };
-      // 1) Handle array of objects format (e.g. from missing heatmap or correlations)
+      
+      // 1) If it's already an array, parse it as array-of-objects
       if (Array.isArray(data)) {
         if (data.length === 0) return { columns: [], matrix: [] };
         const columns = Object.keys(data[0]);
         const matrix = data.map(row => columns.map(col => row[col]));
         return { columns, matrix };
       }
+
       // 2) Handle { columns, matrix } or { columns, values } standard shapes
       if (data.columns) {
         if (data.matrix) return { columns: data.columns, matrix: data.matrix };
         if (data.values) return { columns: data.columns, matrix: data.values };
       }
-      // 3) Handle nested data.matrix format 
-      if (data.matrix && data.matrix.columns) {
-        if (data.matrix.matrix) return { columns: data.matrix.columns, matrix: data.matrix.matrix };
-        if (data.matrix.values) return { columns: data.matrix.columns, matrix: data.matrix.values };
-      }
-      
-      // 4) Recursively check if data itself has a matrix key that matches (triple nesting)
-      if (data.matrix && !data.matrix.columns) {
+
+      // 3) Recursively check if data itself has a matrix key that matches
+      if (data.matrix) {
+          // If data.matrix is an array or has its own columns, recurse
           return parseMatrixData(data.matrix);
       }
+      
       return { columns: [], matrix: [] };
     };
 

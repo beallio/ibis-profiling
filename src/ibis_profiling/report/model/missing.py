@@ -46,8 +46,32 @@ class MissingEngine:
 
             # Use CorrelationEngine's logic for Pearson on the masks
             from .correlations import CorrelationEngine
+            import ibis.expr.types as ir
 
-            heatmap_data = CorrelationEngine._compute_pearson(mask_table, cols_with_missing)
+            corr_results = CorrelationEngine._compute_pearson(mask_table, cols_with_missing)
+
+            # We must execute these expressions in a batch
+            flat_exprs = []
+            for i, row in enumerate(corr_results["matrix"]):
+                for j, item in enumerate(row):
+                    if isinstance(item, ir.Scalar):
+                        flat_exprs.append(item.name(f"mcorr_{i}_{j}"))
+
+            if flat_exprs:
+                executed_vals = mask_table.aggregate(flat_exprs).to_pyarrow().to_pydict()
+                final_matrix = []
+                val_idx = 0
+                for i, row in enumerate(corr_results["matrix"]):
+                    new_row = []
+                    for j, item in enumerate(row):
+                        if i == j:
+                            new_row.append(1.0)
+                        else:
+                            key = list(executed_vals.keys())[val_idx]
+                            new_row.append(executed_vals[key][0])
+                            val_idx += 1
+                    final_matrix.append(new_row)
+                heatmap_data = {"columns": cols_with_missing, "matrix": final_matrix}
 
         # 2. Missingness Matrix (Sampled nullity patterns)
         # We sample 250 rows to show the 'location' of missing values
