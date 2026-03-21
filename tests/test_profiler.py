@@ -110,6 +110,22 @@ def test_profilereport_wrapper():
     assert os.path.exists(output_json)
 
 
+def test_empty_table_profiling():
+    """Verify that profiling an empty table doesn't crash."""
+    import pandas as pd
+
+    df = pd.DataFrame(columns=["a", "b"])
+    table = ibis.memtable(df)
+
+    report = profile(table)
+    report_dict = report.to_dict()
+
+    assert report_dict["table"]["n"] == 0
+    assert "a" in report_dict["variables"]
+    assert report_dict["variables"]["a"]["n"] == 0
+    assert report_dict["variables"]["a"]["n_missing"] == 0
+
+
 def test_histogram_failure_warning():
     """Verify that histogram failures are recorded as warnings instead of swallowed."""
     table = ibis.memtable({"a": [1.0, 2.0, 3.0]})
