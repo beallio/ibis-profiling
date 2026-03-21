@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Fix Nullity Matrix/Heatmap rendering and missingness in 20M report",
+  "files_modified": [
+    "src/ibis_profiling/templates/default.html",
+    "scripts/profile_20M_financial.py"
+  ],
+  "design_decisions": [
+    "Updated parseMatrixData in default.html to handle triple-nested JSON structures recursively (reportData.missing.matrix.matrix.values).",
+    "Fixed a bug where some nested matrices were not correctly identified by the React frontend.",
+    "Modified the 20M financial data script to ensure multiple columns have missing values, which is required to trigger the Pearson Nullity Heatmap.",
+    "Deleted and regenerated the 20M row Parquet file to ensure the new missingness data was persisted."
+  ],
+  "results": "The Nullity Matrix and Nullity Heatmap now correctly compute and render in the 20M transaction report."
+}

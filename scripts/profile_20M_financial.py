@@ -35,13 +35,16 @@ def generate_financial_data_chunk(n, start_idx, rng):
 
     # Introduce some missingness
     # 5% missing in amount
-    mask = rng.random(n) < 0.05
-    data["amount"][mask] = np.nan
+    mask_amount = rng.random(n) < 0.05
+    data["amount"][mask_amount] = np.nan
 
-    # 2% missing in terminal_id
-    # (Since it's a list of strings, we handle it slightly differently if needed,
-    # but for memtable it will convert correctly)
+    # 3% missing in balance
+    mask_balance = rng.random(n) < 0.03
+    data["balance"][mask_balance] = np.nan
 
+    # 2% missing in days_since_tx
+    mask_days = rng.random(n) < 0.02
+    data["days_since_tx"][mask_days] = np.nan
     return pd.DataFrame(data)
 
 

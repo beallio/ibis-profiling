@@ -150,6 +150,11 @@
         if (data.matrix.matrix) return { columns: data.matrix.columns, matrix: data.matrix.matrix };
         if (data.matrix.values) return { columns: data.matrix.columns, matrix: data.matrix.values };
       }
+      
+      // 4) Recursively check if data itself has a matrix key that matches (triple nesting)
+      if (data.matrix && !data.matrix.columns) {
+          return parseMatrixData(data.matrix);
+      }
       return { columns: [], matrix: [] };
     };
 
