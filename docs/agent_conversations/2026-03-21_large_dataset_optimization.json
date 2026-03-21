@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Generate 20M x 20col financial report and optimize for large datasets",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "scripts/profile_20M_financial.py"
+  ],
+  "design_decisions": [
+    "Implemented OOM prevention for large datasets (>1M rows) by skipping Spearman correlation and Monotonicity checks.",
+    "Spearman and Monotonicity are O(n log n) or involve complex window functions that scale poorly on massive tables in memory-constrained environments.",
+    "Maintained Pearson correlation and Missingness Matrix/Heatmap as they scale better via DuckDB aggregates.",
+    "Created scripts/profile_20M_financial.py to generate and profile a 1.4GB 20M-row dataset."
+  ],
+  "results": "Successfully profiled 20M rows in 55.7s without OOM. Pearson correlations and all other sections (except Spearman/Monotonicity) are present."
+}

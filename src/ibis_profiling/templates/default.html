@@ -469,23 +469,23 @@
       const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
 
       return (
-        <div className={`overflow-x-auto mt-12 pt-8 border-t ${theme.border}`}>
+        <div className={`mt-12 pt-8 border-t ${theme.border}`}>
           <h3 className={`font-bold text-xl mb-2 ${theme.textPrimary}`}>Nullity Matrix</h3>
           <p className={`text-sm ${theme.textSub} mb-6`}>Dense visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
 
-          <div className="flex gap-4 items-end min-w-[800px]">
+          <div className="flex gap-4 items-end min-w-[1000px]">
             <div className="flex-1 relative">
               {/* Column Labels */}
               <div className="flex mb-2">
                  {columns.map((c, i) => (
-                    <div key={c} style={{ width: `${100/numCols}%` }} className="flex justify-start h-24 relative overflow-visible">
+                    <div key={c} style={{ width: `${100/numCols}%` }} className="flex justify-start h-32 relative overflow-visible">
                        <span className={`absolute bottom-1 left-1/2 origin-bottom-left -rotate-45 text-[10px] font-mono ${theme.textMuted} whitespace-nowrap`}>{c}</span>
                     </div>
                  ))}
               </div>
               
               {/* SVG Matrix */}
-              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-96 ${theme.bgInput} border ${theme.border} shadow-inner rounded-sm`}>
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-[600px] ${theme.bgInput} border ${theme.border} shadow-inner rounded-sm`}>
                 {columns.map((_, cIdx) => (
                    <g key={cIdx} transform={`translate(${cIdx * colWidth}, 0)`}>
                       {getBlocks(cIdx).map((block, i) => (
@@ -505,7 +505,7 @@
             </div>
 
             {/* Completeness Sparkline */}
-            <div className="w-20 h-96 relative flex flex-col items-center">
+            <div className="w-20 h-[600px] relative flex flex-col items-center">
               <div className={`text-[10px] ${theme.textSub} font-mono text-center absolute -top-8 w-full`}>Data<br/>Completeness</div>
               <svg viewBox={`0 0 100 ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-full border-r border-t border-b ${theme.borderAlt} ${theme.bgCardAlt} rounded-r-sm`}>
                 <polygon points={sparkPoly} fill="rgba(59, 130, 246, 0.15)" />
@@ -529,8 +529,8 @@
       }
 
       return (
-        <div className="overflow-x-auto pb-8 flex justify-center">
-          <table className="mx-auto text-xs border-collapse">
+        <div className="overflow-x-auto pb-8">
+          <table className="min-w-max border-collapse">
             <thead>
               <tr>
                 <th className="p-1"></th>
@@ -546,7 +546,7 @@
             <tbody>
               {matrix.map((row, i) => (
                 <tr key={i}>
-                  <td className={`p-2 font-mono font-bold ${theme.textMuted} text-right pr-8 whitespace-nowrap`}>
+                  <td className={`p-2 font-mono font-bold ${theme.textMuted} text-right pr-8 whitespace-nowrap min-w-[150px]`}>
                     {columns[i]}
                   </td>
                   {row.map((cell, j) => {
@@ -819,7 +819,7 @@
               </div>
             </header>
 
-            <div className="p-8 max-w-[1600px] mx-auto">
+            <div className="p-8 w-full mx-auto">
               
               {/* OVERVIEW TAB */}
               {activeTab === 'overview' && (
