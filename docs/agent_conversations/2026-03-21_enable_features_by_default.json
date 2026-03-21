@@ -1,0 +1,13 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Enable correlations and monotonicity by default in full report",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py"
+  ],
+  "design_decisions": [
+    "Removed the 1M row threshold for Spearman correlation and Monotonicity checks.",
+    "These features are now enabled by default whenever correlations/monotonicity flags are not explicitly False (i.e. in all full reports).",
+    "Users still retain the ability to explicitly disable them via correlations=False or monotonicity=False if performance becomes an issue."
+  ],
+  "results": "Full reports now include Spearman correlations and monotonicity checks regardless of dataset size by default."
+}

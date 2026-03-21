@@ -275,88 +275,68 @@ def profile(
                     final_matrix.append(new_row)
                 report.correlations["pearson"] = {"columns": numeric_cols, "matrix": final_matrix}
 
-            # 4b. Spearman (Rank Pass) - Threshold protection unless explicitly enabled
-            n_total = report.table.get("n", 0)
-            force_spearman = correlations is True
-            if isinstance(n_total, int) and (n_total <= 1_000_000 or force_spearman):
-                spearman_meta = CorrelationEngine._compute_spearman(table, numeric_cols)
-                rank_exprs = [
-                    spearman_meta["rank_exprs"][c].name(f"rank_{c}") for c in numeric_cols
-                ]
-                # Create a CTE-like table with ranks
-                rank_table = table.mutate(*rank_exprs)
+            # 4b. Spearman (Rank Pass)
+            spearman_meta = CorrelationEngine._compute_spearman(table, numeric_cols)
+            rank_exprs = [spearman_meta["rank_exprs"][c].name(f"rank_{c}") for c in numeric_cols]
+            # Create a CTE-like table with ranks
+            rank_table = table.mutate(*rank_exprs)
 
-                flat_spearman = []
-                for i, c1 in enumerate(numeric_cols):
-                    for j, c2 in enumerate(numeric_cols):
+            flat_spearman = []
+            for i, c1 in enumerate(numeric_cols):
+                for j, c2 in enumerate(numeric_cols):
+                    if i < j:
+                        r1 = rank_table[f"rank_{c1}"]
+                        r2 = rank_table[f"rank_{c2}"]
+                        # Pearson on Ranks
+                        expr = r1.cov(r2, how="pop") / (r1.std(how="pop") * r2.std(how="pop"))
+                        flat_spearman.append(expr.name(f"corr_spearman_{i}_{j}"))
+
+            if flat_spearman:
+                executed_vals = rank_table.aggregate(flat_spearman).to_pyarrow().to_pydict()
+                final_matrix = [[1.0 for _ in numeric_cols] for _ in numeric_cols]
+                val_idx = 0
+                for i in range(len(numeric_cols)):
+                    for j in range(len(numeric_cols)):
                         if i < j:
-                            r1 = rank_table[f"rank_{c1}"]
-                            r2 = rank_table[f"rank_{c2}"]
-                            # Pearson on Ranks
-                            expr = r1.cov(r2, how="pop") / (r1.std(how="pop") * r2.std(how="pop"))
-                            flat_spearman.append(expr.name(f"corr_spearman_{i}_{j}"))
-
-                if flat_spearman:
-                    executed_vals = rank_table.aggregate(flat_spearman).to_pyarrow().to_pydict()
-                    final_matrix = [[1.0 for _ in numeric_cols] for _ in numeric_cols]
-                    val_idx = 0
-                    for i in range(len(numeric_cols)):
-                        for j in range(len(numeric_cols)):
-                            if i < j:
-                                key = list(executed_vals.keys())[val_idx]
-                                val = executed_vals[key][0]
-                                final_matrix[i][j] = val
-                                final_matrix[j][i] = val
-                                val_idx += 1
-                    report.correlations["spearman"] = {
-                        "columns": numeric_cols,
-                        "matrix": final_matrix,
-                    }
-            elif isinstance(n_total, int) and n_total > 1_000_000:
-                report.analysis.setdefault("warnings", []).append(
-                    "Spearman correlation skipped for large dataset (>1M rows). Use correlations=True to force."
-                )
+                            key = list(executed_vals.keys())[val_idx]
+                            val = executed_vals[key][0]
+                            final_matrix[i][j] = val
+                            final_matrix[j][i] = val
+                            val_idx += 1
+                report.correlations["spearman"] = {
+                    "columns": numeric_cols,
+                    "matrix": final_matrix,
+                }
 
     # 5. Handle Monotonicity and other column-wise complex checks
     if compute_monotonicity:
-        n_total = report.table.get("n", 0)
-        force_monotonicity = monotonicity is True
-        if isinstance(n_total, int) and (n_total <= 1_000_000 or force_monotonicity):
-            update_progress(5, "Monotonicity checks...")
-            numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
-            # Monotonicity check requires a window pass
-            # We must perform the comparison IN the window pass (mutate) then aggregate
-            mono_checks = []
+        update_progress(5, "Monotonicity checks...")
+        numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
+        # Monotonicity check requires a window pass
+        # We must perform the comparison IN the window pass (mutate) then aggregate
+        mono_checks = []
+        for col_name in numeric_cols:
+            col = table[col_name]
+            prev = col.lag().over(ibis.window())
+            mono_checks.append(((col >= prev) | prev.isnull()).name(f"inc_{col_name}"))
+            mono_checks.append(((col <= prev) | prev.isnull()).name(f"dec_{col_name}"))
+
+        if mono_checks:
+            check_table = table.mutate(*mono_checks)
+            final_aggs = []
             for col_name in numeric_cols:
-                col = table[col_name]
-                prev = col.lag().over(ibis.window())
-                mono_checks.append(((col >= prev) | prev.isnull()).name(f"inc_{col_name}"))
-                mono_checks.append(((col <= prev) | prev.isnull()).name(f"dec_{col_name}"))
+                final_aggs.append(
+                    check_table[f"inc_{col_name}"].all().name(f"{col_name}__monotonic_increasing")
+                )
+                final_aggs.append(
+                    check_table[f"dec_{col_name}"].all().name(f"{col_name}__monotonic_decreasing")
+                )
 
-            if mono_checks:
-                check_table = table.mutate(*mono_checks)
-                final_aggs = []
-                for col_name in numeric_cols:
-                    final_aggs.append(
-                        check_table[f"inc_{col_name}"]
-                        .all()
-                        .name(f"{col_name}__monotonic_increasing")
-                    )
-                    final_aggs.append(
-                        check_table[f"dec_{col_name}"]
-                        .all()
-                        .name(f"{col_name}__monotonic_decreasing")
-                    )
-
-                results = check_table.aggregate(final_aggs).to_pyarrow().to_pydict()
-                for k, v in results.items():
-                    parts = k.split("__")
-                    c_name, m_name = parts[0], parts[1]
-                    report.add_metric(c_name, m_name, v[0])
-        elif isinstance(n_total, int) and n_total > 1_000_000:
-            report.analysis.setdefault("warnings", []).append(
-                "Monotonicity checks skipped for large dataset (>1M rows). Use monotonicity=True to force."
-            )
+            results = check_table.aggregate(final_aggs).to_pyarrow().to_pydict()
+            for k, v in results.items():
+                parts = k.split("__")
+                c_name, m_name = parts[0], parts[1]
+                report.add_metric(c_name, m_name, v[0])
 
     # 6. Capture Samples (Head)
     update_progress(5 if not minimal else 10, "Capturing samples...")
