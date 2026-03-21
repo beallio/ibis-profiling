@@ -42,28 +42,25 @@ class InteractionEngine:
         n_points = len(next(iter(data.values()))) if data else 0
 
         # 4. Build the nested interactions structure
-        interactions = {}
-        for i, col1 in enumerate(numeric_cols):
-            interactions[col1] = {}
-            for j, col2 in enumerate(numeric_cols):
-                if i == j:
-                    continue
+        from itertools import combinations
 
-                # Extract (x, y) pairs, skipping nulls for this specific pair
-                points = []
-                v1_list = data[col1]
-                v2_list = data[col2]
+        interactions = {c: {} for c in numeric_cols}
+        for col1, col2 in combinations(numeric_cols, 2):
+            points = []
+            v1_list = data[col1]
+            v2_list = data[col2]
 
-                for k in range(n_points):
-                    v1 = v1_list[k]
-                    v2 = v2_list[k]
-                    if v1 is not None and v2 is not None:
-                        # Ensure we have python floats for JSON
-                        try:
-                            points.append({"x": float(v1), "y": float(v2)})
-                        except (TypeError, ValueError):
-                            continue
+            for k in range(n_points):
+                v1 = v1_list[k]
+                v2 = v2_list[k]
+                if v1 is not None and v2 is not None:
+                    try:
+                        points.append({"x": float(v1), "y": float(v2)})
+                    except (TypeError, ValueError):
+                        continue
 
-                interactions[col1][col2] = points
+            interactions[col1][col2] = points
+            # Symmetrically populate the other side by swapping x and y
+            interactions[col2][col1] = [{"x": p["y"], "y": p["x"]} for p in points]
 
         return interactions

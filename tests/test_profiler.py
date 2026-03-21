@@ -1,5 +1,7 @@
 import ibis
+import ibis.expr.types as ir
 import polars as pl
+import unittest.mock as mock
 from datetime import datetime
 from ibis_profiling import profile
 
@@ -106,3 +108,28 @@ def test_profilereport_wrapper():
 
     report.to_file(output_json)
     assert os.path.exists(output_json)
+
+
+def test_histogram_failure_warning():
+    """Verify that histogram failures are recorded as warnings instead of swallowed."""
+    table = ibis.memtable({"a": [1.0, 2.0, 3.0]})
+
+    # We'll mock ibis.expr.types.Table.execute because histograms (value_counts)
+    # return a Table, whereas many other setup metrics return Scalars.
+
+    real_execute = ir.Table.execute
+
+    def side_effect(self, *args, **kwargs):
+        # We want to fail when it's the histogram calculation.
+        # Check for any column containing 'count'.
+        if any("count" in str(c).lower() for c in self.columns):
+            raise ValueError("Histogram calculation failed!")
+        return real_execute(self, *args, **kwargs)
+
+    with mock.patch.object(ir.Table, "execute", autospec=True, side_effect=side_effect):
+        report = profile(table)
+
+        # Check that warnings are present in analysis
+        assert "warnings" in report.analysis
+        assert any("Histogram failed for a" in w for w in report.analysis["warnings"])
+        assert "Histogram calculation failed!" in report.analysis["warnings"][0]

@@ -37,7 +37,14 @@ class ExecutionEngine:
                 else:
                     return None
 
-                res = con.con.execute(f"CALL pragma_storage_info('{table_name}')").pl()
+                # Whitelist identifiers to avoid injection
+                import re
+
+                if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", table_name):
+                    return None
+
+                # Prefer parameterized query if supported by DuckDB
+                res = con.con.execute("CALL pragma_storage_info(?)", [table_name]).pl()
                 # Sum the segment sizes (estimated)
                 if not res.is_empty():
                     # Segment sizes in DuckDB blocks

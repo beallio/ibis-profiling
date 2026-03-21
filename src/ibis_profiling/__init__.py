@@ -195,8 +195,10 @@ def profile(
                 "numeric_histogram",
                 {"counts": counts_dict, "min": v_min, "max": v_max, "nbins": nbins},
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            report.analysis.setdefault("warnings", []).append(
+                f"Histogram failed for {col_name}: {exc}"
+            )
 
     # 4. Handle complex metrics (e.g. n_unique, top_values)
     final_types = {c: s.get("type") for c, s in report.variables.items()}

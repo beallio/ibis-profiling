@@ -9,6 +9,25 @@ class MissingEngine:
     def compute(table: ibis.Table, variables: dict) -> Dict[str, Any]:
         """Assembles missing value model from variable statistics and nullity correlations."""
         columns = list(variables.keys())
+        if not columns:
+            return {
+                "bar": {
+                    "name": "Count",
+                    "caption": "A simple bar chart of missing values by variable.",
+                    "matrix": {"columns": [], "counts": []},
+                },
+                "matrix": {
+                    "name": "Matrix",
+                    "caption": "A visualization of the locations of missing values (first 250 rows).",
+                    "matrix": {"columns": [], "values": []},
+                },
+                "heatmap": {
+                    "name": "Heatmap",
+                    "caption": "Pearson correlation of nullity between variables (-1 to 1).",
+                    "matrix": {"columns": [], "matrix": []},
+                },
+            }
+
         counts = [variables[c].get("n_missing", 0) for c in columns]
 
         # 1. Missingness Heatmap (Correlation of nullity)

@@ -76,19 +76,17 @@ registry.register(
 registry.register(
     Metric("n_negative", MetricCategory.COLUMN, [dt.Numeric], lambda col: (col < 0).sum())
 )
+
+
 # n_unique (singletons) is added as a COLUMN metric, but note it might require special handling in the planner
-registry.register(
-    Metric(
-        "n_unique",
-        MetricCategory.COLUMN,
-        None,
-        lambda col: (
-            col.value_counts()
-            .filter(lambda t: (t[f"{col.get_name()}_count"] == 1) & (t[col.get_name()].notnull()))
-            .count()
-        ),
-    )
-)
+def _n_unique_expr(col: ir.Column) -> ir.Value:
+    vc = col.value_counts()
+    count_col = "count" if "count" in vc.columns else vc.columns[1]
+    value_col = vc.columns[0]
+    return vc.filter((vc[count_col] == 1) & vc[value_col].notnull()).count()
+
+
+registry.register(Metric("n_unique", MetricCategory.COLUMN, None, _n_unique_expr))
 registry.register(
     Metric(
         "infinite", MetricCategory.COLUMN, [dt.Float64, dt.Float32], lambda col: col.isinf().sum()

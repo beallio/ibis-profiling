@@ -1,5 +1,7 @@
 import ibis
+import pandas as pd
 from ibis_profiling import profile
+from ibis_profiling.report.model.interactions import InteractionEngine
 
 
 def test_interactions_computation():
@@ -34,3 +36,36 @@ def test_interactions_computation():
     # but since it's a small memtable, order should be preserved.
     assert points[0]["x"] == 1.0
     assert points[0]["y"] == 5.0
+
+
+def test_interaction_engine_symmetry():
+    """Verify that InteractionEngine computes all pairs correctly and symmetrically."""
+    df = pd.DataFrame({"a": [1, 2, 3, 4, 5], "b": [5, 4, 3, 2, 1], "c": [1, 1, 1, 1, 1]})
+    table = ibis.memtable(df)
+
+    # numeric_cols are ['a', 'b', 'c']
+    variables = {"a": {"type": "Numeric"}, "b": {"type": "Numeric"}, "c": {"type": "Numeric"}}
+    numeric_cols = list(variables.keys())
+
+    # Original compute
+    interactions = InteractionEngine.compute(table, variables)
+
+    # Check that interactions[a][b] exists and is the same as interactions[b][a] (swapped)
+    assert "a" in interactions
+    assert "b" in interactions["a"]
+    assert "b" in interactions
+    assert "a" in interactions["b"]
+
+    ab = interactions["a"]["b"]
+    ba = interactions["b"]["a"]
+
+    assert len(ab) == len(ba)
+    for p_ab, p_ba in zip(ab, ba):
+        assert p_ab["x"] == p_ba["y"]
+        assert p_ab["y"] == p_ba["x"]
+
+    # Check that all pairs (A,B) where A != B are present
+    for c1 in numeric_cols:
+        for c2 in numeric_cols:
+            if c1 != c2:
+                assert c2 in interactions[c1]

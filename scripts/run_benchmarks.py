@@ -99,9 +99,20 @@ def main():
             print(f"Generating data for {size:,} rows x {args.cols} cols...")
             # For 20M, we need to make sure we don't OOM during generation too
             import sys
+            import subprocess
 
-            os.system(
-                f"{sys.executable} scripts/generate_bench_data.py --rows {size} --cols {args.cols} --output {data_path}"
+            subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/generate_bench_data.py",
+                    "--rows",
+                    str(size),
+                    "--cols",
+                    str(args.cols),
+                    "--output",
+                    data_path,
+                ],
+                check=True,
             )
 
         if not os.path.exists(data_path):

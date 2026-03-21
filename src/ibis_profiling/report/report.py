@@ -60,7 +60,7 @@ class ProfileReport:
         self.missing = {}
         self.alerts = []
         self.samples = {}
-        self.analysis = {
+        self.analysis: dict[str, Any] = {
             "title": title,
             "date_start": datetime.now().isoformat(),
         }
@@ -386,8 +386,11 @@ class ProfileReport:
         # Minify JSON for embedding (separators removes extra spaces)
         report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
 
+        # Prevent script-breaking sequences / HTML injection
+        safe_json = report_json.replace("<", "\\u003c").replace(">", "\\u003e")
+
         # Inject data AFTER minifying the template to protect data integrity
-        return html.replace("{{REPORT_DATA}}", report_json)
+        return html.replace("{{REPORT_DATA}}", safe_json)
 
     @staticmethod
     def from_excel(path: str, **kwargs) -> "ProfileReport":
