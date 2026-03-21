@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Setup automated version releases with GitHub",
+  "files_modified": [
+    ".github/workflows/publish.yml",
+    ".github/workflows/release.yml"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Transitioned from manual 'release published' trigger to automated 'tag pushed' (v*) trigger for PyPI publishing.",
+    "Created release.yml to automatically create GitHub Releases with generated release notes upon pushing a version tag.",
+    "Added logic to detect pre-releases (rc, beta, alpha) based on tag naming."
+  ],
+  "results": "Automated release process implemented. Pushing a tag like 'v0.1.3' will now automatically create a GitHub Release with notes and publish to PyPI."
+}

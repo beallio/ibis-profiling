@@ -1,8 +1,9 @@
 name: Publish to PyPI
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build-n-publish:
@@ -11,7 +12,7 @@ jobs:
     permissions:
       # Required for Trusted Publishing
       id-token: write
-      contents: read
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
