@@ -376,12 +376,7 @@ class ProfileReport:
             # 2. Remove CSS/JS multi-line comments
             html = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
 
-            # 3. Handle single-line // comments safely
-            # Only remove lines that are ONLY comments (no leading whitespace)
-            # This is safer for Babel/JSX which might have // inside strings or as part of logic
-            html = re.sub(r"^//.*$", "", html, flags=re.MULTILINE)
-
-            # 4. Safer minification: strip leading/trailing whitespace from each line
+            # 3. Safer minification: strip leading/trailing whitespace from each line
             # but preserve line breaks to avoid breaking JSX tags/logic
             html = "\n".join([line.strip() for line in html.splitlines() if line.strip()])
 

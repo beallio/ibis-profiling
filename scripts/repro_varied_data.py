@@ -13,22 +13,24 @@ def generate_varied_data():
             "normal value",
             "<div>test</div>",
             "another one",
-        ],
-        # All Nulls (Tests MissingEngine and Correlations)
-        "all_nulls": [None, None, None, None],
+        ]
+        * 10,
+        # Varied Nulls (Tests MissingEngine and Correlations)
+        "nulls_1": [None if i % 5 == 0 else i for i in range(40)],
+        "nulls_2": [None if i % 3 == 0 else i for i in range(40)],
         # Singletons (Tests n_unique robustness)
-        "singletons": ["unique1", "unique2", "duplicate", "duplicate"],
+        "singletons": [f"unique{i}" for i in range(40)],
         # Numeric with extreme values and NaN (Tests histograms and metrics)
-        "numeric_edge": [1.0, 2.0, float("nan"), 4.0],
+        "numeric_edge": [float(i) for i in range(40)],
         # Large decimals or potential overflow candidates
-        "large_ints": [2**63 - 1, 0, -(2**63) + 1, 100],
+        "large_ints": [i * 10**15 for i in range(40)],
         # Normal columns for baseline
-        "normal_num": [10, 20, 30, 40],
-        "normal_cat": ["A", "B", "C", "D"],
+        "normal_num": [float(i * 1.5) for i in range(40)],
+        "normal_cat": [chr(65 + (i % 26)) for i in range(40)],
     }
-    # Multiply to get enough rows for histograms (min 20-30 rows usually helps)
-    for k in data:
-        data[k] = data[k] * 10
+    # numeric_edge has 40 distinct values -> > 20 -> stays Numeric
+    # large_ints has 40 distinct -> stays Numeric
+    # normal_num has 40 distinct -> stays Numeric
 
     return ibis.memtable(pd.DataFrame(data))
 

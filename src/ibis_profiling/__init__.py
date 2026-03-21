@@ -224,7 +224,18 @@ def profile(
         update_progress(10, "Correlations pass...")
         from .report.model.correlations import CorrelationEngine
 
-        numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
+        # Use all numeric types PLUS booleans and reclassified integers for correlations
+        # Spearman can technically work on ranks of anything, but Pearson needs numeric-like
+        numeric_cols = []
+        for c, s in report.variables.items():
+            if s.get("type") == "Numeric":
+                numeric_cols.append(c)
+            elif s.get("type") in ["Boolean", "Categorical"]:
+                # Only include categoricals that were originally integers (standard profiling practice)
+                dtype = col_types.get(c)
+                if isinstance(dtype, (dt.Integer, dt.Boolean)):
+                    numeric_cols.append(c)
+
         if len(numeric_cols) >= 2:
             # 4a. Pearson (Simple Aggregates)
             corr_results = CorrelationEngine._compute_pearson(table, numeric_cols)
@@ -333,8 +344,7 @@ def profile(
 
     end_time = datetime.now()
     report.analysis["date_end"] = end_time.isoformat()
-    # Explicit cast to str for analysis dict if ty complains
-    report.analysis["duration"] = str((end_time - start_time).total_seconds() * 1000)
+    report.analysis["duration"] = (end_time - start_time).total_seconds() * 1000
 
     # Final tick to 100
     update_progress(0, "Report complete.")

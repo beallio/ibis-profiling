@@ -780,7 +780,7 @@
                     {reportData.analysis.duration !== undefined ? (
                       reportData.analysis.duration > 1000 
                         ? `${(reportData.analysis.duration / 1000).toFixed(2)} s` 
-                        : `${reportData.analysis.duration.toFixed(0)} ms`
+                        : `${Number(reportData.analysis.duration).toFixed(0)} ms`
                     ) : (
                       `${Math.max(0, new Date(reportData.analysis.date_end) - new Date(reportData.analysis.date_start))} ms`
                     )}

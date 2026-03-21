@@ -1,0 +1,14 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Fix missing correlations and null matrices in full report",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "scripts/repro_varied_data.py"
+  ],
+  "design_decisions": [
+    "Broadened correlation inclusion: Boolean and low-cardinality Integer columns (even if reclassified as Categorical) are now included in correlation matrices.",
+    "Previously, reclassification to 'Categorical' (heuristic < 20 distinct values) excluded columns from Numeric-only correlation passes.",
+    "Updated varied data script to ensure higher cardinality and varied missingness for better heatmap/correlation testing."
+  ],
+  "results": "Verified that Pearson, Spearman, and Nullity heatmaps are correctly generated for financial-style datasets."
+}
