@@ -11,10 +11,12 @@ from .model.alerts import AlertEngine
 class ReportEncoder(json.JSONEncoder):
     def default(self, o: Any) -> Any:
         import ibis.expr.types as ir
-        # print(f"DEBUG: Encoding {type(o)}, is_scalar={isinstance(o, ir.Scalar)}")
+        from decimal import Decimal
 
         if isinstance(o, (datetime, date)):
             return o.isoformat()
+        if isinstance(o, Decimal):
+            return float(o)
         if isinstance(o, ir.Scalar):
             try:
                 val = o.to_pyarrow().as_py()
@@ -30,6 +32,9 @@ class ReportEncoder(json.JSONEncoder):
             if math.isnan(val) or math.isinf(val):
                 return None
             return val
+
+        if isinstance(val, Decimal):
+            return float(val)
 
         # Final check if val is same as o and it's not a primitive, we might still fail
         if val is o and not isinstance(val, (str, int, float, bool, list, dict, type(None))):
@@ -66,9 +71,12 @@ class ProfileReport:
     def _to_json_serializable(self, val):
         """Converts Polars/Temporal/Ibis types to standard Python types for JSON serialization."""
         import ibis.expr.types as ir
+        from decimal import Decimal
 
         if isinstance(val, (datetime, date)):
             return val.isoformat()
+        if isinstance(val, Decimal):
+            return float(val)
         if isinstance(val, ir.Scalar):
             # Convert Ibis scalar to python
             try:
@@ -83,6 +91,9 @@ class ProfileReport:
         if isinstance(val, float):
             if math.isnan(val) or math.isinf(val):
                 return None
+
+        if isinstance(val, Decimal):
+            return float(val)
 
         return val
 

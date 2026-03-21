@@ -1,0 +1,14 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Add ty type checking to the pre-commit hook",
+  "files_modified": [
+    ".git/hooks/pre-commit",
+    "docs/agent_protocol.md"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Integrated 'uv run ty check src/' into the pre-commit hook for automated static analysis.",
+    "Ensured cache isolation by redirecting the virtual environment to /tmp/ibis-profiling/.venv via run.sh."
+  ],
+  "results": "Pre-commit hook now includes type checking, and the environment is correctly isolated in /tmp."
+}

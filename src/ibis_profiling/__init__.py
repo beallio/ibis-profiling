@@ -9,8 +9,14 @@ from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
 
 
+from typing import Callable
+
+
 def profile(
-    table: ibis.Table, minimal: bool = False, title: str = "Ibis Profiling Report"
+    table: ibis.Table,
+    minimal: bool = False,
+    title: str = "Ibis Profiling Report",
+    on_progress: Callable[[int, str | None], None] | None = None,
 ) -> InternalProfileReport:
     """
     Main entrypoint for profiling an Ibis table.
@@ -22,15 +28,23 @@ def profile(
     4. Formats the results into a structured report.
     """
     start_time = datetime.now()
+
+    def update_progress(inc, label=None):
+        if on_progress:
+            on_progress(inc, label)
+
+    update_progress(0, "Analyzing dataset...")
     inspector = DatasetInspector(table)
     planner = QueryPlanner(table, registry)
     engine = ExecutionEngine()
 
     # 1. Generate and execute simple aggregates (1 pass)
+    update_progress(15 if not minimal else 25, "Executing global aggregates...")
     global_plan = planner.build_global_aggregation()
     raw_results = engine.execute(global_plan)
 
     # 2. Collect Table Metadata (Memory, etc.)
+    update_progress(5 if not minimal else 10, "Metadata analysis...")
     row_count = raw_results["_dataset__row_count"][0] if not raw_results.is_empty() else 0
     mem_size = engine.get_storage_size(table)
     if mem_size is None:
@@ -50,8 +64,7 @@ def profile(
     report.analysis["date_start"] = start_time.isoformat()
 
     # 4. Low-cardinality Reclassification (Heuristic)
-    # Perform this early so that second pass plans (histograms, top_values)
-    # respect the reclassified type.
+    update_progress(0, "Reclassifying variables...")
     # NOTE: We only reclassify INTEGERS to Categorical. Floats/Decimals stay Numeric
     # even if low cardinality (to keep precise stats and avoid breaking tests).
     CARDINALITY_THRESHOLD = 20
@@ -69,6 +82,7 @@ def profile(
                         types_dict["Categorical"] = types_dict.get("Categorical", 0) + 1
 
     # 5. Inject column-level static metadata (hashable)
+    update_progress(5 if not minimal else 10, "Static analysis...")
     for col_name in report.variables:
         if col_name != "_dataset":
             report.variables[col_name]["hashable"] = inspector.is_hashable(col_name)
@@ -76,6 +90,7 @@ def profile(
     # 5. Handle dataset-wide distinct count (Duplicates)
     # We do this separately to avoid IntegrityErrors in the global batch
     if not minimal:
+        update_progress(5, "Checking for duplicates...")
         n_distinct_rows = table.distinct().count().execute()
         report.table["n_distinct_rows"] = n_distinct_rows
         n_total = report.table.get("n", 0)
@@ -95,6 +110,7 @@ def profile(
         c for c, s in report.variables.items() if s.get("type") in ["Numeric", "DateTime"]
     ]
 
+    update_progress(5 if not minimal else 10, "Advanced moments calculation...")
     for col_name in plottable_cols:
         stats = report.variables[col_name]
         v_type = stats.get("type")
@@ -150,7 +166,12 @@ def profile(
             report.add_metric(c_name, m_name, v[0])
 
     # Execute histograms
+    hist_count = len(histogram_plans)
+    hist_inc = (
+        (15 if not minimal else 20) / hist_count if hist_count > 0 else (15 if not minimal else 20)
+    )
     for col_name, plan, v_min, v_max in histogram_plans:
+        update_progress(hist_inc, f"Calculating histogram for {col_name}...")
         # Skip if it was reclassified to Categorical (handled by top_values)
         if report.variables[col_name].get("type") == "Categorical":
             continue
@@ -180,7 +201,14 @@ def profile(
     # 4. Handle complex metrics (e.g. n_unique, top_values)
     final_types = {c: s.get("type") for c, s in report.variables.items()}
     complex_plans = planner.build_complex_metrics(override_types=final_types)
+    complex_count = len(complex_plans)
+    complex_inc = (
+        (15 if not minimal else 15) / complex_count
+        if complex_count > 0
+        else (15 if not minimal else 15)
+    )
     for col_name, metric_name, expr in complex_plans:
+        update_progress(complex_inc, f"Calculating {metric_name} for {col_name}...")
         if isinstance(expr, ir.Table):
             # For table-valued metrics like top_values
             val = expr.to_pyarrow().to_pydict()
@@ -191,6 +219,7 @@ def profile(
 
     # 4. Handle Correlations
     if not minimal:
+        update_progress(10, "Correlations pass...")
         from .report.model.correlations import CorrelationEngine
 
         numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
@@ -251,6 +280,7 @@ def profile(
 
     # 5. Handle Monotonicity and other column-wise complex checks
     if not minimal:
+        update_progress(5, "Monotonicity checks...")
         numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
         # Monotonicity check requires a window pass
         # We must perform the comparison IN the window pass (mutate) then aggregate
@@ -279,6 +309,7 @@ def profile(
                 report.add_metric(c_name, m_name, v[0])
 
     # 6. Capture Samples (Head)
+    update_progress(5 if not minimal else 10, "Capturing samples...")
     # Note: Ibis doesn't have a reliable cross-backend 'tail' without an order key.
     # We'll just capture the head for now.
     head_sample = table.head(10).to_pyarrow().to_pydict()
@@ -286,12 +317,14 @@ def profile(
 
     # 6. Missing Values (Matrix/Heatmap)
     if not minimal:
+        update_progress(5, "Missing values matrix...")
         from .report.model.missing import MissingEngine
 
         report.missing = MissingEngine.compute(table, report.variables)
 
     # 7. Handle Pairwise Interactions (Scatter Plots)
     if not minimal:
+        update_progress(10, "Pairwise interactions...")
         from .report.model.interactions import InteractionEngine
 
         report.interactions = InteractionEngine.compute(table, report.variables)
@@ -301,6 +334,8 @@ def profile(
     # Explicit cast to str for analysis dict if ty complains
     report.analysis["duration"] = str((end_time - start_time).total_seconds() * 1000)
 
+    # Final tick to 100
+    update_progress(0, "Report complete.")
     return report
 
 
@@ -314,9 +349,15 @@ class ProfileReport:
     Compatibility wrapper to mimic ydata-profiling API.
     """
 
-    def __init__(self, table: ibis.Table, minimal: bool = False, **kwargs):
+    def __init__(
+        self,
+        table: ibis.Table,
+        minimal: bool = False,
+        on_progress: Callable[[int, str | None], None] | None = None,
+        **kwargs,
+    ):
         title = kwargs.get("title", "Ibis Profiling Report")
-        self._report = profile(table, minimal=minimal, title=title)
+        self._report = profile(table, minimal=minimal, title=title, on_progress=on_progress)
 
     @classmethod
     def from_excel(cls, path: str, **kwargs) -> "ProfileReport":

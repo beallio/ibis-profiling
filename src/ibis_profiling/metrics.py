@@ -40,7 +40,12 @@ registry = MetricRegistry()
 
 
 def safe_col(col: ir.Column) -> ir.Column:
-    """Treats NaNs as NULLs for statistical functions to avoid DuckDB OutOfRange errors."""
+    """Treats NaNs as NULLs and casts Numeric types to Float64 for statistical stability."""
+    # Cast to Float64 first to avoid overflow in intermediate calculations
+    # and to ensure consistent behavior across backends for stats functions.
+    if isinstance(col.type(), dt.Numeric):
+        col = col.cast(dt.Float64)
+
     if isinstance(col.type(), (dt.Float64, dt.Float32)):
         return col.isnan().cases((True, None), else_=col)
     return col

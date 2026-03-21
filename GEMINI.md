@@ -25,11 +25,4 @@ DOCUMENT
 
 ### Quality Control
 
-Before any commit, agents MUST execute:
-
-```bash
-ruff check . --fix
-ruff format .
-uv run ty check src/
-uv run pytest
-```
+Before any commit, ensure the precommit hooks are executed.
