@@ -1,0 +1,13 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Verify report generation with 5M row dataset after default changes",
+  "files_modified": [
+    "scripts/verify_defaults_5M.py"
+  ],
+  "design_decisions": [
+    "Verified that 'Full' reports now include expensive checks (Spearman, Monotonicity) by default on datasets > 1M rows (tested with 5M).",
+    "Verified that 'Minimal' reports exclude these checks by default.",
+    "Verified that explicit flags (correlations=False, monotonicity=False) correctly override the defaults."
+  ],
+  "results": "All reports generated successfully. 5M row full report completed in ~8.6s including all expensive metrics."
+}
