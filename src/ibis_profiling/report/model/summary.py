@@ -7,6 +7,8 @@ class SummaryEngine:
 
     @staticmethod
     def process_variables(raw_results: pl.DataFrame, schema: dict) -> Dict[str, Any]:
+        import ibis.expr.datatypes as dt
+
         if raw_results.is_empty():
             return {}
 
@@ -14,17 +16,18 @@ class SummaryEngine:
         variables = {}
 
         for col_name, dtype in schema.items():
-            dt_str = str(dtype).lower()
-            mapped_type = "Categorical"
-            # Support all common numeric variants in Ibis
-            if any(
-                t in dt_str for t in ["int", "float", "decimal", "double", "int", "uint", "numeric"]
-            ):
+            # Use Ibis DataType hierarchy for robust classification
+            if isinstance(dtype, dt.Numeric):
                 mapped_type = "Numeric"
-            elif "bool" in dt_str:
+            elif isinstance(dtype, dt.Boolean):
                 mapped_type = "Boolean"
-            elif any(t in dt_str for t in ["time", "date"]):
+            elif isinstance(dtype, (dt.Date, dt.Time, dt.Timestamp)):
                 mapped_type = "DateTime"
+            elif isinstance(dtype, dt.String):
+                mapped_type = "Categorical"
+            else:
+                # Default to Categorical for unknown/complex types
+                mapped_type = "Categorical"
 
             # Initialize base model
             variables[col_name] = {

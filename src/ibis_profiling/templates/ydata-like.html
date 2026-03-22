@@ -97,8 +97,9 @@
       ScatterChart
     } from 'lucide-react';
 
-    // Statically embedded payload replacing the API call
-    const REPORT_DATA = {{REPORT_DATA}};
+    // Securely decode the Base64-encoded payload
+    const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
+    const REPORT_DATA = JSON.parse(atob(ENCODED_REPORT_DATA));
 
     // --- FORMATTING HELPERS ---
     const formatBytes = (bytes) => {

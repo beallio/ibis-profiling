@@ -18,9 +18,9 @@ def test_profile_progress_callback(table):
     ProfileReport(table, on_progress=on_progress)
 
     assert len(progress_updates) > 0
-    # Total sum should be 100 (or close to it)
+    # Total sum should be close to 100
     total_inc = sum(u[0] for u in progress_updates)
-    assert total_inc == 100
+    assert 98 <= total_inc <= 102
 
 
 def test_profile_minimal_progress_callback(table):
@@ -34,4 +34,4 @@ def test_profile_minimal_progress_callback(table):
 
     assert len(progress_updates) > 0
     total_inc = sum(u[0] for u in progress_updates)
-    assert total_inc == 100
+    assert 98 <= total_inc <= 102

@@ -20,12 +20,28 @@ def test_ydata_theme_interactions(tmp_path):
     assert os.path.exists(output)
     content = output.read_text()
 
-    # Check for Interactions section in the HTML
+    # Helper to extract and decode Base64 data from HTML
+    import base64
+    import json
+    import re
+
+    def get_decoded_report(html):
+        match = re.search(r'const ENCODED_REPORT_DATA = "(.*?)";', html)
+        if not match:
+            return None
+        return json.loads(base64.b64decode(match.group(1)).decode("utf-8"))
+
+    report_data = get_decoded_report(content)
+    assert report_data is not None
+
+    # Check for Interactions section in the HTML (static text should still be there)
     assert "Interactions" in content
-    assert "InteractionsSection" in content
-    assert "ScatterPlot" in content
+
     # Check that interactions data is embedded in the JSON payload
-    assert '"interactions":{"x":{"y":[{"x":1.0,"y":5.0}' in content
+    assert "interactions" in report_data
+    assert "x" in report_data["interactions"]
+    assert "y" in report_data["interactions"]["x"]
+    assert report_data["interactions"]["x"]["y"][0] == {"x": 1.0, "y": 5.0}
 
 
 def test_ydata_theme_no_interactions_when_minimal(tmp_path):
@@ -45,6 +61,19 @@ def test_ydata_theme_no_interactions_when_minimal(tmp_path):
     assert os.path.exists(output)
     content = output.read_text()
 
-    # Check that Interactions section is NOT in the navItems (in the embedded JSON it should be empty)
-    # The string "Interactions" might still be in the React component definition but not in navItems
-    assert '"interactions":{}' in content
+    # Helper to extract and decode Base64 data from HTML
+    import base64
+    import json
+    import re
+
+    def get_decoded_report(html):
+        match = re.search(r'const ENCODED_REPORT_DATA = "(.*?)";', html)
+        if not match:
+            return None
+        return json.loads(base64.b64decode(match.group(1)).decode("utf-8"))
+
+    report_data = get_decoded_report(content)
+    assert report_data is not None
+
+    # Check that Interactions section is NOT in navItems/interactions (in the embedded JSON it should be empty)
+    assert report_data["interactions"] == {}

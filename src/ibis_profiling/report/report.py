@@ -78,13 +78,16 @@ class ProfileReport:
         if isinstance(val, Decimal):
             return float(val)
         if isinstance(val, ir.Scalar):
-            # Convert Ibis scalar to python
             try:
+                # Use to_pyarrow() for robust conversion, then to_py()
                 val = val.to_pyarrow().as_py()
             except Exception:
+                # If conversion fails, don't just return str(val) if it might be used numerically
+                # but for general report data, string is the safest fallback if we can't get the value
+                # Log a warning or similar if we had a logger
                 return str(val)
 
-        if hasattr(val, "item"):
+        if hasattr(val, "item") and callable(getattr(val, "item", None)):
             val = val.item()
 
         # Handle NaN/Inf which break strict JSON
@@ -92,10 +95,11 @@ class ProfileReport:
             if math.isnan(val) or math.isinf(val):
                 return None
 
-        if isinstance(val, Decimal):
-            return float(val)
+        if isinstance(val, (str, int, float, bool, list, dict, type(None))):
+            return val
 
-        return val
+        # Final fallback: string representation with a marker
+        return f"__unsupported_type__:{type(val).__name__}:{str(val)}"
 
     def _build(self):
         # 1. Variables Summary
@@ -356,6 +360,8 @@ class ProfileReport:
             f.write(content)
 
     def to_html(self, theme: str = "default", minify: bool = True) -> str:
+        import base64
+
         template_name = f"{theme}.html"
         template_path = os.path.join(os.path.dirname(__file__), "..", "templates", template_name)
         if not os.path.exists(template_path):
@@ -367,27 +373,27 @@ class ProfileReport:
         with open(template_path, "r") as f:
             html = f.read()
 
+        # Minify JSON for embedding (separators removes extra spaces)
+        report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
+
+        # Base64 encode the JSON for secure embedding in a data-attribute
+        # This completely avoids XSS from the JSON data
+        encoded_json = base64.b64encode(report_json.encode("utf-8")).decode("utf-8")
+
         if minify:
             import re
 
             # 1. Remove HTML comments
             html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
-
             # 2. Remove CSS/JS multi-line comments
             html = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
-
             # 3. Safer minification: strip leading/trailing whitespace from each line
-            # but preserve line breaks to avoid breaking JSX tags/logic
             html = "\n".join([line.strip() for line in html.splitlines() if line.strip()])
 
-        # Minify JSON for embedding (separators removes extra spaces)
-        report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
-
-        # Prevent script-breaking sequences / HTML injection
-        safe_json = report_json.replace("<", "\\u003c").replace(">", "\\u003e")
-
-        # Inject data AFTER minifying the template to protect data integrity
-        return html.replace("{{REPORT_DATA}}", safe_json)
+        # Replace data-report attribute with our encoded JSON
+        # We assume the template has <div id="report-data" data-report="{{REPORT_DATA}}"></div>
+        # or similar. If it's a raw script tag like before, we update the JS to decode it.
+        return html.replace("{{REPORT_DATA}}", encoded_json)
 
     @staticmethod
     def from_excel(path: str, **kwargs) -> "ProfileReport":
