@@ -4,7 +4,7 @@
 
 # Ibis Profiling
 
-[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?icon=si%3Apython)](https://badge.fury.io/py/ibis-profiling)
+[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg)](https://badge.fury.io/py/ibis-profiling)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An ultra-high-performance data profiling system built natively for **Ibis**.
