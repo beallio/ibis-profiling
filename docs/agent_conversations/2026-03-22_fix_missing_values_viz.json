@@ -1,0 +1,16 @@
+{
+  "date": "2026-03-22",
+  "task_objective": "Fix missing values visualization in ydata-theme and default theme.",
+  "files_modified": [
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.html"
+  ],
+  "tests_added": 0,
+  "design_decisions": [
+    "Added pt-16 padding to Missing counts chart to prevent label clipping.",
+    "Implemented dynamic label rotation (rotate-90) for datasets with >15 columns.",
+    "Standardized Nullity Matrix height to 500px for better visibility.",
+    "Fixed default theme Missing bar chart limit to show all variables."
+  ],
+  "results": "Missing value counts are now fully visible and bold. Nullity matrix and correlation heatmaps now handle high-column datasets gracefully with vertical labels and responsive container widths."
+}
