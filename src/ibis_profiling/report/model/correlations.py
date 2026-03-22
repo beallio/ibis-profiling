@@ -77,10 +77,6 @@ class CorrelationEngine:
         return {
             "pearson": pearson,
             "spearman": spearman,
-            # placeholders for others
-            "kendall": {"columns": [], "matrix": []},
-            "phi_k": {"columns": [], "matrix": []},
-            "cramers": {"columns": [], "matrix": []},
         }
 
     @staticmethod
