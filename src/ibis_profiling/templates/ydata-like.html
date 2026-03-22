@@ -673,22 +673,24 @@
                 <div className="flex flex-col gap-3 w-full max-w-2xl">
                   {missingData.map((d, i) => (
                     <div key={i} className="flex flex-col text-sm">
-                      <div className="flex justify-between text-gray-600 mb-1.5 px-1">
-                        <span className="truncate pr-4 font-mono font-medium" title={d.name}>{d.name}</span>
-                        <span className="font-mono text-xs whitespace-nowrap text-gray-500">
-                          <span className="font-bold text-slate-700">{formatNum(d.present)}</span> present / <span className="text-red-600">{formatNum(d.missing)}</span> missing
-                        </span>
+                      <div className="flex text-gray-600 mb-1.5 px-1">
+                        <span className="truncate font-mono font-medium" title={d.name}>{d.name}</span>
                       </div>
-                      <div className="w-full bg-gray-100 h-6 rounded-sm overflow-hidden flex border border-gray-200 shadow-inner group">
-                        <div 
-                          className="h-full bg-slate-700 group-hover:bg-slate-800 transition-colors" 
-                          style={{ width: `${d.percent}%` }}
-                          title={`${d.name}: ${d.missing} missing`}
-                        ></div>
-                        <div 
-                          className="h-full bg-red-100/50" 
-                          style={{ width: `${100 - d.percent}%` }}
-                        ></div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 bg-gray-100 h-6 rounded-sm overflow-hidden flex border border-gray-200 shadow-inner group">
+                          <div 
+                            className="h-full bg-slate-700 group-hover:bg-slate-800 transition-colors" 
+                            style={{ width: `${d.percent}%` }}
+                            title={`${d.name}: ${d.missing} missing`}
+                          ></div>
+                          <div 
+                            className="h-full bg-red-100/50" 
+                            style={{ width: `${100 - d.percent}%` }}
+                          ></div>
+                        </div>
+                        <div className="font-mono text-xs whitespace-nowrap text-gray-500 w-48">
+                          <span className="font-bold text-slate-700">{formatNum(d.present)}</span> present / <span className="text-red-600">{formatNum(d.missing)}</span> missing
+                        </div>
                       </div>
                     </div>
                   ))}
