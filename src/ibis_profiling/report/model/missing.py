@@ -8,6 +8,9 @@ class MissingEngine:
     @staticmethod
     def compute(table: ibis.Table, variables: dict) -> Dict[str, Any]:
         """Assembles missing value model from variable statistics and nullity correlations."""
+        import ibis.expr.types as ir
+        import ibis.expr.datatypes as dt
+
         columns = list(variables.keys())
         if not columns:
             return {
@@ -40,17 +43,16 @@ class MissingEngine:
             from ...metrics import safe_col
 
             nullity_masks = [
-                safe_col(table[c]).isnull().cast("int8").name(c) for c in cols_with_missing
+                safe_col(table[c]).isnull().cast(dt.Int8).name(c) for c in cols_with_missing
             ]
             mask_table = table.projection(nullity_masks)
 
             # Use CorrelationEngine's logic for Pearson on the masks
             from .correlations import CorrelationEngine
-            import ibis.expr.types as ir
 
             corr_results = CorrelationEngine._compute_pearson(mask_table, cols_with_missing)
 
-            # We must execute these expressions in a batch
+            # Execute these expressions
             flat_exprs = []
             for i, row in enumerate(corr_results["matrix"]):
                 for j, item in enumerate(row):
@@ -58,19 +60,15 @@ class MissingEngine:
                         flat_exprs.append(item.name(f"mcorr_{i}_{j}"))
 
             if flat_exprs:
-                executed_vals = mask_table.aggregate(flat_exprs).to_pyarrow().to_pydict()
-                final_matrix = []
-                val_idx = 0
-                for i, row in enumerate(corr_results["matrix"]):
-                    new_row = []
-                    for j, item in enumerate(row):
-                        if i == j:
-                            new_row.append(1.0)
-                        else:
-                            key = list(executed_vals.keys())[val_idx]
-                            new_row.append(executed_vals[key][0])
-                            val_idx += 1
-                    final_matrix.append(new_row)
+                res = mask_table.aggregate(flat_exprs).to_pyarrow().to_pydict()
+                final_matrix = [[1.0 for _ in cols_with_missing] for _ in cols_with_missing]
+                for i in range(len(cols_with_missing)):
+                    for j in range(len(cols_with_missing)):
+                        if i != j:
+                            key = f"mcorr_{i}_{j}"
+                            val = res[key][0]
+                            # Handle potential NaNs from zero-variance masks
+                            final_matrix[i][j] = val if val is not None else 0.0
                 heatmap_data = {"columns": cols_with_missing, "matrix": final_matrix}
 
         # 2. Missingness Matrix (Sampled nullity patterns)
