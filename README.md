@@ -4,7 +4,7 @@
 
 # Ibis Profiling
 
-[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=1)](https://badge.fury.io/py/ibis-profiling)
+[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=2)](https://badge.fury.io/py/ibis-profiling)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An ultra-high-performance data profiling system built natively for **Ibis**.
@@ -113,7 +113,7 @@ You can profile datasets directly from the terminal without writing any Python c
 uv run ProfileReport --file-path data.csv --output report.html
 
 # One-off run (no installation required)
-uv run --with ibis-profiling ProfileReport --file-path data.parquet
+uv run --with ibis-profiling,ibis-framework[duckdb] ProfileReport --file-path data.parquet
 ```
 
 #### CLI Options
@@ -125,6 +125,9 @@ uv run --with ibis-profiling ProfileReport --file-path data.parquet
 | `--minimal` | | Generate a minimal report (faster). |
 | `--theme` | | Report theme: `default` or `ydata-like`. |
 | `--format` | | Force output format: `html` or `json`. |
+| `--correlations` | | Explicitly enable or disable correlations (`--correlations` / `--no-correlations`). |
+| `--monotonicity` | | Explicitly enable or disable monotonicity checks (`--monotonicity` / `--no-monotonicity`). |
+| `--duplicates` | | Explicitly enable or disable duplicate row checks (`--duplicates` / `--no-duplicates`). |
 
 ---
 
