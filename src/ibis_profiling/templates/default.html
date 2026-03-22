@@ -308,11 +308,11 @@
       );
     };
 
-    const CategoricalChart = ({ bins, counts }) => {
+    const CategoricalChart = ({ bins, counts, limit = 10 }) => {
       const { theme } = useContext(ThemeContext);
-      if (!bins || !counts || counts.length === 0) return <div className={`p-4 text-center text-xs ${theme.textSub}`}>No categorical distribution data</div>;
+      if (!bins || !counts || counts.length === 0) return <div className={`p-4 text-center text-xs ${theme.textSub}`}>No data distribution data</div>;
       const max = Math.max(...counts);
-      const displayLimit = 10;
+      const displayLimit = limit;
       const topBins = bins.slice(0, displayLimit);
       const topCounts = counts.slice(0, displayLimit);
 
@@ -472,19 +472,19 @@
           <h3 className={`font-bold text-xl mb-2 ${theme.textPrimary}`}>Nullity Matrix</h3>
           <p className={`text-sm ${theme.textSub} mb-6`}>Dense visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
 
-          <div className="flex gap-4 items-end min-w-[1000px]">
+          <div className="flex gap-4 items-end" style={{ minWidth: `${Math.max(1000, numCols * 25)}px` }}>
             <div className="flex-1 relative">
               {/* Column Labels */}
               <div className="flex mb-2">
                  {columns.map((c, i) => (
                     <div key={c} style={{ width: `${100/numCols}%` }} className="flex justify-start h-32 relative overflow-visible">
-                       <span className={`absolute bottom-1 left-1/2 origin-bottom-left -rotate-45 text-[10px] font-mono ${theme.textMuted} whitespace-nowrap`}>{c}</span>
+                       <span className={`absolute bottom-1 left-1/2 origin-bottom-left text-[10px] font-mono ${theme.textMuted} whitespace-nowrap ${numCols > 15 ? '-rotate-90' : '-rotate-45'}`}>{c}</span>
                     </div>
                  ))}
               </div>
               
               {/* SVG Matrix */}
-              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-[600px] ${theme.bgInput} border ${theme.border} shadow-inner rounded-sm`}>
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-[500px] ${theme.bgInput} border ${theme.border} shadow-inner rounded-sm`}>
                 {columns.map((_, cIdx) => (
                    <g key={cIdx} transform={`translate(${cIdx * colWidth}, 0)`}>
                       {getBlocks(cIdx).map((block, i) => (
@@ -504,7 +504,7 @@
             </div>
 
             {/* Completeness Sparkline */}
-            <div className="w-20 h-[600px] relative flex flex-col items-center">
+            <div className="w-20 h-[500px] relative flex flex-col items-center">
               <div className={`text-[10px] ${theme.textSub} font-mono text-center absolute -top-8 w-full`}>Data<br/>Completeness</div>
               <svg viewBox={`0 0 100 ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-full border-r border-t border-b ${theme.borderAlt} ${theme.bgCardAlt} rounded-r-sm`}>
                 <polygon points={sparkPoly} fill="rgba(59, 130, 246, 0.15)" />
@@ -535,7 +535,7 @@
                 <th className="p-1"></th>
                 {columns.map(c => (
                   <th key={c} className={`p-2 font-mono font-bold ${theme.textMuted} h-32 align-bottom`}>
-                    <div className="transform -rotate-45 origin-bottom-left ml-8 truncate w-32">
+                    <div className={`transform origin-bottom-left ml-8 truncate w-32 ${columns.length > 15 ? '-rotate-90' : '-rotate-45'}`}>
                       {c}
                     </div>
                   </th>
@@ -1202,10 +1202,12 @@
                          <p className="text-slate-400">No missing values were detected in any of the {reportData.table.n_var} variables.</p>
                       </div>
                     ) : (
-                      <CategoricalChart 
-                        bins={reportData.missing?.bar?.matrix?.columns} 
-                        counts={reportData.missing?.bar?.matrix?.counts} 
+                      <CategoricalChart
+                        bins={reportData.missing?.bar?.matrix?.columns}
+                        counts={reportData.missing?.bar?.matrix?.counts}
+                        limit={reportData.missing?.bar?.matrix?.columns?.length || 20}
                       />
+
                     )}
 
                     {reportData.missing?.matrix && Object.keys(reportData.missing.matrix).length > 0 && (
