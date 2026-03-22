@@ -1210,8 +1210,8 @@
 
                     )}
 
-                    {reportData.missing?.matrix && Object.keys(reportData.missing.matrix).length > 0 && (
-                      <NullityMatrix data={reportData.missing.matrix} />
+                    {reportData.missing?.matrix?.matrix && reportData.missing.matrix.matrix.length > 0 && (
+                      <NullityMatrix data={reportData.missing.matrix.matrix} />
                     )}
 
                     {reportData.missing?.heatmap && Object.keys(reportData.missing.heatmap).length > 0 && (

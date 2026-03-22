@@ -692,7 +692,7 @@
               </div>
             )}
 
-            {data.missing?.matrix && <NullityMatrix data={data.missing.matrix} />}
+            {data.missing?.matrix?.matrix && <NullityMatrix data={data.missing.matrix.matrix} />}
             
             {data.missing?.heatmap && (
               <div className="mt-8 pt-8 border-t border-gray-100">

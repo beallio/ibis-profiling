@@ -82,7 +82,7 @@ def test_default_theme_rendering(page, html_reports):
         page.wait_for_selector("svg rect", state="visible", timeout=3000)
 
     # 5. Check Missing Values Section
-    missing_tab = page.locator("button:has-text('Missing Values')").first
+    missing_tab = page.locator("button:has-text('Missing')").first
     if missing_tab.is_visible():
         missing_tab.click()
         # Verify the matrix or heatmap titles
@@ -135,7 +135,8 @@ def test_ydata_theme_rendering(page, html_reports):
     missing_link = page.locator("a[href='#missing']")
     if missing_link.is_visible():
         missing_link.click()
-        page.wait_for_selector("text=Missing Values", state="visible")
+        # In ydata theme, it's 'Missing values'
+        page.wait_for_selector("text=Missing values", state="visible")
         # Nullity matrix uses <rect>
         page.wait_for_selector("svg rect", state="visible", timeout=3000)
 
