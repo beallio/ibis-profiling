@@ -422,22 +422,16 @@
     // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
     const NullityMatrix = ({ data }) => {
       const { theme } = useContext(ThemeContext);
-      const parsed = parseMatrixData(data);
-      const columns = parsed.columns;
-      let values = parsed.matrix; // array containing booleans (true = missing data)
+      // Data is now a list of dicts: [ {col1: true, col2: false}, ... ]
+      if (!data || !Array.isArray(data) || data.length === 0) return null;
 
-      if (!columns || !columns.length || !values || !values.length) return null;
-
-      // Ibis sends this matrix in column-oriented format [cols][rows]
-      // We detect if transposition is needed based on dimensionality
-      // or just transpose it if values.length === columns.length
-      if (values.length === columns.length && Array.isArray(values[0]) && values[0].length > columns.length) {
-          // Transpose: [cols][rows] -> [rows][cols]
-          values = values[0].map((_, rIdx) => values.map(cArr => cArr[rIdx]));
-      }
-
-      const numRows = values.length;
+      const columns = Object.keys(data[0]);
+      const numRows = data.length;
       const numCols = columns.length;
+      
+      // Convert list of dicts to row-major values array for processing
+      const values = data.map(row => columns.map(c => row[c]));
+
       const svgWidth = 1000;
       const svgHeight = 400;
       const colWidth = svgWidth / numCols;

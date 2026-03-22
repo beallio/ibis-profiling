@@ -85,11 +85,9 @@ class MissingEngine:
         sample_df = table.projection(sample_masks).limit(sample_size).execute()
 
         # Convert to list of lists for JSON
-        # We explicitly convert each column to a list to ensure pure JSON arrays
-        matrix_data = {
-            "columns": columns,
-            "values": [sample_df[c].to_list() for c in columns],
-        }
+        # Template expects matrix: { columns: [], matrix: [row1, row2, ...] }
+        # where row is [True, False, ...]
+        matrix_values = sample_df.to_numpy().tolist()
 
         return {
             "bar": {
@@ -100,7 +98,7 @@ class MissingEngine:
             "matrix": {
                 "name": "Matrix",
                 "caption": "A visualization of the locations of missing values (first 250 rows).",
-                "matrix": matrix_data,
+                "matrix": {"columns": columns, "matrix": matrix_values},
             },
             "heatmap": {
                 "name": "Heatmap",

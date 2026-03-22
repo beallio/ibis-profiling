@@ -40,13 +40,12 @@ def test_missing_matrix_structure():
 
     missing = data.get("missing", {})
     assert "matrix" in missing
-    # The frontend expects missing.matrix.matrix.columns and missing.matrix.matrix.values
-    # (Due to the nesting we found in the JSON)
-    inner_matrix = missing["matrix"].get("matrix", {})
-    assert "columns" in inner_matrix
-    assert "values" in inner_matrix
-    assert isinstance(inner_matrix["values"], list)
-    assert isinstance(inner_matrix["values"][0], list)
+    # The frontend now expects a list of dicts directly under missing.matrix.matrix
+    inner_matrix = missing["matrix"].get("matrix", [])
+    assert isinstance(inner_matrix, list)
+    assert len(inner_matrix) == 2
+    assert "a" in inner_matrix[0]
+    assert "b" in inner_matrix[0]
 
 
 def test_correlation_matrix_values():

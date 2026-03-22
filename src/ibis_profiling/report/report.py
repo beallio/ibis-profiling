@@ -311,15 +311,13 @@ class ProfileReport:
             "analysis": self.analysis,
             "table": self.table,
             "variables": self.variables,
-            "correlations": self.correlations,
+            "correlations": self._format_matrices(self.correlations),
             "interactions": self.interactions,
-            "missing": self.missing,
+            "missing": self._format_matrices(self.missing),
             "alerts": self.alerts,
             "sample": self.samples,
             "package": {"name": "ibis-profiling", "version": pkg_version},
         }
-        # Standardize matrices to list-of-dicts for ydata compatibility
-        d = self._format_matrices(d)
         return self._clean_dict(d)
 
     def _format_matrices(self, obj: Any) -> Any:
