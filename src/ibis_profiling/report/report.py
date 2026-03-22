@@ -325,11 +325,15 @@ class ProfileReport:
     def _format_matrices(self, obj: Any) -> Any:
         """Recursively transforms {columns, matrix} objects to list-of-dicts."""
         if isinstance(obj, dict):
+            # Check if this specific dict is a matrix container
             if "columns" in obj and "matrix" in obj and isinstance(obj["matrix"], list):
                 cols = obj["columns"]
                 matrix = obj["matrix"]
+                # Only transform if it's the raw [ [v1, v2], [v3, v4] ] format
                 if matrix and isinstance(matrix[0], list):
                     return [dict(zip(cols, row)) for row in matrix]
+
+            # Continue recursing for all keys
             return {k: self._format_matrices(v) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [self._format_matrices(v) for v in obj]
