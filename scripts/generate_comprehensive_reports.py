@@ -93,7 +93,7 @@ def create_financial_data(n=10000):
 
 
 def main():
-    output_dir = "test_reports/comprehensive"
+    output_dir = "/tmp/ibis-profiling/test_reports/comprehensive"
     os.makedirs(output_dir, exist_ok=True)
 
     datasets = [
