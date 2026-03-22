@@ -127,9 +127,9 @@
       DEFAULT: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' }
     };
 
-    // Securely decode the Base64-encoded payload
+    // Securely decode the Base64-encoded payload (Unicode-safe)
     const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
-    const REPORT_DATA = JSON.parse(atob(ENCODED_REPORT_DATA));
+    const REPORT_DATA = JSON.parse(decodeURIComponent(escape(atob(ENCODED_REPORT_DATA))));
 
     // Helper: Safely parse different matrix JSON structures
     const parseMatrixData = (data) => {
