@@ -64,8 +64,16 @@ class QueryPlanner:
                     dt.Decimal,
                 ),
             )
+            is_hashable = not isinstance(
+                dtype,
+                (
+                    dt.Array,
+                    dt.Map,
+                    dt.Struct,
+                ),
+            )
 
-            if is_discrete:
+            if is_discrete and is_hashable:
                 vc = col.value_counts()
                 count_col = vc.columns[1]
                 hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)

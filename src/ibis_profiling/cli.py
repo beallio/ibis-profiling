@@ -23,6 +23,11 @@ from ibis_profiling import ProfileReport
     help="Explicitly enable or disable monotonicity checks.",
 )
 @click.option(
+    "--duplicates/--no-duplicates",
+    default=None,
+    help="Explicitly enable or disable duplicate row checks.",
+)
+@click.option(
     "--theme",
     type=click.Choice(["default", "ydata-like"]),
     default="default",
@@ -34,7 +39,9 @@ from ibis_profiling import ProfileReport
     type=click.Choice(["html", "json"]),
     help="Force output format (overrides extension).",
 )
-def main(file_path, output, title, minimal, correlations, monotonicity, theme, output_format):
+def main(
+    file_path, output, title, minimal, correlations, monotonicity, duplicates, theme, output_format
+):
     """Profile a dataset using Ibis and generate a report."""
     if not os.path.exists(file_path):
         click.echo(f"Error: File not found: {file_path}", err=True)
@@ -52,6 +59,7 @@ def main(file_path, output, title, minimal, correlations, monotonicity, theme, o
                 minimal=minimal,
                 correlations=correlations,
                 monotonicity=monotonicity,
+                compute_duplicates=duplicates,
             )
         elif ext == ".parquet":
             click.echo(f"Loading Parquet file: {file_path}...")
@@ -62,6 +70,7 @@ def main(file_path, output, title, minimal, correlations, monotonicity, theme, o
                 title=title,
                 correlations=correlations,
                 monotonicity=monotonicity,
+                compute_duplicates=duplicates,
             )
         elif ext == ".csv":
             click.echo(f"Loading CSV file: {file_path}...")
@@ -72,6 +81,7 @@ def main(file_path, output, title, minimal, correlations, monotonicity, theme, o
                 title=title,
                 correlations=correlations,
                 monotonicity=monotonicity,
+                compute_duplicates=duplicates,
             )
         else:
             # Fallback/Attempt to load as Parquet or CSV
@@ -87,6 +97,7 @@ def main(file_path, output, title, minimal, correlations, monotonicity, theme, o
                 title=title,
                 correlations=correlations,
                 monotonicity=monotonicity,
+                compute_duplicates=duplicates,
             )
 
         if not output_format:

@@ -1,0 +1,26 @@
+{
+  "date": "2026-03-21",
+  "task_objective": "Implement fixes identified during code review, including metric key parsing bugs, unhashable type crashes in value counts, expensive distinct counts, redundant interaction table counts, schema dict mutations, and broad exception swallowing.",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/cli.py",
+    "src/ibis_profiling/engine.py",
+    "src/ibis_profiling/planner.py",
+    "src/ibis_profiling/report/model/interactions.py",
+    "src/ibis_profiling/report/model/summary.py",
+    "src/ibis_profiling/report/report.py",
+    "docs/plans/code_review_fixes.md"
+  ],
+  "tests_added": [
+    "tests/test_code_review_fixes.py"
+  ],
+  "design_decisions": [
+    "Used `.rsplit('__', 1)` to handle column names that contain double underscores without breaking metric parsing.",
+    "Added an `is_hashable` check to prevent `value_counts()` from executing on complex/unhashable types (Arrays, Structs, Maps).",
+    "Parameterised the expensive full-table duplicate check with `compute_duplicates`, keeping it enabled by default but allowing users to toggle it for performance.",
+    "Updated `InteractionEngine` to accept a pre-computed `row_count` to eliminate the redundant table scan during sampling.",
+    "Copied the schema dictionary in `ProfileReport._build` to avoid in-place mutations that caused side effects.",
+    "Narrowed exception catching in backend adapters and implemented `logging` to avoid silently swallowing backend execution errors while gracefully handling unsupported schemas."
+  ],
+  "results": "All identified issues were successfully fixed and covered by new unit tests. No regressions were introduced, and all validation checks pass."
+}

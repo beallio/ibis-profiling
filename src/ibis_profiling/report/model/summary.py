@@ -41,7 +41,7 @@ class SummaryEngine:
 
         for col, val in row.items():
             if "__" in col and not col.startswith("_dataset__"):
-                col_name, metric_name = col.split("__", 1)
+                col_name, metric_name = col.rsplit("__", 1)
                 if col_name in variables:
                     # Clean the value
                     if hasattr(val, "item"):

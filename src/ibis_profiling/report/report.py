@@ -104,8 +104,9 @@ class ProfileReport:
     def _build(self):
         # 1. Variables Summary
         # Temporarily store _dataset if it exists in schema
-        dataset_meta = self.schema.pop("_dataset", {})
-        self.variables = SummaryEngine.process_variables(self.raw_results, self.schema)
+        schema_copy = dict(self.schema)
+        dataset_meta = schema_copy.pop("_dataset", {})
+        self.variables = SummaryEngine.process_variables(self.raw_results, schema_copy)
 
         # 2. Table Summary
         n = 0

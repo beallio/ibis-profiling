@@ -7,7 +7,10 @@ class InteractionEngine:
 
     @staticmethod
     def compute(
-        table: ibis.Table, variables: Dict[str, Any], sample_size: int = 1000
+        table: ibis.Table,
+        variables: Dict[str, Any],
+        row_count: int | None = None,
+        sample_size: int = 1000,
     ) -> Dict[str, Dict[str, List[Dict[str, float]]]]:
         """
         Calculates pairwise scatter plot coordinates (x, y) for numeric columns.
@@ -20,13 +23,18 @@ class InteractionEngine:
         # 1. Sample the table if it's large
         # We need to ensure we have actual values, so we filter out nulls for the pair if possible
         # but a global sample is easier and usually sufficient.
-        row_count = table.count().to_pyarrow().as_py()
+        if row_count is None:
+            try:
+                row_count = table.count().to_pyarrow().as_py()
+            except Exception:
+                row_count = sample_size + 1  # fallback to ensure sampling check triggers
 
         if row_count > sample_size:
             # ibis.Table.sample() is not supported by all backends equally
             # (e.g. DuckDB supports it, but some others might not)
             # A more robust way is to use limit if the backend doesn't support sampling
             try:
+                # Sample using a fraction
                 sampled_table = table.sample(sample_size / row_count)
             except Exception:
                 sampled_table = table.limit(sample_size)

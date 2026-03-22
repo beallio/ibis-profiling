@@ -24,6 +24,7 @@ class Profiler:
         on_progress: Callable[[int, str | None], None] | None = None,
         correlations: bool | None = None,
         monotonicity: bool | None = None,
+        compute_duplicates: bool | None = None,
         cardinality_threshold: int = 20,
     ):
         from typing import Any
@@ -34,6 +35,7 @@ class Profiler:
         self.on_progress = on_progress
         self.compute_correlations = not minimal if correlations is None else correlations
         self.compute_monotonicity = not minimal if monotonicity is None else monotonicity
+        self.compute_duplicates = not minimal if compute_duplicates is None else compute_duplicates
         self.cardinality_threshold = cardinality_threshold
 
         self.start_time = datetime.now()
@@ -90,7 +92,7 @@ class Profiler:
                 report.variables[col_name]["hashable"] = self.inspector.is_hashable(col_name)
 
         # 4. Duplicates (if not minimal) (10%)
-        if not self.minimal:
+        if self.compute_duplicates:
             self._update_progress(10, "Checking for duplicates...")
             n_distinct_rows = self.table.distinct().count().execute()
             report.table["n_distinct_rows"] = n_distinct_rows
@@ -101,8 +103,13 @@ class Profiler:
                     (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
                 )
         else:
-            # For minimal, we still want to reach 100 eventually
-            pass
+            if not self.minimal:
+                self._update_progress(10, "Skipping duplicate check...")
+                report.analysis.setdefault("warnings", []).append(
+                    "Skipped duplicate check as requested."
+                )
+            else:
+                pass
 
         # 5. Advanced Moments & Histograms (20%)
         self._run_advanced_pass(report)
@@ -199,7 +206,7 @@ class Profiler:
         if second_pass_aggs:
             results = self.table.aggregate(second_pass_aggs).to_pyarrow().to_pydict()
             for k, v in results.items():
-                parts = k.split("__")
+                parts = k.rsplit("__", 1)
                 report.add_metric(parts[0], parts[1], v[0])
 
         hist_inc = (
@@ -280,7 +287,7 @@ class Profiler:
                 )
             results = check_table.aggregate(final_aggs).to_pyarrow().to_pydict()
             for k, v in results.items():
-                parts = k.split("__")
+                parts = k.rsplit("__", 1)
                 report.add_metric(parts[0], parts[1], v[0])
 
     def _run_final_pass(self, report: InternalProfileReport):
@@ -295,7 +302,13 @@ class Profiler:
             self._update_progress(1, "Pairwise interactions...")
             from .report.model.interactions import InteractionEngine
 
-            report.interactions = InteractionEngine.compute(self.table, report.variables)
+            n_total = report.table.get("n", None)
+            if not isinstance(n_total, int):
+                n_total = None
+
+            report.interactions = InteractionEngine.compute(
+                self.table, report.variables, row_count=n_total
+            )
         else:
             self._update_progress(3)
 
@@ -307,6 +320,7 @@ def profile(
     on_progress: Callable[[int, str | None], None] | None = None,
     correlations: bool | None = None,
     monotonicity: bool | None = None,
+    compute_duplicates: bool | None = None,
     cardinality_threshold: int = 20,
 ) -> InternalProfileReport:
     """Main entrypoint for profiling an Ibis table."""
@@ -317,6 +331,7 @@ def profile(
         on_progress=on_progress,
         correlations=correlations,
         monotonicity=monotonicity,
+        compute_duplicates=compute_duplicates,
         cardinality_threshold=cardinality_threshold,
     )
     return profiler.run()
@@ -339,6 +354,7 @@ class ProfileReport:
         on_progress: Callable[[int, str | None], None] | None = None,
         correlations: bool | None = None,
         monotonicity: bool | None = None,
+        compute_duplicates: bool | None = None,
         **kwargs,
     ):
         title = kwargs.get("title", "Ibis Profiling Report")
@@ -349,6 +365,7 @@ class ProfileReport:
             on_progress=on_progress,
             correlations=correlations,
             monotonicity=monotonicity,
+            compute_duplicates=compute_duplicates,
         )
 
     @classmethod
