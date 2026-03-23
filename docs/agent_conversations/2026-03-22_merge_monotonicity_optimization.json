@@ -1,0 +1,30 @@
+{
+  "date": "2026-03-22",
+  "task_objective": "Merge the active branch 'fix/monotonicity-performance' into 'main'",
+  "files_modified": [
+    "README.md",
+    "docs/plans/fix_monotonicity_checks.md",
+    "docs/specs/ibis_profiling_json_spec.md",
+    "scripts/benchmark_monotonicity.py",
+    "scripts/repro_n_unique_queries.py",
+    "scripts/test_ibis_batching.py",
+    "scripts/test_nunique_nulls.py",
+    "scripts/test_window_batching.py",
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/cli.py",
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.html",
+    "tests/test_monotonicity_fixes.py"
+  ],
+  "tests_added": [
+    "tests/test_monotonicity_fixes.py",
+    "scripts/test_ibis_batching.py",
+    "scripts/test_nunique_nulls.py",
+    "scripts/test_window_batching.py"
+  ],
+  "design_decisions": [
+    "Merged monotonicity optimization work which included performance benchmarks and threshold controls.",
+    "Staged and committed untracked reproduction and test scripts to maintain historical context and debuggability."
+  ],
+  "results": "Successfully merged fix/monotonicity-performance into main. All protocol checks (lint, format, tests) passed."
+}
