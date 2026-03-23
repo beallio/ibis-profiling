@@ -411,9 +411,12 @@ class ProfileReport:
         import ibis
         from .. import profile
 
-        # Separate read_excel kwargs from profile kwargs
-        # This is a bit heuristic but ydata-like
-        profile_keys = ["minimal", "title"]
+        import inspect
+
+        # Separate read_excel kwargs from profile kwargs using profile signature
+        sig = inspect.signature(profile)
+        profile_keys = set(sig.parameters.keys())
+
         profile_kwargs = {k: v for k, v in kwargs.items() if k in profile_keys}
         read_kwargs = {k: v for k, v in kwargs.items() if k not in profile_keys}
 
