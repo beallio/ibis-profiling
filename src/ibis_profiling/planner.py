@@ -67,7 +67,7 @@ class QueryPlanner:
             if is_discrete and is_hashable:
                 vc = col.value_counts()
                 count_col = vc.columns[1]
-                hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)
+                hist_expr = vc.order_by(ibis.desc(count_col)).limit(20)
                 plans.append((col_name, "top_values", hist_expr, "Table"))
 
             # 3. Extreme Values (Smallest/Largest) - Table

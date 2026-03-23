@@ -1,0 +1,14 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Fix fragile top_values count column detection by using positional indexing",
+  "files_modified": [
+    "src/ibis_profiling/planner.py",
+    "src/ibis_profiling/report/report.py",
+    "src/ibis_profiling/metrics.py"
+  ],
+  "tests_added": [
+    "tests/test_count_column_robustness.py"
+  ],
+  "design_decisions": "Shifted from name-based column detection ('count') to positional indexing ([0]=label, [1]=count) for results from Ibis value_counts(). This avoids failures when the original data column is named 'count'.",
+  "results": "All tests passed, including new robustness test and full regression suite."
+}

@@ -232,21 +232,12 @@ class ProfileReport:
             # Handle complex mapping like histograms
             if metric_name == "top_values":
                 # Ibis value_counts() returns [col_name, count_col]
-                # count_col can be 'count', or f'{col_name}_count', or an expression string
+                # We use positional indexing for robustness
+                keys = list(value.keys())
+                if len(keys) >= 2:
+                    label_key = keys[0]
+                    count_key = keys[1]
 
-                # 1. Identify count column
-                if "count" in value:
-                    count_key = "count"
-                else:
-                    # Fallback to anything ending in _count or having 'count' in it
-                    count_keys = [k for k in value.keys() if "count" in k.lower()]
-                    count_key = count_keys[0] if count_keys else None
-
-                # 2. Identify label column (the one that isn't the count)
-                label_keys = [k for k in value.keys() if k != count_key]
-                label_key = label_keys[0] if label_keys else None
-
-                if count_key and label_key:
                     counts = list(value.get(count_key, []))
                     labels = []
                     for x in value.get(label_key, []):

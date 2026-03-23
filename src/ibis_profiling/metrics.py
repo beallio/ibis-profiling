@@ -93,8 +93,8 @@ registry.register(
 # n_unique (singletons) is added as a COLUMN metric, but note it might require special handling in the planner
 def _n_unique_expr(col: ir.Column) -> ir.Value:
     vc = col.value_counts()
-    count_col = "count" if "count" in vc.columns else vc.columns[1]
     value_col = vc.columns[0]
+    count_col = vc.columns[1]
     return vc.filter((vc[count_col] == 1) & vc[value_col].notnull()).count()
 
 
