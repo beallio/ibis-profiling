@@ -31,6 +31,8 @@ class Profiler:
         max_interaction_pairs: int = 10,
         correlations_sampling_threshold: int = 1_000_000,
         correlations_sample_size: int = 1_000_000,
+        monotonicity_threshold: int = 100_000,
+        monotonicity_order_by: str | None = None,
         parallel: bool = False,
         pool_size: int = 4,
     ):
@@ -42,11 +44,14 @@ class Profiler:
         self.on_progress = on_progress
         self.compute_correlations = not minimal if correlations is None else correlations
         self.compute_monotonicity = not minimal if monotonicity is None else monotonicity
+        self.explicit_monotonicity = monotonicity is True
         self.compute_duplicates = not minimal if compute_duplicates is None else compute_duplicates
         self.cardinality_threshold = cardinality_threshold
         self.max_interaction_pairs = max_interaction_pairs
         self.correlations_sampling_threshold = correlations_sampling_threshold
         self.correlations_sample_size = correlations_sample_size
+        self.monotonicity_threshold = monotonicity_threshold
+        self.monotonicity_order_by = monotonicity_order_by
         self.parallel = parallel
         self.pool_size = pool_size
 
@@ -365,11 +370,32 @@ class Profiler:
 
     def _run_monotonicity(self, report: InternalProfileReport):
         self._update_progress(5, "Monotonicity checks...")
+        n_val = report.table.get("n", 0)
+        row_count = int(n_val) if isinstance(n_val, (int, float)) else 0
+
+        if row_count > self.monotonicity_threshold and not self.explicit_monotonicity:
+            report.analysis.setdefault("warnings", []).append(
+                f"Skipped monotonicity checks for large dataset ({row_count:,} rows). "
+                f"Threshold: {self.monotonicity_threshold:,} rows."
+            )
+            for col_name, stats in report.variables.items():
+                if stats.get("type") == "Numeric":
+                    report.add_metric(col_name, "monotonic_increasing", "Skipped")
+                    report.add_metric(col_name, "monotonic_decreasing", "Skipped")
+            return
+
         numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
         mono_checks = []
+        # Use order_by if provided, otherwise default to global window (dangerous on large data)
+        win = (
+            ibis.window(order_by=self.monotonicity_order_by)
+            if self.monotonicity_order_by
+            else ibis.window()
+        )
+
         for col_name in numeric_cols:
             col = self.table[col_name]
-            prev = col.lag().over(ibis.window())
+            prev = col.lag().over(win)
             mono_checks.append(((col >= prev) | prev.isnull()).name(f"inc_{col_name}"))
             mono_checks.append(((col <= prev) | prev.isnull()).name(f"dec_{col_name}"))
 
@@ -427,6 +453,8 @@ def profile(
     max_interaction_pairs: int = 10,
     correlations_sampling_threshold: int = 1_000_000,
     correlations_sample_size: int = 1_000_000,
+    monotonicity_threshold: int = 100_000,
+    monotonicity_order_by: str | None = None,
     parallel: bool = False,
     pool_size: int = 4,
 ) -> InternalProfileReport:
@@ -443,6 +471,8 @@ def profile(
         max_interaction_pairs=max_interaction_pairs,
         correlations_sampling_threshold=correlations_sampling_threshold,
         correlations_sample_size=correlations_sample_size,
+        monotonicity_threshold=monotonicity_threshold,
+        monotonicity_order_by=monotonicity_order_by,
         parallel=parallel,
         pool_size=pool_size,
     )
@@ -467,6 +497,8 @@ class ProfileReport:
         correlations: bool | None = None,
         monotonicity: bool | None = None,
         compute_duplicates: bool | None = None,
+        monotonicity_threshold: int = 100_000,
+        monotonicity_order_by: str | None = None,
         **kwargs,
     ):
         title = kwargs.get("title", "Ibis Profiling Report")
@@ -478,6 +510,8 @@ class ProfileReport:
             correlations=correlations,
             monotonicity=monotonicity,
             compute_duplicates=compute_duplicates,
+            monotonicity_threshold=monotonicity_threshold,
+            monotonicity_order_by=monotonicity_order_by,
             max_interaction_pairs=kwargs.get("max_interaction_pairs", 10),
             correlations_sampling_threshold=kwargs.get(
                 "correlations_sampling_threshold", 1_000_000
