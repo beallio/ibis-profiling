@@ -28,6 +28,17 @@ from ibis_profiling import ProfileReport
     help="Explicitly enable or disable duplicate row checks.",
 )
 @click.option(
+    "--monotonicity-threshold",
+    type=int,
+    default=100_000,
+    help="Row count threshold above which monotonicity is skipped (default 100k).",
+)
+@click.option(
+    "--monotonicity-order-by",
+    type=str,
+    help="Column name to order by for monotonicity checks.",
+)
+@click.option(
     "--theme",
     type=click.Choice(["default", "ydata-like"]),
     default="default",
@@ -40,7 +51,17 @@ from ibis_profiling import ProfileReport
     help="Force output format (overrides extension).",
 )
 def main(
-    file_path, output, title, minimal, correlations, monotonicity, duplicates, theme, output_format
+    file_path,
+    output,
+    title,
+    minimal,
+    correlations,
+    monotonicity,
+    duplicates,
+    monotonicity_threshold,
+    monotonicity_order_by,
+    theme,
+    output_format,
 ):
     """Profile a dataset using Ibis and generate a report."""
     if not os.path.exists(file_path):
@@ -60,6 +81,8 @@ def main(
                 correlations=correlations,
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
+                monotonicity_threshold=monotonicity_threshold,
+                monotonicity_order_by=monotonicity_order_by,
             )
         elif ext == ".parquet":
             click.echo(f"Loading Parquet file: {file_path}...")
@@ -71,6 +94,8 @@ def main(
                 correlations=correlations,
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
+                monotonicity_threshold=monotonicity_threshold,
+                monotonicity_order_by=monotonicity_order_by,
             )
         elif ext == ".csv":
             click.echo(f"Loading CSV file: {file_path}...")
@@ -82,6 +107,8 @@ def main(
                 correlations=correlations,
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
+                monotonicity_threshold=monotonicity_threshold,
+                monotonicity_order_by=monotonicity_order_by,
             )
         else:
             # Fallback/Attempt to load as Parquet or CSV
@@ -98,6 +125,8 @@ def main(
                 correlations=correlations,
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
+                monotonicity_threshold=monotonicity_threshold,
+                monotonicity_order_by=monotonicity_order_by,
             )
 
         if not output_format:
