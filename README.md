@@ -127,6 +127,8 @@ uv run --with ibis-profiling,ibis-framework[duckdb] ProfileReport --file-path da
 | `--format` | | Force output format: `html` or `json`. |
 | `--correlations` | | Explicitly enable or disable correlations (`--correlations` / `--no-correlations`). |
 | `--monotonicity` | | Explicitly enable or disable monotonicity checks (`--monotonicity` / `--no-monotonicity`). |
+| `--monotonicity-threshold` | | Row count threshold above which monotonicity is skipped (default: 100,000). |
+| `--monotonicity-order-by` | | Column name to order by for monotonicity checks. |
 | `--duplicates` | | Explicitly enable or disable duplicate row checks (`--duplicates` / `--no-duplicates`). |
 
 ---
@@ -162,6 +164,8 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | `correlations_sample_size` | `1,000,000` | Number of rows used when correlation sampling is active. |
 | `correlations` | `True` | Explicitly enable/disable all correlation matrices. |
 | `monotonicity` | `True` | Explicitly enable/disable monotonicity checks. |
+| `monotonicity_threshold` | `100,000` | Row count threshold above which monotonicity is skipped by default. |
+| `monotonicity_order_by` | `None` | Optional column name to order by for deterministic monotonicity. |
 | `compute_duplicates` | `True` | Explicitly enable/disable duplicate row detection. |
 
 #### 🔍 Interaction Pruning & "Interactivity"
