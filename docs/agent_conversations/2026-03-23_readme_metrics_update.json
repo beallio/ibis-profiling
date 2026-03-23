@@ -1,0 +1,12 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Review each of the metrics calculated by tool thoroughly. Review the templates thoroughly. In the readme document how each metric in the template is derived/calculated.",
+  "files_modified": [
+    "README.md"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Replaced the small `Metrics & Calculation Reference` section in the README with a comprehensive, template-aligned guide. Categorized into Dataset Statistics, Variable Statistics, Visualizations, and Alerts. Addressed all missing calculations like memory estimation, quantiles, complex moments, missing patterns, and correlations to align directly with the metrics shown in both HTML report variants."
+  ],
+  "results": "README.md updated with thorough definitions and calculations of all metrics shown in the template. Pre-commit hooks passed. Test suite passed."
+}
