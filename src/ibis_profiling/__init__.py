@@ -510,6 +510,7 @@ class ProfileReport:
             correlations=correlations,
             monotonicity=monotonicity,
             compute_duplicates=compute_duplicates,
+            cardinality_threshold=kwargs.get("cardinality_threshold", 20),
             monotonicity_threshold=monotonicity_threshold,
             monotonicity_order_by=monotonicity_order_by,
             max_interaction_pairs=kwargs.get("max_interaction_pairs", 10),
