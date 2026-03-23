@@ -71,8 +71,8 @@ Each variable object is keyed by its column name. Content varies by inferred typ
 | `n_negative`, `p_negative`| Both | Negative-value statistics. |
 | `n_infinite`, `p_infinite`| Both | Count and percentage of infinite values. |
 | `skewness`, `mad` | **Full** | Skewness and Median Absolute Deviation. |
-| `monotonic_increasing` | **Full** | `Boolean` (True if non-decreasing). |
-| `monotonic_decreasing` | **Full** | `Boolean` (True if non-increasing). |
+| `monotonic_increasing` | **Full** | `Boolean` (True if non-decreasing) OR `String` ("Skipped"). |
+| `monotonic_decreasing` | **Full** | `Boolean` (True if non-increasing) OR `String` ("Skipped"). |
 | `histogram` | Both | Binned distribution (see Section 4). |
 | `extreme_values_smallest`| Both | List of 5 smallest non-null values. |
 | `extreme_values_largest` | Both | List of 5 largest non-null values. |
