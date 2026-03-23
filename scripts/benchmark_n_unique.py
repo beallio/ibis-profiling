@@ -46,10 +46,6 @@ def run_benchmark(n_rows=10_000, n_cols=100):
     timed_progress.last_msg = None
 
     start_time = time.time()
-    # We want to test n_unique, so we DON'T use minimal=True if it skips it.
-    # In my recent change, it is skipped if minimal=True:
-    # if not self.minimal: ... self.planner.build_singleton_batches()
-
     profile = ProfileReport(
         t,
         on_progress=timed_progress,

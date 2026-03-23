@@ -16,3 +16,5 @@ logs/
 *.log
 .temp/
 .tmp/
+*.duckdb
+*.duckdb.wal
