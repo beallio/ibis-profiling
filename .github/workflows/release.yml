@@ -18,9 +18,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get tag message
+        id: tag_message
+        run: |
+          # Extract the tag message (subject and body)
+          git fetch --tags --force
+          TAG_SUBJECT=$(git tag -l --format='%(contents:subject)' ${{ github.ref_name }})
+          TAG_BODY=$(git tag -l --format='%(contents:body)' ${{ github.ref_name }})
+          echo "subject=$TAG_SUBJECT" >> $GITHUB_OUTPUT
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAG_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ steps.tag_message.outputs.subject != '' && steps.tag_message.outputs.subject || github.ref_name }}
+          body: ${{ steps.tag_message.outputs.body }}
           generate_release_notes: true
           draft: false
           prerelease: contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha')
