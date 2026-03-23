@@ -284,31 +284,74 @@ Explore dependencies between numeric variables with high-performance scatter plo
 
 ## 📏 Metrics & Calculation Reference
 
-### 1. Variable Calculations
+Ibis Profiling uses a multi-pass execution engine to compute statistics efficiently across massive datasets while remaining compatible with SQL-based backends. Below is the comprehensive breakdown of every metric presented in the generated reports.
 
-The profiler uses a multi-pass execution engine to compute statistics efficiently across massive datasets while remaining compatible with SQL-based backends.
+### 1. Dataset Statistics (Overview)
 
-#### Core Statistics (Pass 1)
+| Metric | Calculation / Derivation |
+| :--- | :--- |
+| **Number of variables** | `n_var` = Total columns in the dataset schema. |
+| **Number of observations** | `n` = Total rows in the dataset. |
+| **Missing cells** | `n_cells_missing` = Sum of all `NULL` or `NaN` values across all variables. |
+| **Missing cells (%)** | `p_cells_missing` = `n_cells_missing / (n * n_var)` |
+| **Duplicate rows** | `n_duplicates` = `n - count(distinct_rows)`. Evaluated dataset-wide. |
+| **Duplicate rows (%)** | `p_duplicates` = `n_duplicates / n` |
+| **Total size in memory** | Estimated payload footprint calculated via `DatasetInspector`, using conservative type heuristics (e.g., `Int64` = 8 bytes, `String` = 20 bytes) multiplied by `n`. |
+| **Average record size** | `memory_size / n` |
+| **Variable types** | Count of variables classified as `Numeric`, `Categorical`, `Boolean`, or `DateTime`. Low-cardinality numerics may be automatically reclassified as `Categorical`. |
+
+### 2. Variable Statistics
+
+#### Core Metrics & Properties
+
 | Metric | Calculation | Type |
 | :--- | :--- | :--- |
-| `n` | Total number of observations (rows) in the table. | All |
-| `n_missing` | Count of `NULL` or `NaN` values. | All |
-| `p_missing` | `n_missing / n` | All |
-| `n_distinct` | Count of unique values (excluding `NULL`). | All |
-| `mean` | `sum(x) / count` (NaNs treated as NULL) | Numeric |
-| `std` | Sample standard deviation (Bessel's correction). | Numeric |
-| `min` / `max` | Minimum and maximum values. | Numeric, DateTime |
-| `histogram` | Binned distribution (Numeric/DateTime) or Top Values (Categorical). | All |
+| **Distinct** | `n_distinct` = Count of unique values (excluding `NULL`). | All |
+| **Distinct (%)** | `p_distinct` = `n_distinct / n` | All |
+| **Missing** | `n_missing` = Count of `NULL` or `NaN` values. | All |
+| **Missing (%)** | `p_missing` = `n_missing / n` | All |
+| **Infinite** | `n_infinite` = Count of `inf` or `-inf` values. | Numeric |
+| **Infinite (%)** | `p_infinite` = `n_infinite / n` | Numeric |
+| **Mean** | `sum(x) / count(x)`. Safe-aggregation treats `NaN` as `NULL`. | Numeric |
+| **Minimum / Maximum** | `min(x)` and `max(x)`. | Num, Date |
+| **Zeros** | `n_zeros` = Count of values strictly equal to `0`. | Numeric |
+| **Zeros (%)** | `p_zeros` = `n_zeros / n` | Numeric |
+| **Negative** | `n_negative` = Count of values `< 0`. | Numeric |
+| **Negative (%)** | `p_negative` = `n_negative / n` | Numeric |
+| **Hashable** | `True` if the datatype supports hashing (excludes Arrays, Maps, Structs). | All |
+| **Length (Max, Mean, Min)** | Character length aggregations: `max(length(x))`, `mean(length(x))`, `min(length(x))`. | Text, Cat |
 
-#### Advanced Statistics (Pass 2)
-To avoid "Nested Aggregation" errors in SQL backends, these are computed using values from Pass 1 as constants.
+#### Quantile & Descriptive Statistics (Numeric)
+*(Note: Complex moments use values from Pass 1 (mean, std) as constants to avoid "Nested Aggregation" backend errors).*
+
 | Metric | Calculation | Logic |
 | :--- | :--- | :--- |
-| `skewness` | `mean( ((x - μ) / σ)^3 )` | Standardized 3rd moment. |
-| `mad` | `mean( abs(x - μ) )` | Mean Absolute Deviation. |
-| `n_duplicates` | `n - count(distinct_rows)` | Dataset-wide duplicate row count. |
+| **Standard Deviation** | `std(x)` | Sample standard deviation (Bessel's correction). |
+| **Variance** | `var(x)` | Sample variance. |
+| **Coefficient of Variation** | `cv` = `std / mean` | Standardized measure of dispersion. |
+| **Kurtosis** | `kurtosis(x)` | Standardized 4th moment (tail heaviness). |
+| **Skewness** | `mean( ((x - μ) / σ)^3 )` | Standardized 3rd moment (asymmetry). |
+| **MAD** | `mean( abs(x - μ) )` | Mean Absolute Deviation. |
+| **Sum** | `sum(x)` | Aggregate sum of all valid numeric values. |
+| **Monotonicity** | Logical evaluation | Checks if column values strictly or non-strictly increase/decrease. |
+| **Percentiles (5%, Q1, Median, Q3, 95%)** | Backend quantile approximation functions. | Provides dataset distribution shape without loading data. |
+| **Range** | `max - min` | Total span of values. |
+| **Interquartile Range (IQR)** | `Q3 - Q1` | Spread of the middle 50% of values. |
 
-### 2. Alert Engine Logic
+### 3. Visualizations & Advanced Matrices
+
+- **Histograms:** 
+  - *Numeric/DateTime:* Computed using equi-width binning pushed down to the query engine.
+  - *Categorical:* Fetches the top distinct values via `value_counts()`.
+- **Length Distribution:** Categorical charts mapping the character length distribution of text columns.
+- **Nullity Matrix (Missing Data):** Dense SVG sparkline visualization representing data completeness. Evaluated over the sampled rows.
+- **Nullity Heatmap:** Pearson correlation of `nullity` between all variables. Reveals structural dependencies (e.g., if Column A is missing, Column B is highly likely to also be missing).
+- **Interactions (Scatter Plots):** Automated, high-performance HTML5 Canvas scatter plots. The engine scores numeric columns by their average absolute Pearson correlation and samples pairs of the highest-scoring (most interactive) columns.
+- **Correlations:** Computes both **Pearson** (linear relationship) and **Spearman** (monotonic relationship) matrices. Uses intelligent sampling if datasets exceed `1,000,000` rows by default.
+
+### 4. Alert Engine Logic
+
+The report generates heuristic warnings (Alerts) to flag potential data quality issues immediately.
 
 | Alert Type | Logic / Threshold | Severity |
 | :--- | :--- | :--- |
