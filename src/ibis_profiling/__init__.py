@@ -385,13 +385,18 @@ class Profiler:
             return
 
         numeric_cols = [c for c, s in report.variables.items() if s.get("type") == "Numeric"]
+        if not self.monotonicity_order_by:
+            report.analysis.setdefault("warnings", []).append(
+                "Skipped monotonicity checks. Monotonicity requires a deterministic 'monotonicity_order_by' column to be reliable."
+            )
+            for col_name in numeric_cols:
+                report.add_metric(col_name, "monotonic_increasing", "Skipped")
+                report.add_metric(col_name, "monotonic_decreasing", "Skipped")
+            return
+
         mono_checks = []
-        # Use order_by if provided, otherwise default to global window (dangerous on large data)
-        win = (
-            ibis.window(order_by=self.monotonicity_order_by)
-            if self.monotonicity_order_by
-            else ibis.window()
-        )
+        # Use order_by column for deterministic window
+        win = ibis.window(order_by=self.monotonicity_order_by)
 
         for col_name in numeric_cols:
             col = self.table[col_name]
