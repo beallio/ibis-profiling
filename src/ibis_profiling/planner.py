@@ -34,6 +34,46 @@ class QueryPlanner:
 
         return self.table.aggregate(aggs)
 
+    def build_singleton_batches(self, batch_size: int = 50) -> list[ir.Table]:
+        """
+        Batches singleton count (n_unique) calculations into multiple passes
+        using window functions to avoid OOM on wide tables.
+        """
+        schema = self.table.schema()
+        cols_to_profile = []
+
+        metric = self.registry.metrics.get("n_unique")
+        if not metric:
+            return []
+
+        for col_name, dtype in schema.items():
+            if metric.supports(dtype):
+                cols_to_profile.append(col_name)
+
+        if not cols_to_profile:
+            return []
+
+        batches = []
+        for i in range(0, len(cols_to_profile), batch_size):
+            batch_cols = cols_to_profile[i : i + batch_size]
+            mutates = {}
+            for col_name in batch_cols:
+                col = self.table[col_name]
+                # is_singleton = (count over partition == 1) and not null
+                win = ibis.window(group_by=col)
+                mutates[f"{col_name}__is_singleton"] = (
+                    (col.count().over(win) == 1) & col.notnull()
+                ).cast("int")
+
+            m = self.table.mutate(**mutates)
+            aggs = [
+                m[f"{col_name}__is_singleton"].sum().name(f"{col_name}__n_unique")
+                for col_name in batch_cols
+            ]
+            batches.append(m.aggregate(aggs))
+
+        return batches
+
     def build_complex_metrics(
         self,
         override_types: dict[str, str] | None = None,
@@ -54,9 +94,8 @@ class QueryPlanner:
             col_meta = metadata.get(col_name, {})
 
             # 1. n_unique (singletons) - Scalar Value
-            metric = self.registry.metrics.get("n_unique")
-            if metric and metric.supports(dtype):
-                plans.append((col_name, metric.name, metric.build_expr(col), "Value"))
+            # DEPRECATED in complex pass: now batched in run() or global pass
+            # We omit it here to avoid individual database round-trips.
 
             # 2. Histograms / Distribution (top values) - Table
             is_discrete = mapped_type == "Categorical" or not isinstance(

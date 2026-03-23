@@ -130,13 +130,31 @@ class Profiler:
                 else:
                     pass
 
-            # 5. Advanced Moments & Histograms (20%)
+            # 5. Advanced Moments & Histograms (15%)
             self._run_advanced_pass(report)
 
-            # 6. Complex Metrics (15%)
+            # 6. Singleton Metrics (Batched) (5%)
+            if not self.minimal:
+                self._update_progress(5, "Calculating singleton metrics...")
+                singleton_batches = self.planner.build_singleton_batches()
+                for batch in singleton_batches:
+                    try:
+                        results = batch.to_pyarrow().to_pydict()
+                        for k, v in results.items():
+                            col_name = k.rsplit("__", 1)[0]
+                            val = v[0] if v and v[0] is not None else 0
+                            report.add_metric(col_name, "n_unique", val)
+                    except Exception as exc:
+                        report.analysis.setdefault("warnings", []).append(
+                            f"Singleton batch failed: {exc}"
+                        )
+            else:
+                self._update_progress(5)
+
+            # 7. Complex Metrics (15%)
             self._run_complex_pass(report)
 
-            # 7. Correlations (5%)
+            # 8. Correlations (5%)
             if self.compute_correlations:
                 self._run_correlations(report)
             elif not self.minimal:
@@ -501,6 +519,16 @@ class ProfileReport:
         monotonicity_order_by: str | None = None,
         **kwargs,
     ):
+        self.table = table
+        self.minimal = minimal
+        self.on_progress = on_progress
+        self.correlations = correlations
+        self.monotonicity = monotonicity
+        self.compute_duplicates = compute_duplicates
+        self.monotonicity_threshold = monotonicity_threshold
+        self.monotonicity_order_by = monotonicity_order_by
+        self.kwargs = kwargs
+
         title = kwargs.get("title", "Ibis Profiling Report")
         self._report = profile(
             table,

@@ -9,13 +9,11 @@ class SummaryEngine:
     def process_variables(raw_results: pl.DataFrame, schema: dict) -> Dict[str, Any]:
         import ibis.expr.datatypes as dt
 
-        if raw_results.is_empty():
-            return {}
-
-        row = raw_results.row(0, named=True)
         variables = {}
 
         for col_name, dtype in schema.items():
+            if col_name == "_dataset":
+                continue
             # Use Ibis DataType hierarchy for robust classification
             if isinstance(dtype, dt.Numeric):
                 mapped_type = "Numeric"
@@ -33,11 +31,17 @@ class SummaryEngine:
             variables[col_name] = {
                 "type": mapped_type,
                 "n_distinct": 0,
+                "n_unique": 0,
                 "n_missing": 0,
                 "p_missing": 0.0,
                 "n": 0,
                 "count": 0,
             }
+
+        if raw_results.is_empty():
+            return variables
+
+        row = raw_results.row(0, named=True)
 
         for col, val in row.items():
             if "__" in col and not col.startswith("_dataset__"):

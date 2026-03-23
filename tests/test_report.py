@@ -23,7 +23,9 @@ def test_report_empty_results():
     result = report.to_dict()
 
     assert result["table"] == {}
-    assert result["variables"] == {}
+    # New behavior: we return initialized variable model even if empty
+    assert "a" in result["variables"]
+    assert result["variables"]["a"]["n_distinct"] == 0
 
 
 def test_report_to_html():
