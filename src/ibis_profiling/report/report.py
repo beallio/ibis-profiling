@@ -3,6 +3,7 @@ from datetime import datetime, date
 import json
 import os
 import math
+import base64
 from typing import Any, cast
 from .model.summary import SummaryEngine
 from .model.alerts import AlertEngine
@@ -301,12 +302,9 @@ class ProfileReport:
                 self.variables[col_name][metric_name] = self._to_json_serializable(value)
 
     def to_dict(self) -> dict:
-        try:
-            from importlib.metadata import version
+        from .. import __version__
 
-            pkg_version = version("ibis-profiling")
-        except Exception:
-            pkg_version = "0.1.2"
+        pkg_version = __version__
 
         d = {
             "analysis": self.analysis,
@@ -322,7 +320,10 @@ class ProfileReport:
         return self._clean_dict(d)
 
     def _format_matrices(self, obj: Any) -> Any:
-        """Recursively transforms {columns, matrix} objects to list-of-dicts."""
+        """
+        Recursively transforms {columns, matrix} objects to {matrix: list-of-dicts, metadata}.
+        Preserves flags like 'sampled'.
+        """
         if isinstance(obj, dict):
             # Check if this specific dict is a matrix container
             if "columns" in obj and "matrix" in obj and isinstance(obj["matrix"], list):
@@ -330,7 +331,13 @@ class ProfileReport:
                 matrix = obj["matrix"]
                 # Only transform if it's the raw [ [v1, v2], [v3, v4] ] format
                 if matrix and isinstance(matrix[0], list):
-                    return [dict(zip(cols, row)) for row in matrix]
+                    formatted_matrix = [dict(zip(cols, row)) for row in matrix]
+                    # Create result with matrix and any other metadata (like 'sampled')
+                    res = {"matrix": formatted_matrix}
+                    for k, v in obj.items():
+                        if k not in ["columns", "matrix"]:
+                            res[k] = v
+                    return res
 
             # Continue recursing for all keys
             return {k: self._format_matrices(v) for k, v in obj.items()}
@@ -363,7 +370,6 @@ class ProfileReport:
             f.write(content)
 
     def to_html(self, theme: str = "default", minify: bool = True) -> str:
-        import base64
 
         template_name = f"{theme}.html"
         template_path = os.path.join(os.path.dirname(__file__), "..", "templates", template_name)

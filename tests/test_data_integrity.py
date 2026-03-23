@@ -40,8 +40,11 @@ def test_missing_matrix_structure():
 
     missing = data.get("missing", {})
     assert "matrix" in missing
-    # The frontend now expects a list of dicts directly under missing.matrix.matrix
-    inner_matrix = missing["matrix"].get("matrix", [])
+    # The frontend now expects a list of dicts under missing.matrix.matrix.matrix
+    # missing.matrix is the section, missing.matrix.matrix is the matrix wrapper, missing.matrix.matrix.matrix is the list
+    inner_matrix_obj = missing["matrix"].get("matrix", {})
+    assert isinstance(inner_matrix_obj, dict)
+    inner_matrix = inner_matrix_obj.get("matrix", [])
     assert isinstance(inner_matrix, list)
     assert len(inner_matrix) == 2
     assert "a" in inner_matrix[0]
@@ -55,9 +58,12 @@ def test_correlation_matrix_values():
     report = profile(table)
     data = report.to_dict()
 
-    # In our JSON output, correlations are a list of objects
+    # In our JSON output, correlations are now dicts with a 'matrix' key
     pearson = data["correlations"]["pearson"]
-    assert isinstance(pearson, list)
-    assert "a" in pearson[0]
-    assert isinstance(pearson[0]["a"], float)
-    assert pearson[0]["a"] == 1.0
+    assert isinstance(pearson, dict)
+    assert "matrix" in pearson
+    matrix = pearson["matrix"]
+    assert isinstance(matrix, list)
+    assert "a" in matrix[0]
+    assert isinstance(matrix[0]["a"], float)
+    assert matrix[0]["a"] == 1.0

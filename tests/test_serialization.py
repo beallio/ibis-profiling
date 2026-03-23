@@ -62,8 +62,10 @@ def test_missing_matrix_serialization_structure():
     assert "caption" in matrix_section
     assert "matrix" in matrix_section
 
-    # The crucial part: matrix_section['matrix'] must be a list of dicts (converted by _format_matrices)
-    matrix_data = matrix_section["matrix"]
+    # The crucial part: matrix_section['matrix'] must contain the list of dicts
+    matrix_obj = matrix_section["matrix"]
+    assert isinstance(matrix_obj, dict)
+    matrix_data = matrix_obj["matrix"]
     assert isinstance(matrix_data, list), (
         f"Expected matrix data to be a list, got {type(matrix_data)}"
     )

@@ -35,75 +35,77 @@ class QueryPlanner:
         return self.table.aggregate(aggs)
 
     def build_complex_metrics(
-        self, override_types: dict[str, str] | None = None
-    ) -> list[tuple[str, str, ir.Value]]:
+        self,
+        override_types: dict[str, str] | None = None,
+        variables_metadata: dict[str, dict] | None = None,
+    ) -> list[tuple[str, str, ir.Expr, str]]:
         """
-        Returns a list of (column_name, metric_name, expression) for metrics
-        that cannot be batched in a single pass.
+        Returns a list of (column_name, metric_name, expression, execution_hint)
+        where execution_hint is 'Value' (scalar) or 'Table' (result set).
         """
         schema = self.table.schema()
         plans = []
         overrides = override_types or {}
+        metadata = variables_metadata or {}
 
         for col_name, dtype in schema.items():
             col = self.table[col_name]
             mapped_type = overrides.get(col_name)
+            col_meta = metadata.get(col_name, {})
 
-            # 1. n_unique (singletons)
+            # 1. n_unique (singletons) - Scalar Value
             metric = self.registry.metrics.get("n_unique")
             if metric and metric.supports(dtype):
-                plans.append((col_name, metric.name, metric.build_expr(col)))
+                plans.append((col_name, metric.name, metric.build_expr(col), "Value"))
 
-            # 2. Histograms / Distribution (top values) for Categorical/Boolean/Discrete Numeric
-            # If overridden to Categorical, OR it's not a standard continuous numeric type
+            # 2. Histograms / Distribution (top values) - Table
             is_discrete = mapped_type == "Categorical" or not isinstance(
-                dtype,
-                (
-                    dt.Integer,
-                    dt.Floating,
-                    dt.Decimal,
-                ),
+                dtype, (dt.Integer, dt.Floating, dt.Decimal)
             )
-            is_hashable = not isinstance(
-                dtype,
-                (
-                    dt.Array,
-                    dt.Map,
-                    dt.Struct,
-                ),
-            )
+            is_hashable = not isinstance(dtype, (dt.Array, dt.Map, dt.Struct))
 
             if is_discrete and is_hashable:
                 vc = col.value_counts()
                 count_col = vc.columns[1]
                 hist_expr = vc.order_by(ibis.desc(count_col)).rename({"count": count_col}).limit(20)
-                plans.append((col_name, "top_values", hist_expr))
+                plans.append((col_name, "top_values", hist_expr, "Table"))
 
-            # 3. Extreme Values (Smallest/Largest)
-            if not isinstance(
-                dtype,
-                (dt.Array, dt.Map, dt.Struct),
-            ):
+            # 3. Extreme Values (Smallest/Largest) - Table
+            if not isinstance(dtype, (dt.Array, dt.Map, dt.Struct)):
+                # Heuristic: If cardinality is low, use distinct() to speed up sort
+                n_distinct = col_meta.get("n_distinct")
+                n_total = col_meta.get("n", 0)
+                use_distinct = False
+                if (
+                    isinstance(n_distinct, (int, float))
+                    and n_total > 0
+                    and (n_distinct / n_total) <= 0.5
+                ):
+                    use_distinct = True
+
+                base_table = self.table.select(col_name)
+                if use_distinct:
+                    base_table = base_table.distinct()
+
                 # Smallest
                 small_expr = (
-                    self.table.select(col_name).filter(col.notnull()).order_by(col).limit(5)
+                    base_table.filter(base_table[col_name].notnull())
+                    .order_by(base_table[col_name])
+                    .limit(5)
                 )
-                plans.append((col_name, "extreme_values_smallest", small_expr))
+                plans.append((col_name, "extreme_values_smallest", small_expr, "Table"))
 
                 # Largest
                 large_expr = (
-                    self.table.select(col_name)
-                    .filter(col.notnull())
-                    .order_by(ibis.desc(col))
+                    base_table.filter(base_table[col_name].notnull())
+                    .order_by(ibis.desc(base_table[col_name]))
                     .limit(5)
                 )
-                plans.append((col_name, "extreme_values_largest", large_expr))
+                plans.append((col_name, "extreme_values_largest", large_expr, "Table"))
 
-            # 4. String Length Histogram
+            # 4. String Length Histogram - Table
             if isinstance(dtype, dt.String):
-                # value_counts() returns a table with columns [col_name, f"{col_name}_count"]
-                # For lengths, the col_name will be 'StringLength(s)' or similar
                 len_hist = col.length().value_counts().limit(10)
-                plans.append((col_name, "length_histogram", len_hist))
+                plans.append((col_name, "length_histogram", len_hist, "Table"))
 
         return plans

@@ -93,16 +93,27 @@ class MissingEngine:
             "bar": {
                 "name": "Count",
                 "caption": "A simple bar chart of missing values by variable.",
+                # Special case: 'counts' is used instead of 'matrix' for the bar chart
+                # format_matrices won't touch this as it doesn't have a 'matrix' key
                 "matrix": {"columns": columns, "counts": counts},
             },
             "matrix": {
                 "name": "Matrix",
                 "caption": "A visualization of the locations of missing values (first 250 rows).",
-                "matrix": {"columns": columns, "matrix": matrix_values},
+                "matrix": {
+                    "columns": columns,
+                    "matrix": matrix_values,
+                    "sampled": n_rows > sample_size,
+                    "sample_size": sample_size,
+                },
             },
             "heatmap": {
                 "name": "Heatmap",
                 "caption": "Pearson correlation of nullity between variables (-1 to 1).",
-                "matrix": heatmap_data,
+                "matrix": {
+                    "columns": heatmap_data["columns"],
+                    "matrix": heatmap_data["matrix"],
+                    "sampled": False,
+                },
             },
         }

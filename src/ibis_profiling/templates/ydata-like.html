@@ -30,20 +30,24 @@
       background-color: #f3f4f6; /* Tailwind gray-100 */
       color: #1f2937; /* Tailwind gray-800 */
     }
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+    /* Custom Scrollbar for specific containers */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      display: block;
     }
-    ::-webkit-scrollbar-track {
+    .custom-scrollbar::-webkit-scrollbar-track {
       background: #f1f5f9; 
     }
-    ::-webkit-scrollbar-thumb {
+    .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #cbd5e1; 
-      border-radius: 4px;
+      border-radius: 10px;
     }
-    ::-webkit-scrollbar-thumb:hover {
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #94a3b8; 
+    }
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 #f1f5f9;
     }
     
     @keyframes fadeIn {
@@ -124,7 +128,14 @@
     const parseMatrixData = (data) => {
       if (!data) return { columns: [], matrix: [] };
       
-      // 1) Handle array of objects format (e.g. from missing heatmap or correlations)
+      // 1) Handle { matrix: [ {col1: v1, ...}, ... ] } - new standard
+      if (data.matrix && Array.isArray(data.matrix) && data.matrix.length > 0 && typeof data.matrix[0] === 'object' && !Array.isArray(data.matrix[0])) {
+          const columns = Object.keys(data.matrix[0]);
+          const matrix = data.matrix.map(row => columns.map(col => row[col]));
+          return { columns, matrix };
+      }
+
+      // 2) Handle array of objects format (e.g. from missing heatmap or correlations)
       if (Array.isArray(data)) {
         if (data.length === 0) return { columns: [], matrix: [] };
         const columns = Object.keys(data[0]);
@@ -132,16 +143,10 @@
         return { columns, matrix };
       }
       
-      // 2) Standard { columns, matrix } or { columns, values }
+      // 3) Standard { columns, matrix } or { columns, values }
       if (data.columns) {
         if (data.matrix) return { columns: data.columns, matrix: data.matrix };
         if (data.values) return { columns: data.columns, matrix: data.values };
-      }
-      
-      // 3) Nested { matrix: { columns, values } }
-      if (data.matrix && data.matrix.columns) {
-        if (data.matrix.matrix) return { columns: data.matrix.columns, matrix: data.matrix.matrix };
-        if (data.matrix.values) return { columns: data.matrix.columns, matrix: data.matrix.values };
       }
       
       return { columns: [], matrix: [] };
@@ -696,16 +701,17 @@
               </div>
             )}
 
-            {data.missing?.matrix?.matrix && <NullityMatrix data={data.missing.matrix.matrix} />}
+            {data.missing?.matrix?.matrix?.matrix && <NullityMatrix data={data.missing.matrix.matrix.matrix} />}
             
-            {data.missing?.heatmap?.matrix && Array.isArray(data.missing.heatmap.matrix) && data.missing.heatmap.matrix.length > 0 && (
+            {data.missing?.heatmap?.matrix?.matrix && data.missing.heatmap.matrix.matrix.length > 0 && (
               <div className="mt-8 pt-8 border-t border-gray-100">
                 <h3 className="text-lg font-medium text-gray-800 mb-10">Heatmap</h3>
                 <div className="flex justify-center">
-                   <CorrelationMatrixComponent data={data.missing.heatmap.matrix} />
+                  <CorrelationMatrixComponent data={data.missing.heatmap.matrix.matrix} />
                 </div>
               </div>
             )}
+
           </div>
         </div>
       );
@@ -719,7 +725,14 @@
         <div id="correlations" className="space-y-4 animate-fadeIn section">
           <div className="flex items-center gap-2 mb-4">
             <PieChart size={24} className="text-slate-600" />
-            <h2 className="text-2xl font-bold text-gray-800">Correlations</h2>
+            <div className="flex flex-col">
+              <h2 className="text-2xl font-bold text-gray-800">Correlations</h2>
+              {data.correlations?.[corrType]?.sampled && (
+                <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                  <Info size={12} /> Sampled estimate ({data.correlations[corrType].sample_size?.toLocaleString()} rows)
+                </span>
+              )}
+            </div>
           </div>
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
             <div className="flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar">
@@ -887,7 +900,7 @@
     const InteractionsSection = ({ data }) => {
       if (!data.interactions || Object.keys(data.interactions).length === 0) return null;
 
-      const columns = Object.keys(data.interactions);
+      const columns = Object.keys(data.interactions).filter(k => k !== '_metadata').sort();
       const [colX, setColX] = useState(columns[0]);
       const [colY, setColY] = useState(columns[1] || columns[0]);
 
@@ -902,14 +915,21 @@
         <div id="interactions" className="space-y-4 animate-fadeIn section">
           <div className="flex items-center gap-2 mb-4">
             <ScatterChart size={24} className="text-slate-600" />
-            <h2 className="text-2xl font-bold text-gray-800">Interactions</h2>
+            <div className="flex flex-col">
+              <h2 className="text-2xl font-bold text-gray-800">Interactions</h2>
+              {data.interactions?._metadata?.is_truncated && (
+                <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                  <AlertTriangle size={12} /> Top {data.interactions._metadata.active_columns.length} most interactive variables shown
+                </span>
+              )}
+            </div>
           </div>
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="md:col-span-1 space-y-6">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">X-Axis</label>
-                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto no-scrollbar border border-gray-100 rounded-sm p-1">
+                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1">
                     {columns.map(col => (
                       <button
                         key={col}
@@ -923,7 +943,7 @@
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Y-Axis</label>
-                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto no-scrollbar border border-gray-100 rounded-sm p-1">
+                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1">
                     {columns.map(col => (
                       <button
                         key={col}

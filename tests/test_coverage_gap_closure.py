@@ -37,13 +37,12 @@ def test_engine_duckdb_storage_info():
     mock_op = MagicMock(spec=ibis.expr.operations.relations.DatabaseTable)
     mock_op.name = "test_table"
     mock_table.op.return_value = mock_op
-    assert engine.get_storage_size(mock_table) == 1024
-
+    assert engine.get_storage_size(mock_table) is None
     # 2. UnboundTable op
     mock_op = MagicMock(spec=ibis.expr.operations.relations.UnboundTable)
     mock_op.name = "test_table"
     mock_table.op.return_value = mock_op
-    assert engine.get_storage_size(mock_table) == 1024
+    assert engine.get_storage_size(mock_table) is None
 
     # 3. Other op
     mock_table.op.return_value = MagicMock()

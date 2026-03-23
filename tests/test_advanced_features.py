@@ -71,5 +71,5 @@ def test_spearman_correlation():
     assert "spearman" in corrs
     # Perfect correlation should be 1.0 (or very close)
     # Spearman should be 1.0 because it's perfectly monotonic
-    # Format is now list of dicts
-    assert corrs["spearman"][0]["b"] > 0.99
+    # Format is now dict with 'matrix' key
+    assert corrs["spearman"]["matrix"][0]["b"] > 0.99

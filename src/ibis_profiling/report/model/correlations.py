@@ -6,8 +6,14 @@ class CorrelationEngine:
     """Computes pairwise correlations using Ibis backends."""
 
     @staticmethod
-    def compute_all(table: ibis.Table, variables: dict) -> Dict[str, Any]:
-        """Calculates all supported correlation matrices."""
+    def compute_all(
+        table: ibis.Table,
+        variables: dict,
+        row_count: int | None = None,
+        sampling_threshold: int = 1_000_000,
+        sample_size: int = 1_000_000,
+    ) -> Dict[str, Any]:
+        """Calculates all supported correlation matrices with sampling for large datasets."""
         import ibis.expr.types as ir
         import ibis.expr.datatypes as dt
 
@@ -17,16 +23,34 @@ class CorrelationEngine:
 
         if len(numeric_cols) < 2:
             return {
-                "pearson": {"columns": numeric_cols, "matrix": []},
-                "spearman": {"columns": numeric_cols, "matrix": []},
+                "pearson": {"columns": numeric_cols, "matrix": [], "sampled": False},
+                "spearman": {"columns": numeric_cols, "matrix": [], "sampled": False},
             }
 
-        # Limit Spearman on very large datasets to avoid performance collapse
-        row_count = table.count().to_pyarrow().as_py()
-        SPEARMAN_THRESHOLD = 1_000_000
+        # Robust row count detection for sampling
+        if row_count is None:
+            row_count = variables.get("_dataset", {}).get("n")
+
+        if row_count is None:
+            # Try to find 'n' in any variable entry
+            for stats in variables.values():
+                if isinstance(stats, dict) and "n" in stats:
+                    row_count = stats["n"]
+                    break
+
+        if row_count is None:
+            row_count = table.count().to_pyarrow().as_py()
+
+        is_sampled = row_count > sampling_threshold
+        calc_table = table
+        if is_sampled:
+            try:
+                calc_table = table.sample(sample_size / row_count)
+            except Exception:
+                calc_table = table.limit(sample_size)
 
         # 1. Pearson Pass
-        pearson_meta = CorrelationEngine._compute_pearson(table, numeric_cols)
+        pearson_meta = CorrelationEngine._compute_pearson(calc_table, numeric_cols)
         flat_pearson = []
         for i, row in enumerate(pearson_meta["matrix"]):
             for j, item in enumerate(row):
@@ -34,45 +58,66 @@ class CorrelationEngine:
                     flat_pearson.append(item.name(f"p_{i}_{j}"))
 
         if flat_pearson:
-            res = table.aggregate(flat_pearson).to_pyarrow().to_pydict()
+            res = calc_table.aggregate(flat_pearson).to_pyarrow().to_pydict()
             final_pearson = [[1.0 for _ in numeric_cols] for _ in numeric_cols]
             for i in range(len(numeric_cols)):
                 for j in range(len(numeric_cols)):
                     if i != j:
                         key = f"p_{i}_{j}"
-                        final_pearson[i][j] = res[key][0]
-            pearson = {"columns": numeric_cols, "matrix": final_pearson}
+                        val = res[key][0]
+                        final_pearson[i][j] = val
+            pearson = {
+                "columns": numeric_cols,
+                "matrix": final_pearson,
+                "sampled": is_sampled,
+                "sample_size": sample_size if is_sampled else None,
+            }
         else:
-            pearson = {"columns": numeric_cols, "matrix": []}
+            pearson = {
+                "columns": numeric_cols,
+                "matrix": [],
+                "sampled": is_sampled,
+                "sample_size": sample_size if is_sampled else None,
+            }
 
         # 2. Spearman Pass
-        spearman = {"columns": numeric_cols, "matrix": []}
-        if row_count <= SPEARMAN_THRESHOLD:
-            spearman_meta = CorrelationEngine._compute_spearman(table, numeric_cols)
-            rank_exprs = [spearman_meta["rank_exprs"][c].name(f"rank_{c}") for c in numeric_cols]
-            rank_table = table.mutate(*rank_exprs)
+        spearman_meta = CorrelationEngine._compute_spearman(calc_table, numeric_cols)
+        rank_exprs = [spearman_meta["rank_exprs"][c].name(f"rank_{c}") for c in numeric_cols]
+        rank_table = calc_table.mutate(*rank_exprs)
 
-            flat_spearman = []
-            for i, c1 in enumerate(numeric_cols):
-                for j, c2 in enumerate(numeric_cols):
+        flat_spearman = []
+        for i, c1 in enumerate(numeric_cols):
+            for j, c2 in enumerate(numeric_cols):
+                if i < j:
+                    r1 = rank_table[f"rank_{c1}"]
+                    r2 = rank_table[f"rank_{c2}"]
+                    # Pearson on Ranks
+                    expr = r1.cov(r2, how="pop") / (r1.std(how="pop") * r2.std(how="pop"))
+                    flat_spearman.append(expr.name(f"s_{i}_{j}"))
+
+        if flat_spearman:
+            res = rank_table.aggregate(flat_spearman).to_pyarrow().to_pydict()
+            final_spearman = [[1.0 for _ in numeric_cols] for _ in numeric_cols]
+            for i in range(len(numeric_cols)):
+                for j in range(len(numeric_cols)):
                     if i < j:
-                        r1 = rank_table[f"rank_{c1}"]
-                        r2 = rank_table[f"rank_{c2}"]
-                        # Pearson on Ranks
-                        expr = r1.cov(r2, how="pop") / (r1.std(how="pop") * r2.std(how="pop"))
-                        flat_spearman.append(expr.name(f"s_{i}_{j}"))
-
-            if flat_spearman:
-                res = rank_table.aggregate(flat_spearman).to_pyarrow().to_pydict()
-                final_spearman = [[1.0 for _ in numeric_cols] for _ in numeric_cols]
-                for i in range(len(numeric_cols)):
-                    for j in range(len(numeric_cols)):
-                        if i < j:
-                            key = f"s_{i}_{j}"
-                            val = res[key][0]
-                            final_spearman[i][j] = val
-                            final_spearman[j][i] = val
-                spearman = {"columns": numeric_cols, "matrix": final_spearman}
+                        key = f"s_{i}_{j}"
+                        val = res[key][0]
+                        final_spearman[i][j] = val
+                        final_spearman[j][i] = val
+            spearman = {
+                "columns": numeric_cols,
+                "matrix": final_spearman,
+                "sampled": is_sampled,
+                "sample_size": sample_size if is_sampled else None,
+            }
+        else:
+            spearman = {
+                "columns": numeric_cols,
+                "matrix": [],
+                "sampled": is_sampled,
+                "sample_size": sample_size if is_sampled else None,
+            }
 
         return {
             "pearson": pearson,

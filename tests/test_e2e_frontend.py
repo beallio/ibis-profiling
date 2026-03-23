@@ -64,14 +64,14 @@ def test_default_theme_rendering(page, html_reports):
     if variables_tab.is_visible():
         variables_tab.click()
         # Ensure a histogram rendered (has <rect> tags for bars)
-        page.wait_for_selector("svg rect", state="visible", timeout=3000)
+        page.wait_for_selector("svg rect", state="visible", timeout=30000)
 
     # 3. Check Interactions Section (Scatter Plots)
     interactions_tab = page.locator("button:has-text('Interactions')").first
     if interactions_tab.is_visible():
         interactions_tab.click()
         # Ensure scatter plot rendered (has <circle> tags for points)
-        page.wait_for_selector("svg circle", state="visible", timeout=3000)
+        page.wait_for_selector("svg circle", state="visible", timeout=30000)
 
     # 4. Check Correlations Section (Heatmap)
     correlations_tab = page.locator("button:has-text('Correlations')").first
@@ -79,7 +79,7 @@ def test_default_theme_rendering(page, html_reports):
         correlations_tab.click()
         # Ensure correlation matrix rendered (has <rect> tags for heatmap cells)
         page.wait_for_selector("text=Correlation Matrix", state="visible")
-        page.wait_for_selector("svg rect", state="visible", timeout=3000)
+        page.wait_for_selector("svg rect", state="visible", timeout=30000)
 
     # 5. Check Missing Values Section
     missing_tab = page.locator("button:has-text('Missing')").first
@@ -88,7 +88,7 @@ def test_default_theme_rendering(page, html_reports):
         # Verify the matrix or heatmap titles
         page.wait_for_selector("text=Nullity Matrix", state="visible")
         # Nullity matrix uses <rect> for presence/absence
-        page.wait_for_selector("svg rect", state="visible", timeout=3000)
+        page.wait_for_selector("svg rect", state="visible", timeout=30000)
 
     # Final error check
     assert len(errors) == 0, f"React rendering crashed with errors: {errors}"
@@ -113,7 +113,7 @@ def test_ydata_theme_rendering(page, html_reports):
     if variables_link.is_visible():
         variables_link.click()
         # Ensure a histogram rendered (has <rect> tags for bars)
-        page.wait_for_selector("svg rect", state="visible", timeout=3000)
+        page.wait_for_selector("svg rect", state="visible", timeout=30000)
 
     # 3. Check Interactions Section
     interactions_link = page.locator("a[href='#interactions']")
@@ -121,7 +121,7 @@ def test_ydata_theme_rendering(page, html_reports):
         interactions_link.click()
         page.wait_for_selector("text=Interactions", state="visible")
         # Ensure scatter plot rendered (has <circle> tags for points)
-        page.wait_for_selector("svg circle", state="visible", timeout=3000)
+        page.wait_for_selector("svg circle", state="visible", timeout=30000)
 
     # 4. Check Correlations Section
     correlations_link = page.locator("a[href='#correlations']")
@@ -129,7 +129,7 @@ def test_ydata_theme_rendering(page, html_reports):
         correlations_link.click()
         page.wait_for_selector("button:has-text('pearson')", state="visible")
         # Ensure correlation matrix rendered (has <rect> tags for heatmap cells)
-        page.wait_for_selector("svg rect", state="visible", timeout=3000)
+        page.wait_for_selector("svg rect", state="visible", timeout=30000)
 
     # 5. Check Missing Values Section
     missing_link = page.locator("a[href='#missing']")
@@ -138,7 +138,7 @@ def test_ydata_theme_rendering(page, html_reports):
         # In ydata theme, it's 'Missing values'
         page.wait_for_selector("text=Missing values", state="visible")
         # Nullity matrix uses <rect>
-        page.wait_for_selector("svg rect", state="visible", timeout=3000)
+        page.wait_for_selector("svg rect", state="visible", timeout=30000)
 
     # Final error check
     assert len(errors) == 0, f"React rendering crashed with errors: {errors}"

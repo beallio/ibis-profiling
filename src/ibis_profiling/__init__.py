@@ -8,9 +8,11 @@ from .metrics import registry, safe_col
 from .planner import QueryPlanner
 from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
+from ._version import __version__
 
 
-from typing import Callable
+from typing import Callable, cast
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class Profiler:
@@ -26,6 +28,11 @@ class Profiler:
         monotonicity: bool | None = None,
         compute_duplicates: bool | None = None,
         cardinality_threshold: int = 20,
+        max_interaction_pairs: int = 10,
+        correlations_sampling_threshold: int = 1_000_000,
+        correlations_sample_size: int = 1_000_000,
+        parallel: bool = False,
+        pool_size: int = 4,
     ):
         from typing import Any
 
@@ -37,11 +44,17 @@ class Profiler:
         self.compute_monotonicity = not minimal if monotonicity is None else monotonicity
         self.compute_duplicates = not minimal if compute_duplicates is None else compute_duplicates
         self.cardinality_threshold = cardinality_threshold
+        self.max_interaction_pairs = max_interaction_pairs
+        self.correlations_sampling_threshold = correlations_sampling_threshold
+        self.correlations_sample_size = correlations_sample_size
+        self.parallel = parallel
+        self.pool_size = pool_size
 
         self.start_time = datetime.now()
         self.inspector = DatasetInspector(table)
         self.planner = QueryPlanner(table, registry)
         self.engine = ExecutionEngine()
+        self.executor = ThreadPoolExecutor(max_workers=pool_size) if parallel else None
 
         self.col_types: dict[str, Any] = self.inspector.get_column_types()
         self.report_data = {
@@ -59,85 +72,89 @@ class Profiler:
 
     def run(self) -> InternalProfileReport:
         """Executes all phases of profiling."""
-        # Start at 0
-        self._update_progress(0, "Analyzing dataset...")
+        try:
+            # Start at 0
+            self._update_progress(0, "Analyzing dataset...")
 
-        # 1. Global Aggregates (20%)
-        self._update_progress(20 if not self.minimal else 30, "Executing global aggregates...")
-        global_plan = self.planner.build_global_aggregation()
-        raw_results = self.engine.execute(global_plan)
+            # 1. Global Aggregates (20%)
+            self._update_progress(20 if not self.minimal else 30, "Executing global aggregates...")
+            global_plan = self.planner.build_global_aggregation()
+            raw_results = self.engine.execute(global_plan)
 
-        # 2. Metadata & Initial Report (10%)
-        self._update_progress(10, "Metadata analysis...")
-        row_count = raw_results["_dataset__row_count"][0] if not raw_results.is_empty() else 0
-        mem_size = self.engine.get_storage_size(self.table)
-        if mem_size is None:
-            mem_size = self.inspector.estimate_memory_size(row_count)
+            # 2. Metadata & Initial Report (10%)
+            self._update_progress(10, "Metadata analysis...")
+            row_count = raw_results["_dataset__row_count"][0] if not raw_results.is_empty() else 0
+            mem_size = self.engine.get_storage_size(self.table)
+            if mem_size is None:
+                mem_size = self.inspector.estimate_memory_size(row_count)
 
-        self.col_types["_dataset"] = {
-            "memory_size": mem_size,
-            "record_size": mem_size / row_count if row_count > 0 else 0,
-        }
+            self.col_types["_dataset"] = {
+                "memory_size": mem_size,
+                "record_size": mem_size / row_count if row_count > 0 else 0,
+            }
 
-        report = InternalProfileReport(raw_results, self.col_types, title=self.title)
-        report.analysis["date_start"] = self.start_time.isoformat()
+            report = InternalProfileReport(raw_results, self.col_types, title=self.title)
+            report.analysis["date_start"] = self.start_time.isoformat()
 
-        # 3. Reclassification & Static Analysis (10%)
-        self._update_progress(5, "Reclassifying variables...")
-        self._reclassify(report)
+            # 3. Reclassification & Static Analysis (10%)
+            self._update_progress(5, "Reclassifying variables...")
+            self._reclassify(report)
 
-        self._update_progress(5, "Static analysis...")
-        for col_name in report.variables:
-            if col_name != "_dataset":
-                report.variables[col_name]["hashable"] = self.inspector.is_hashable(col_name)
+            self._update_progress(5, "Static analysis...")
+            for col_name in report.variables:
+                if col_name != "_dataset":
+                    report.variables[col_name]["hashable"] = self.inspector.is_hashable(col_name)
 
-        # 4. Duplicates (if not minimal) (10%)
-        if self.compute_duplicates:
-            self._update_progress(10, "Checking for duplicates...")
-            n_distinct_rows = self.table.distinct().count().execute()
-            report.table["n_distinct_rows"] = n_distinct_rows
-            n_total = report.table.get("n", 0)
-            if isinstance(n_total, (int, float)):
-                report.table["n_duplicates"] = n_total - n_distinct_rows
-                report.table["p_duplicates"] = (
-                    (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
-                )
-        else:
-            if not self.minimal:
-                self._update_progress(10, "Skipping duplicate check...")
-                report.analysis.setdefault("warnings", []).append(
-                    "Skipped duplicate check as requested."
-                )
+            # 4. Duplicates (if not minimal) (10%)
+            if self.compute_duplicates:
+                self._update_progress(10, "Checking for duplicates...")
+                n_distinct_rows = self.table.distinct().count().execute()
+                report.table["n_distinct_rows"] = n_distinct_rows
+                n_total = report.table.get("n", 0)
+                if isinstance(n_total, (int, float)):
+                    report.table["n_duplicates"] = n_total - n_distinct_rows
+                    report.table["p_duplicates"] = (
+                        (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
+                    )
             else:
-                pass
+                if not self.minimal:
+                    self._update_progress(10, "Skipping duplicate check...")
+                    report.analysis.setdefault("warnings", []).append(
+                        "Skipped duplicate check as requested."
+                    )
+                else:
+                    pass
 
-        # 5. Advanced Moments & Histograms (20%)
-        self._run_advanced_pass(report)
+            # 5. Advanced Moments & Histograms (20%)
+            self._run_advanced_pass(report)
 
-        # 6. Complex Metrics (15%)
-        self._run_complex_pass(report)
+            # 6. Complex Metrics (15%)
+            self._run_complex_pass(report)
 
-        # 7. Correlations (5%)
-        if self.compute_correlations:
-            self._run_correlations(report)
-        elif not self.minimal:
-            self._update_progress(5)
+            # 7. Correlations (5%)
+            if self.compute_correlations:
+                self._run_correlations(report)
+            elif not self.minimal:
+                self._update_progress(5)
 
-        # 8. Monotonicity (5%)
-        if self.compute_monotonicity:
-            self._run_monotonicity(report)
-        elif not self.minimal:
-            self._update_progress(5)
+            # 8. Monotonicity (5%)
+            if self.compute_monotonicity:
+                self._run_monotonicity(report)
+            elif not self.minimal:
+                self._update_progress(5)
 
-        # 9. Samples & Missing Matrix (5%)
-        self._run_final_pass(report)
+            # 9. Samples & Missing Matrix (5%)
+            self._run_final_pass(report)
 
-        end_time = datetime.now()
-        report.analysis["date_end"] = end_time.isoformat()
-        report.analysis["duration"] = (end_time - self.start_time).total_seconds() * 1000
+            end_time = datetime.now()
+            report.analysis["date_end"] = end_time.isoformat()
+            report.analysis["duration"] = (end_time - self.start_time).total_seconds() * 1000
 
-        self._update_progress(0, "Report complete.")
-        return report
+            self._update_progress(0, "Report complete.")
+            return report
+        finally:
+            if self.executor:
+                self.executor.shutdown(wait=True)
 
     def _reclassify(self, report: InternalProfileReport):
         for col_name, stats in report.variables.items():
@@ -212,12 +229,32 @@ class Profiler:
         hist_inc = (
             (10 if not self.minimal else 10) / len(histogram_plans) if histogram_plans else 10
         )
-        for col_name, plan, v_min, v_max, nbins in histogram_plans:
-            self._update_progress(int(hist_inc), f"Calculating histogram for {col_name}...")
-            if report.variables[col_name].get("type") == "Categorical":
-                continue
+
+        def run_hist(p):
+            col_name, plan, v_min, v_max, nbins = p
             try:
                 res = plan.execute()
+                return col_name, res, v_min, v_max, nbins, None
+            except Exception as exc:
+                return col_name, None, v_min, v_max, nbins, exc
+
+        if self.executor and histogram_plans:
+            futures = [self.executor.submit(run_hist, p) for p in histogram_plans]
+            results = [f.result() for f in as_completed(futures)]
+        else:
+            results = [run_hist(p) for p in histogram_plans]
+
+        for col_name, res, v_min, v_max, nbins, exc in results:
+            self._update_progress(int(hist_inc), f"Processing histogram for {col_name}...")
+            if exc:
+                report.analysis.setdefault("warnings", []).append(
+                    f"Histogram failed for {col_name}: {exc}"
+                )
+                continue
+            if res is None:
+                continue
+
+            try:
                 c_key = "count" if "count" in res.columns else res.columns[1]
                 l_key = res.columns[0]
                 counts_dict = {
@@ -230,23 +267,78 @@ class Profiler:
                     "numeric_histogram",
                     {"counts": counts_dict, "min": v_min, "max": v_max, "nbins": nbins},
                 )
-            except Exception as exc:
+            except Exception as e:
                 report.analysis.setdefault("warnings", []).append(
-                    f"Histogram failed for {col_name}: {exc}"
+                    f"Histogram processing failed for {col_name}: {e}"
                 )
 
     def _run_complex_pass(self, report: InternalProfileReport):
         final_types = {c: s.get("type") for c, s in report.variables.items()}
-        complex_plans = self.planner.build_complex_metrics(override_types=final_types)
-        inc = 15 / len(complex_plans) if complex_plans else 15
-        for col_name, metric_name, expr in complex_plans:
-            self._update_progress(int(inc), f"Calculating {metric_name} for {col_name}...")
-            val = (
-                expr.to_pyarrow().to_pydict()
-                if isinstance(expr, ir.Table)
-                else expr.to_pyarrow().as_py()
-            )
-            report.add_metric(col_name, metric_name, val)
+        complex_plans = self.planner.build_complex_metrics(
+            override_types=final_types, variables_metadata=report.variables
+        )
+
+        value_aggs = []
+        table_plans = []
+
+        for col_name, metric_name, expr, hint in complex_plans:
+            if hint == "Value":
+                if isinstance(expr, ir.Value):
+                    value_aggs.append(expr.name(f"{col_name}__{metric_name}"))
+                else:
+                    table_plans.append((col_name, metric_name, expr))
+            else:
+                table_plans.append((col_name, metric_name, expr))
+
+        # 1. Execute batched scalar metrics
+        if value_aggs:
+            self._update_progress(5, "Calculating batched scalar metrics...")
+            try:
+                results = self.table.aggregate(value_aggs).to_pyarrow().to_pydict()
+                for k, v in results.items():
+                    parts = k.rsplit("__", 1)
+                    report.add_metric(parts[0], parts[1], v[0])
+            except Exception as exc:
+                report.analysis.setdefault("warnings", []).append(
+                    f"Batched complex metrics failed: {exc}. Falling back to individual queries."
+                )
+                # Sequential fallback for scalars
+                for col_name, metric_name, expr, hint in complex_plans:
+                    if hint == "Value":
+                        try:
+                            val = expr.to_pyarrow().as_py()
+                            report.add_metric(col_name, metric_name, val)
+                        except Exception:
+                            continue
+
+        # 2. Execute Table metrics in parallel if executor is present
+        inc = 10 / len(table_plans) if table_plans else 10
+
+        def run_table_plan(p):
+            col_name, metric_name, expr = p
+            try:
+                if isinstance(expr, ir.Table):
+                    val = expr.to_pyarrow().to_pydict()
+                else:
+                    val = expr.to_pyarrow().as_py()
+                return col_name, metric_name, val, None
+            except Exception as exc:
+                return col_name, metric_name, None, exc
+
+        if self.executor and table_plans:
+            futures = [self.executor.submit(run_table_plan, p) for p in table_plans]
+            results = [f.result() for f in as_completed(futures)]
+        else:
+            results = [run_table_plan(p) for p in table_plans]
+
+        for col_name, metric_name, val, exc in results:
+            self._update_progress(int(inc), f"Processing {metric_name} for {col_name}...")
+            if exc:
+                report.analysis.setdefault("warnings", []).append(
+                    f"{metric_name} failed for {col_name}: {exc}"
+                )
+            elif val is not None:
+                report.add_metric(col_name, metric_name, val)
 
     def _run_correlations(self, report: InternalProfileReport):
         self._update_progress(5, "Correlations pass...")
@@ -262,7 +354,13 @@ class Profiler:
                     numeric_cols.append(c)
 
         if len(numeric_cols) >= 2:
-            res = CorrelationEngine.compute_all(self.table, report.variables)
+            res = CorrelationEngine.compute_all(
+                self.table,
+                report.variables,
+                row_count=cast(int | None, report.table.get("n")),
+                sampling_threshold=self.correlations_sampling_threshold,
+                sample_size=self.correlations_sample_size,
+            )
             report.correlations = res
 
     def _run_monotonicity(self, report: InternalProfileReport):
@@ -307,7 +405,11 @@ class Profiler:
                 n_total = None
 
             report.interactions = InteractionEngine.compute(
-                self.table, report.variables, row_count=n_total
+                self.table,
+                report.variables,
+                row_count=n_total,
+                max_interaction_pairs=self.max_interaction_pairs,
+                correlations=report.correlations,
             )
         else:
             self._update_progress(3)
@@ -322,6 +424,11 @@ def profile(
     monotonicity: bool | None = None,
     compute_duplicates: bool | None = None,
     cardinality_threshold: int = 20,
+    max_interaction_pairs: int = 10,
+    correlations_sampling_threshold: int = 1_000_000,
+    correlations_sample_size: int = 1_000_000,
+    parallel: bool = False,
+    pool_size: int = 4,
 ) -> InternalProfileReport:
     """Main entrypoint for profiling an Ibis table."""
     profiler = Profiler(
@@ -333,6 +440,11 @@ def profile(
         monotonicity=monotonicity,
         compute_duplicates=compute_duplicates,
         cardinality_threshold=cardinality_threshold,
+        max_interaction_pairs=max_interaction_pairs,
+        correlations_sampling_threshold=correlations_sampling_threshold,
+        correlations_sample_size=correlations_sample_size,
+        parallel=parallel,
+        pool_size=pool_size,
     )
     return profiler.run()
 
@@ -366,6 +478,13 @@ class ProfileReport:
             correlations=correlations,
             monotonicity=monotonicity,
             compute_duplicates=compute_duplicates,
+            max_interaction_pairs=kwargs.get("max_interaction_pairs", 10),
+            correlations_sampling_threshold=kwargs.get(
+                "correlations_sampling_threshold", 1_000_000
+            ),
+            correlations_sample_size=kwargs.get("correlations_sample_size", 1_000_000),
+            parallel=kwargs.get("parallel", False),
+            pool_size=kwargs.get("pool_size", 4),
         )
 
     @classmethod
@@ -391,4 +510,4 @@ class ProfileReport:
         return self._report.to_html(theme=theme, minify=minify)
 
 
-__all__ = ["profile", "registry", "ProfileReport", "profile_excel"]
+__all__ = ["profile", "registry", "ProfileReport", "profile_excel", "__version__"]

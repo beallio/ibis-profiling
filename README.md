@@ -4,7 +4,7 @@
 
 # Ibis Profiling
 
-[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=2)](https://badge.fury.io/py/ibis-profiling)
+[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=3)](https://badge.fury.io/py/ibis-profiling)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An ultra-high-performance data profiling system built natively for **Ibis**.
@@ -147,6 +147,35 @@ report = ProfileReport(table, title="Loan Analysis Report")
 # 3. Export results
 report.to_file("report.html")
 ```
+
+### ⚙️ Advanced Configuration
+
+Fine-tune the profiler's performance and behavior using additional parameters in `ProfileReport()`:
+
+| Parameter | Default | Description |
+| :--- | :--- | :--- |
+| `minimal` | `False` | Enable faster profiling by skipping expensive metrics (correlations, interactions). |
+| `parallel` | `False` | Execute independent backend queries in parallel using a thread pool. (Experimental) |
+| `pool_size` | `4` | Number of concurrent worker threads for parallel execution. |
+| `max_interaction_pairs` | `10` | Limit pairwise scatter plots to the Top N most interactive numeric variables. |
+| `correlations_sampling_threshold` | `1,000,000` | Row count threshold above which Spearman correlation uses sampling. |
+| `correlations_sample_size` | `1,000,000` | Number of rows used when correlation sampling is active. |
+| `correlations` | `True` | Explicitly enable/disable all correlation matrices. |
+| `monotonicity` | `True` | Explicitly enable/disable monotonicity checks. |
+| `compute_duplicates` | `True` | Explicitly enable/disable duplicate row detection. |
+
+#### 🔍 Interaction Pruning & "Interactivity"
+
+To maintain high performance and keep HTML reports lightweight, `ibis-profiling` uses an automated pruning strategy for pairwise scatter plots:
+
+- **Interactivity Definition**: "Interactivity" is defined as the **average absolute Pearson correlation** of a column with all other numeric variables.
+- **Why are variables limited?**: We determine the number of columns to include ($N$) by the requested `max_interaction_pairs` (default 10). A limit of 10 variables results in up to 45 pairwise scatter plots ($10 \times 9 / 2 = 45$).
+- **How are fields pruned?**:
+    1.  **Scoring**: Every numeric column is assigned a score based on its average absolute correlation with others.
+    2.  **Ranking**: Columns are ranked by this score. High scores indicate variables that likely have the most meaningful relationships.
+    3.  **Selection**: Only the Top $N$ columns are kept. All other columns are pruned from the interactions pass to prevent massive HTML bloat and long compute times.
+
+---
 
 ### Excel Ingestion
 
