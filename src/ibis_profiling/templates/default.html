@@ -387,6 +387,8 @@
         }
       } else if (typeof val === 'boolean') {
         formattedVal = val ? 'True' : 'False';
+      } else if (val === 'Skipped') {
+        formattedVal = 'Skipped';
       }
 
       return (
