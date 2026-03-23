@@ -506,7 +506,7 @@
                     <StatRow label="MAD" value={formatNum(variable.mad)} />
                     <StatRow label="Skewness" value={formatNum(variable.skewness)} />
                     <StatRow label="Variance" value={formatNum(variable.variance)} />
-                    <StatRow label="Monotonicity" value={variable.monotonic_increasing ? 'Increasing' : variable.monotonic_decreasing ? 'Decreasing' : 'None'} />
+                    <StatRow label="Monotonicity" value={variable.monotonic_increasing === 'Skipped' ? 'Skipped' : (variable.monotonic_increasing ? 'Increasing' : variable.monotonic_decreasing ? 'Decreasing' : 'None')} />
                   </div>
                 </div>
               </>
