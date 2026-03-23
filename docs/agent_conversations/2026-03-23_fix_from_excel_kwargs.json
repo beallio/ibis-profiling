@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Address code review finding: `ProfileReport.from_excel` misroutes profiling kwargs to `pl.read_excel`, causing errors or ignored settings when parameters like `correlations=False` or `compute_duplicates=False` are passed.",
+  "files_modified": [
+    "src/ibis_profiling/report/report.py",
+    "tests/test_from_excel.py",
+    "scripts/benchmark_excel.py",
+    "docs/plans/fix_from_excel_kwargs.md"
+  ],
+  "tests_added": [
+    "tests/test_from_excel.py::test_from_excel_kwargs_routing"
+  ],
+  "design_decisions": [
+    "Used inspect.signature(profile).parameters.keys() to dynamically extract all valid profiling argument names instead of relying on a hardcoded list.",
+    "Routed kwargs present in the signature to profile_kwargs, and the remainder to read_kwargs.",
+    "Created a new benchmark script specifically for from_excel since the main backtest script only uses Parquet files, allowing us to isolate and measure the Excel loading and processing overhead."
+  ],
+  "results": "Successfully implemented dynamic kwarg routing for `from_excel`. Added a passing test verifying that kwargs are correctly split and do not cause TypeErrors from Polars. Created a benchmarking script `scripts/benchmark_excel.py` which confirmed the implementation functions performantly."
+}
