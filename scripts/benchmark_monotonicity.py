@@ -3,10 +3,11 @@ import pandas as pd
 import numpy as np
 import time
 import os
+import argparse
 from ibis_profiling import profile
 
 
-def generate_data(n=1_000_000):
+def generate_data(n=5_000_000):
     print(f"Generating {n:,} rows of data...")
     rng = np.random.default_rng(42)
     data = {
@@ -19,34 +20,51 @@ def generate_data(n=1_000_000):
 
 
 def main():
-    table = generate_data(1_000_000)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--rows", type=int, default=5_000_000)
+    parser.add_argument("--iterations", type=int, default=10)
+    args = parser.parse_args()
 
-    print("\n--- Benchmarking Monotonicity ---")
+    n_rows = args.rows
+    n_iters = args.iterations
 
-    # 1. With Monotonicity (Forced)
-    print("Running with Monotonicity ENABLED (forced)...")
-    start = time.time()
-    profile(table, monotonicity=True)
-    duration_enabled = time.time() - start
-    print(f"Duration (Enabled): {duration_enabled:.2f}s")
+    table = generate_data(n_rows)
 
-    # 2. Without Monotonicity (Skipped via threshold)
-    print("\nRunning with Monotonicity SKIPPED (threshold=100k)...")
-    start = time.time()
-    profile(table, monotonicity_threshold=100_000)
-    duration_skipped = time.time() - start
-    print(f"Duration (Skipped): {duration_skipped:.2f}s")
+    print(f"\n--- Benchmarking Monotonicity ({n_rows:,} rows, {n_iters} iterations) ---")
 
-    improvement = (duration_enabled - duration_skipped) / duration_enabled * 100
-    print(f"\nPerformance Improvement: {improvement:.2f}%")
+    enabled_times = []
+    skipped_times = []
+
+    for i in range(n_iters):
+        print(f"Iteration {i + 1}/{n_iters}...")
+
+        # 1. With Monotonicity (Forced)
+        start = time.time()
+        profile(table, monotonicity=True, cardinality_threshold=0)
+        enabled_times.append(time.time() - start)
+
+        # 2. Without Monotonicity (Skipped via threshold)
+        start = time.time()
+        profile(table, monotonicity_threshold=100_000, cardinality_threshold=0)
+        skipped_times.append(time.time() - start)
+
+    avg_enabled = sum(enabled_times) / n_iters
+    avg_skipped = sum(skipped_times) / n_iters
+
+    improvement = (avg_enabled - avg_skipped) / avg_enabled * 100
+
+    print("\nResults:")
+    print(f"Average Duration (Enabled): {avg_enabled:.2f}s")
+    print(f"Average Duration (Skipped): {avg_skipped:.2f}s")
+    print(f"Average Improvement: {improvement:.2f}%")
 
     # Save results to /tmp
-    results_path = "/tmp/ibis-profiling/monotonicity_benchmark.txt"
+    results_path = "/tmp/ibis-profiling/monotonicity_benchmark_5M.txt"
     os.makedirs(os.path.dirname(results_path), exist_ok=True)
     with open(results_path, "w") as f:
-        f.write("Monotonicity Benchmark Results (1M rows)\n")
-        f.write(f"Enabled: {duration_enabled:.2f}s\n")
-        f.write(f"Skipped: {duration_skipped:.2f}s\n")
+        f.write(f"Monotonicity Benchmark Results ({n_rows:,} rows, {n_iters} iters)\n")
+        f.write(f"Average Enabled: {avg_enabled:.2f}s\n")
+        f.write(f"Average Skipped: {avg_skipped:.2f}s\n")
         f.write(f"Improvement: {improvement:.2f}%\n")
     print(f"Results saved to {results_path}")
 
