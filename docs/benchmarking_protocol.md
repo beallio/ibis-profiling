@@ -11,7 +11,7 @@ This document defines the mandatory methodology for measuring and verifying perf
 ## 2. Standard Benchmarking Datasets
 Benchmarks must be run on the following synthetic datasets (generated via `scripts/generate_bench_data.py`):
 
-1.  **Standard Test**: 1,000,000 rows x 20 columns.
+1.  **Standard Test**: 5,000,000 rows x 20 columns.
     *   *Focus*: Baseline performance for common analysis tasks.
 2.  **Scalability Test**: 100,000 rows x 100 columns.
     *   *Focus*: Verifying query batching efficiency and interaction truncation.
