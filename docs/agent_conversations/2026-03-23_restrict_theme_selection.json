@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Restrict report template selection to a safe allowlist and prevent path traversal.",
+  "files_modified": [
+    "src/ibis_profiling/report/report.py",
+    "tests/test_theme_security.py",
+    "docs/plans/restrict_report_theme_selection.md"
+  ],
+  "tests_added": [
+    "tests/test_theme_security.py"
+  ],
+  "design_decisions": [
+    "Implemented an ALLOWED_THEMES allowlist: {'default', 'ydata-like'}.",
+    "Added validation logic to fall back to 'default' if an invalid theme is requested.",
+    "Recorded a warning in the report's analysis data when an invalid theme is used.",
+    "Added an extra layer of defense using os.path.realpath and os.path.commonpath to ensure the template stays within the templates directory."
+  ],
+  "results": "Successfully secured ProfileReport.to_html against theme-based path traversal. Verified with new security tests and confirmed no regressions in the full test suite."
+}
