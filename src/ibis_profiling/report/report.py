@@ -361,14 +361,35 @@ class ProfileReport:
             f.write(content)
 
     def to_html(self, theme: str = "default", minify: bool = True) -> str:
+        ALLOWED_THEMES = {"default", "ydata-like"}
+
+        # 1. Allowlist validation
+        if theme not in ALLOWED_THEMES:
+            self.analysis.setdefault("warnings", [])
+            self.analysis["warnings"].append(
+                f"Invalid theme '{theme}' requested. Falling back to 'default'."
+            )
+            theme = "default"
 
         template_name = f"{theme}.html"
-        template_path = os.path.join(os.path.dirname(__file__), "..", "templates", template_name)
-        if not os.path.exists(template_path):
-            # Fallback to default if theme not found
-            template_path = os.path.join(
-                os.path.dirname(__file__), "..", "templates", "default.html"
+        templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+        template_path = os.path.join(templates_dir, template_name)
+
+        # 2. Path traversal protection (realpath check)
+        # We use os.path.commonpath for more robust prefix checking
+        real_templates_dir = os.path.realpath(templates_dir)
+        real_template_path = os.path.realpath(template_path)
+
+        if os.path.commonpath([real_templates_dir, real_template_path]) != real_templates_dir:
+            self.analysis.setdefault("warnings", [])
+            self.analysis["warnings"].append(
+                f"Security: Theme path '{theme}' attempted to escape templates directory. Falling back to 'default'."
             )
+            template_path = os.path.join(templates_dir, "default.html")
+
+        if not os.path.exists(template_path):
+            # Fallback to default if theme file not found
+            template_path = os.path.join(templates_dir, "default.html")
 
         with open(template_path, "r") as f:
             html = f.read()

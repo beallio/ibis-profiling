@@ -854,14 +854,13 @@
                       sub={`Across ${reportData.table.n_vars_with_missing} variables`} 
                       color="red" 
                     />
-                    <StatCard 
-                      title="Memory Size" 
-                      value={`${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MB`} 
-                      icon={CheckCircle2} 
-                      sub={`${reportData.table.record_size} bytes per record`} 
-                      color="green" 
-                    />
-                  </div>
+                    <StatCard
+                      title="Memory Size"
+                      value={`${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MiB`}
+                      icon={CheckCircle2}
+                      sub={`${reportData.table.record_size} bytes per record`}
+                      color="green"
+                    />                  </div>
 
                   <section className={`${theme.bgCard} border ${theme.border} p-6 rounded-2xl shadow-xl`}>
                     <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${theme.textPrimary}`}>
