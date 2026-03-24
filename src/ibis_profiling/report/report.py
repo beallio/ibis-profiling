@@ -409,13 +409,8 @@ class ProfileReport:
         encoded_json = base64.b64encode(report_json.encode("utf-8")).decode("utf-8")
 
         if minify:
-            import re
-
-            # 1. Remove HTML comments
-            html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
-            # 2. Remove CSS/JS multi-line comments
-            html = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
-            # 3. Safer minification: strip leading/trailing whitespace from each line
+            # Safer minification: strip leading/trailing whitespace from each line
+            # We skip heavy regex-based comment removal as it's dangerous for pre-compiled templates
             html = "\n".join([line.strip() for line in html.splitlines() if line.strip()])
 
         # Replace data-report attribute with our encoded JSON

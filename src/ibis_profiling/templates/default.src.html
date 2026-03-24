@@ -19,10 +19,9 @@
 
   <style>
     body {
-      background-color: #020617; /* Tailwind slate-950 */
-      color: #e2e8f0; /* Tailwind slate-200 */
+      background-color: #020617;
+      color: #e2e8f0;
     }
-    /* Custom Scrollbar for a polished look */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -122,9 +121,14 @@
     };
 
     // Securely decode the Base64-encoded payload (Unicode-safe)
-    const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
-    const bytes = Uint8Array.from(atob(ENCODED_REPORT_DATA), c => c.charCodeAt(0));
-    const REPORT_DATA = JSON.parse(new TextDecoder().decode(bytes));
+    let REPORT_DATA = { analysis: {}, table: { types: {} }, variables: {}, alerts: [] };
+    try {
+      const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
+      const bytes = Uint8Array.from(atob(ENCODED_REPORT_DATA), c => c.charCodeAt(0));
+      REPORT_DATA = JSON.parse(new TextDecoder().decode(bytes));
+    } catch (e) {
+      console.error("Error decoding report data:", e);
+    }
 
     // Helper: Safely parse different matrix JSON structures
     const parseMatrixData = (data) => {
