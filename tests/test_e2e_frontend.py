@@ -112,8 +112,10 @@ def test_ydata_theme_rendering(page, html_reports):
     variables_link = page.locator("a[href='#variables']")
     if variables_link.is_visible():
         variables_link.click()
-        # Ensure a histogram rendered (has <rect> tags for bars)
-        page.wait_for_selector("svg rect", state="visible", timeout=30000)
+        # In ydata theme, numeric histograms use div bars with bg-blue-500
+        # and categorical histograms use divs as well.
+        # Let's look for the HistogramChart container or a blue bar.
+        page.wait_for_selector(".bg-blue-500", state="visible", timeout=30000)
 
     # 3. Check Interactions Section
     interactions_link = page.locator("a[href='#interactions']")

@@ -4,18 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ibis Profiling Report</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Babel for in-browser JSX compilation -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- React & Dependencies (UMD Builds for local file portability) -->
-  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
   <script>window.react = window.React;</script>
-  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js" crossorigin="anonymous"></script>
 
   <style>
     body {
@@ -38,1377 +32,1457 @@
       background: #475569; 
     }
   </style>
-</head>
+<style id="tailwind-static">*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.bottom-0{bottom:0px}.left-0{left:0px}.left-3{left:0.75rem}.right-0{right:0px}.top-0{top:0px}.top-1\/2{top:50%}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.mx-auto{margin-left:auto;margin-right:auto}.mb-10{margin-bottom:2.5rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mt-1{margin-top:0.25rem}.mt-16{margin-top:4rem}.mt-auto{margin-top:auto}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-10{height:2.5rem}.h-full{height:100%}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-64{width:16rem}.w-full{width:100%}.flex-1{flex:1 1 0%}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.cursor-pointer{cursor:pointer}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.justify-around{justify-content:space-around}.gap-0\.5{gap:0.125rem}.gap-1{gap:0.25rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-8 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2rem * var(--tw-space-y-reverse))}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded-t-sm{border-top-left-radius:0.125rem;border-top-right-radius:0.125rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-r{border-right-width:1px}.border-t{border-top-width:1px}.border-slate-800{--tw-border-opacity:1;border-color:rgb(30 41 59 / var(--tw-border-opacity, 1))}.border-slate-800\/50{border-color:rgb(30 41 59 / 0.5)}.bg-blue-500\/10{background-color:rgb(59 130 246 / 0.1)}.bg-blue-500\/60{background-color:rgb(59 130 246 / 0.6)}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-green-500\/10{background-color:rgb(34 197 94 / 0.1)}.bg-purple-500\/10{background-color:rgb(168 85 247 / 0.1)}.bg-red-500\/10{background-color:rgb(239 68 68 / 0.1)}.bg-slate-800\/20{background-color:rgb(30 41 59 / 0.2)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.bg-slate-900\/50{background-color:rgb(15 23 42 / 0.5)}.bg-slate-950{--tw-bg-opacity:1;background-color:rgb(2 6 23 / var(--tw-bg-opacity, 1))}.bg-slate-950\/80{background-color:rgb(2 6 23 / 0.8)}.object-cover{object-fit:cover}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-1\.5{padding-left:0.375rem;padding-right:0.375rem}.px-4{padding-left:1rem;padding-right:1rem}.px-8{padding-left:2rem;padding-right:2rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-20{padding-bottom:5rem}.pb-8{padding-bottom:2rem}.pl-10{padding-left:2.5rem}.pr-10{padding-right:2.5rem}.pr-2{padding-right:0.5rem}.pt-3{padding-top:0.75rem}.pt-6{padding-top:1.5rem}.pt-8{padding-top:2rem}.text-center{text-align:center}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.font-sans{font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[10px\]{font-size:10px}.text-\[9px\]{font-size:9px}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.uppercase{text-transform:uppercase}.leading-tight{line-height:1.25}.tracking-tight{letter-spacing:-0.025em}.tracking-wider{letter-spacing:0.05em}.tracking-widest{letter-spacing:0.1em}.text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.text-blue-500{--tw-text-opacity:1;color:rgb(59 130 246 / var(--tw-text-opacity, 1))}.text-green-400{--tw-text-opacity:1;color:rgb(74 222 128 / var(--tw-text-opacity, 1))}.text-green-500{--tw-text-opacity:1;color:rgb(34 197 94 / var(--tw-text-opacity, 1))}.text-purple-400{--tw-text-opacity:1;color:rgb(192 132 252 / var(--tw-text-opacity, 1))}.text-red-400{--tw-text-opacity:1;color:rgb(248 113 113 / var(--tw-text-opacity, 1))}.text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249 / var(--tw-text-opacity, 1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-yellow-500{--tw-text-opacity:1;color:rgb(234 179 8 / var(--tw-text-opacity, 1))}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-blue-500\/20{--tw-shadow-color:rgb(59 130 246 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-blue-600\/20{--tw-shadow-color:rgb(37 99 235 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-shadow{transition-property:box-shadow;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-200{transition-duration:200ms}.duration-300{transition-duration:300ms}.duration-500{transition-duration:500ms}.hover\:border-blue-500\/30:hover{border-color:rgb(59 130 246 / 0.3)}.hover\:bg-blue-400:hover{--tw-bg-opacity:1;background-color:rgb(96 165 250 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-800\/20:hover{background-color:rgb(30 41 59 / 0.2)}.hover\:text-blue-300:hover{--tw-text-opacity:1;color:rgb(147 197 253 / var(--tw-text-opacity, 1))}.hover\:text-slate-100:hover{--tw-text-opacity:1;color:rgb(241 245 249 / var(--tw-text-opacity, 1))}.hover\:text-slate-400:hover{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.hover\:shadow-blue-900\/10:hover{--tw-shadow-color:rgb(30 58 138 / 0.1);--tw-shadow:var(--tw-shadow-colored)}.hover\:shadow-green-900\/10:hover{--tw-shadow-color:rgb(20 83 45 / 0.1);--tw-shadow:var(--tw-shadow-colored)}.hover\:shadow-purple-900\/10:hover{--tw-shadow-color:rgb(88 28 135 / 0.1);--tw-shadow:var(--tw-shadow-colored)}.hover\:shadow-red-900\/10:hover{--tw-shadow-color:rgb(127 29 29 / 0.1);--tw-shadow:var(--tw-shadow-colored)}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-blue-500\/50:focus{--tw-ring-color:rgb(59 130 246 / 0.5)}.group:hover .group-hover\:text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}@media (min-width: 768px){.md\:w-80{width:20rem}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.md\:flex-row{flex-direction:row}}@media (min-width: 1024px){.lg\:block{display:block}.lg\:hidden{display:none}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.lg\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}.lg\:grid-cols-5{grid-template-columns:repeat(5, minmax(0, 1fr))}.lg\:pb-0{padding-bottom:0px}.lg\:pl-64{padding-left:16rem}}</style></head>
 <body>
   <div id="root"></div>
 
   <!-- React Application -->
-  <script type="text/babel">
-    const { useState, useMemo, useEffect, createContext, useContext } = React;
-    const { 
-      BarChart3, AlertTriangle, Table, Database, Info, Search, 
-      Clock, CheckCircle2, LayoutDashboard, PieChart, ChevronRight,
-      MapPin, ShieldCheck, TrendingUp, Percent,
-      Fingerprint, Lock, Copy, FileWarning, TextSelect, X, Layers,
-      Sun, Moon, Contrast
-    } = LucideReact;
+  <script type="text/javascript">const {
+  useState,
+  useMemo,
+  useEffect,
+  createContext,
+  useContext
+} = React;
+const {
+  BarChart3,
+  AlertTriangle,
+  Table,
+  Database,
+  Info,
+  Search,
+  Clock,
+  CheckCircle2,
+  LayoutDashboard,
+  PieChart,
+  ChevronRight,
+  MapPin,
+  ShieldCheck,
+  TrendingUp,
+  Percent,
+  Fingerprint,
+  Lock,
+  Copy,
+  FileWarning,
+  TextSelect,
+  X,
+  Layers,
+  Sun,
+  Moon,
+  Contrast
+} = LucideReact;
+const THEMES = {
+  dark: {
+    id: 'dark',
+    name: 'Dark',
+    icon: Moon,
+    bgMain: 'bg-slate-950',
+    bgSidebar: 'bg-slate-900/50',
+    bgCard: 'bg-slate-900',
+    bgCardAlt: 'bg-slate-800/20',
+    bgHeader: 'bg-slate-950/80',
+    bgInput: 'bg-slate-900',
+    border: 'border-slate-800',
+    borderAlt: 'border-slate-800/50',
+    textPrimary: 'text-slate-100',
+    textSecondary: 'text-slate-200',
+    textMuted: 'text-slate-400',
+    textSub: 'text-slate-500',
+    accent: 'blue'
+  },
+  light: {
+    id: 'light',
+    name: 'Light',
+    icon: Sun,
+    bgMain: 'bg-slate-50',
+    bgSidebar: 'bg-slate-100/80',
+    bgCard: 'bg-white',
+    bgCardAlt: 'bg-slate-100/50',
+    bgHeader: 'bg-white/80',
+    bgInput: 'bg-white',
+    border: 'border-slate-200',
+    borderAlt: 'border-slate-100',
+    textPrimary: 'text-slate-900',
+    textSecondary: 'text-slate-800',
+    textMuted: 'text-slate-600',
+    textSub: 'text-slate-500',
+    accent: 'blue'
+  },
+  contrast: {
+    id: 'contrast',
+    name: 'High Contrast',
+    icon: Contrast,
+    bgMain: 'bg-black',
+    bgSidebar: 'bg-zinc-900',
+    bgCard: 'bg-zinc-900',
+    bgCardAlt: 'bg-zinc-800',
+    bgHeader: 'bg-black/90',
+    bgInput: 'bg-zinc-900',
+    border: 'border-zinc-700',
+    borderAlt: 'border-zinc-700',
+    textPrimary: 'text-white',
+    textSecondary: 'text-zinc-100',
+    textMuted: 'text-zinc-300',
+    textSub: 'text-zinc-400',
+    accent: 'blue'
+  }
+};
+const ThemeContext = createContext();
 
-    const THEMES = {
-      dark: {
-        id: 'dark',
-        name: 'Dark',
-        icon: Moon,
-        bgMain: 'bg-slate-950',
-        bgSidebar: 'bg-slate-900/50',
-        bgCard: 'bg-slate-900',
-        bgCardAlt: 'bg-slate-800/20',
-        bgHeader: 'bg-slate-950/80',
-        bgInput: 'bg-slate-900',
-        border: 'border-slate-800',
-        borderAlt: 'border-slate-800/50',
-        textPrimary: 'text-slate-100',
-        textSecondary: 'text-slate-200',
-        textMuted: 'text-slate-400',
-        textSub: 'text-slate-500',
-        accent: 'blue'
-      },
-      light: {
-        id: 'light',
-        name: 'Light',
-        icon: Sun,
-        bgMain: 'bg-slate-50',
-        bgSidebar: 'bg-slate-100/80',
-        bgCard: 'bg-white',
-        bgCardAlt: 'bg-slate-100/50',
-        bgHeader: 'bg-white/80',
-        bgInput: 'bg-white',
-        border: 'border-slate-200',
-        borderAlt: 'border-slate-100',
-        textPrimary: 'text-slate-900',
-        textSecondary: 'text-slate-800',
-        textMuted: 'text-slate-600',
-        textSub: 'text-slate-500',
-        accent: 'blue'
-      },
-      contrast: {
-        id: 'contrast',
-        name: 'High Contrast',
-        icon: Contrast,
-        bgMain: 'bg-black',
-        bgSidebar: 'bg-zinc-900',
-        bgCard: 'bg-zinc-900',
-        bgCardAlt: 'bg-zinc-800',
-        bgHeader: 'bg-black/90',
-        bgInput: 'bg-zinc-900',
-        border: 'border-zinc-700',
-        borderAlt: 'border-zinc-700',
-        textPrimary: 'text-white',
-        textSecondary: 'text-zinc-100',
-        textMuted: 'text-zinc-300',
-        textSub: 'text-zinc-400',
-        accent: 'blue'
-      }
+// Alert configuration for distinct styling
+const ALERT_CONFIG = {
+  UNIQUE: {
+    icon: Fingerprint,
+    color: 'text-purple-400',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/20'
+  },
+  CONSTANT: {
+    icon: Lock,
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/20'
+  },
+  HIGH_CARDINALITY: {
+    icon: Copy,
+    color: 'text-yellow-400',
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-500/20'
+  },
+  MISSING: {
+    icon: FileWarning,
+    color: 'text-red-400',
+    bg: 'bg-red-500/10',
+    border: 'border-red-500/20'
+  },
+  DEFAULT: {
+    icon: Info,
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20'
+  }
+};
+
+// Securely decode the Base64-encoded payload (Unicode-safe)
+const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
+const bytes = Uint8Array.from(atob(ENCODED_REPORT_DATA), c => c.charCodeAt(0));
+const REPORT_DATA = JSON.parse(new TextDecoder().decode(bytes));
+
+// Helper: Safely parse different matrix JSON structures
+const parseMatrixData = data => {
+  if (!data) return {
+    columns: [],
+    matrix: []
+  };
+
+  // 1) Handle { matrix: [ {col1: v1, ...}, ... ] } - new standard
+  if (data.matrix && Array.isArray(data.matrix) && data.matrix.length > 0 && typeof data.matrix[0] === 'object' && !Array.isArray(data.matrix[0])) {
+    const columns = Object.keys(data.matrix[0]);
+    const matrix = data.matrix.map(row => columns.map(col => row[col]));
+    return {
+      columns,
+      matrix
     };
+  }
 
-    const ThemeContext = createContext();
-
-    // Alert configuration for distinct styling
-    const ALERT_CONFIG = {
-      UNIQUE: { icon: Fingerprint, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-      CONSTANT: { icon: Lock, color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
-      HIGH_CARDINALITY: { icon: Copy, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
-      MISSING: { icon: FileWarning, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-      DEFAULT: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' }
+  // 2) If it's already an array, parse it as array-of-objects
+  if (Array.isArray(data)) {
+    if (data.length === 0) return {
+      columns: [],
+      matrix: []
     };
-
-    // Securely decode the Base64-encoded payload (Unicode-safe)
-    const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
-    const bytes = Uint8Array.from(atob(ENCODED_REPORT_DATA), c => c.charCodeAt(0));
-    const REPORT_DATA = JSON.parse(new TextDecoder().decode(bytes));
-
-    // Helper: Safely parse different matrix JSON structures
-    const parseMatrixData = (data) => {
-      if (!data) return { columns: [], matrix: [] };
-      
-      // 1) Handle { matrix: [ {col1: v1, ...}, ... ] } - new standard
-      if (data.matrix && Array.isArray(data.matrix) && data.matrix.length > 0 && typeof data.matrix[0] === 'object' && !Array.isArray(data.matrix[0])) {
-          const columns = Object.keys(data.matrix[0]);
-          const matrix = data.matrix.map(row => columns.map(col => row[col]));
-          return { columns, matrix };
-      }
-
-      // 2) If it's already an array, parse it as array-of-objects
-      if (Array.isArray(data)) {
-        if (data.length === 0) return { columns: [], matrix: [] };
-        const columns = Object.keys(data[0]);
-        const matrix = data.map(row => columns.map(col => row[col]));
-        return { columns, matrix };
-      }
-
-      // 3) Handle { columns, matrix } or { columns, values } standard shapes
-      if (data.columns) {
-        if (data.matrix) return { columns: data.columns, matrix: data.matrix };
-        if (data.values) return { columns: data.columns, matrix: data.values };
-      }
-      
-      return { columns: [], matrix: [] };
+    const columns = Object.keys(data[0]);
+    const matrix = data.map(row => columns.map(col => row[col]));
+    return {
+      columns,
+      matrix
     };
+  }
 
-    const ScatterPlot = ({ data, xLabel, yLabel }) => {
-      const { theme } = useContext(ThemeContext);
-      if (!data || data.length === 0) return <div className={`h-96 flex items-center justify-center ${theme.textSub} italic border ${theme.border} rounded-xl`}>No interaction data for this pair</div>;
-
-      const margin = { top: 20, right: 20, bottom: 40, left: 60 };
-      const width = 800;
-      const height = 400;
-
-      const xValues = data.map(d => d.x);
-      const yValues = data.map(d => d.y);
-      const xMin = Math.min(...xValues);
-      const xMax = Math.max(...xValues);
-      const yMin = Math.min(...yValues);
-      const yMax = Math.max(...yValues);
-
-      // Add 5% padding to scales
-      const xRange = xMax - xMin || 1;
-      const yRange = yMax - yMin || 1;
-      const xSMin = xMin - xRange * 0.05;
-      const xSMax = xMax + xRange * 0.05;
-      const ySMin = yMin - yRange * 0.05;
-      const ySMax = yMax + yRange * 0.05;
-
-      const xScale = (val) => margin.left + ((val - xSMin) / (xSMax - xSMin)) * (width - margin.left - margin.right);
-      const yScale = (val) => height - margin.bottom - ((val - ySMin) / (ySMax - ySMin)) * (height - margin.top - margin.bottom);
-
-      return (
-        <div className="relative">
-          <svg viewBox={`0 0 ${width} ${height}`} className={`w-full h-auto ${theme.bgCardAlt} rounded-xl border ${theme.border}`}>
-            {/* Grid lines */}
-            {[0, 0.25, 0.5, 0.75, 1].map(v => (
-              <React.Fragment key={v}>
-                <line 
-                  x1={margin.left} y1={yScale(ySMin + v * (ySMax - ySMin))} 
-                  x2={width - margin.right} y2={yScale(ySMin + v * (ySMax - ySMin))} 
-                  stroke={theme.border} strokeDasharray="4"
-                />
-                <line 
-                  x1={xScale(xSMin + v * (xSMax - xSMin))} y1={margin.top} 
-                  x2={xScale(xSMin + v * (xSMax - xSMin))} y2={height - margin.bottom} 
-                  stroke={theme.border} strokeDasharray="4"
-                />
-              </React.Fragment>
-            ))}
-
-            {/* Axes */}
-            <line x1={margin.left} y1={height - margin.bottom} x2={width - margin.right} y2={height - margin.bottom} stroke={theme.textMuted} strokeWidth="2" />
-            <line x1={margin.left} y1={margin.top} x2={margin.left} y2={height - margin.bottom} stroke={theme.textMuted} strokeWidth="2" />
-
-            {/* Points */}
-            {data.map((d, i) => (
-              <circle 
-                key={i} 
-                cx={xScale(d.x)} 
-                cy={yScale(d.y)} 
-                r="3" 
-                fill="rgba(59, 130, 246, 0.6)" 
-                className="hover:fill-blue-400 transition-colors"
-              >
-                <title>{`(${d.x.toFixed(4)}, ${d.y.toFixed(4)})`}</title>
-              </circle>
-            ))}
-
-            {/* Labels */}
-            <text x={width / 2} y={height - 5} textAnchor="middle" className={`text-xs font-bold fill-current ${theme.textMuted}`}>{xLabel}</text>
-            <text x={15} y={height / 2} textAnchor="middle" transform={`rotate(-90, 15, ${height / 2})`} className={`text-xs font-bold fill-current ${theme.textMuted}`}>{yLabel}</text>
-          </svg>
-        </div>
-      );
+  // 3) Handle { columns, matrix } or { columns, values } standard shapes
+  if (data.columns) {
+    if (data.matrix) return {
+      columns: data.columns,
+      matrix: data.matrix
     };
-
-    // Filter helper to remove None/Null/NaN bins from histogram charts
-    const filterMissingBins = (bins, counts) => {
-      if (!bins || !counts || !Array.isArray(bins) || !Array.isArray(counts)) {
-        return { filteredBins: bins || [], filteredCounts: counts || [] };
-      }
-      const missingLabels = ['none', 'null', 'nan', 'undefined', ''];
-      const filteredBins = [];
-      const filteredCounts = [];
-      for (let i = 0; i < bins.length; i++) {
-        const binVal = bins[i];
-        if (binVal === null || binVal === undefined) continue;
-        
-        let binStr = "";
-        try {
-          binStr = String(binVal).toLowerCase().trim();
-        } catch (e) {
-          binStr = "";
-        }
-        
-        // Don't filter out range labels like "[10.0, 20.0]"
-        if (!missingLabels.includes(binStr)) {
-          filteredBins.push(binVal);
-          filteredCounts.push(counts[i]);
-        }
-      }
-      return { filteredBins, filteredCounts };
+    if (data.values) return {
+      columns: data.columns,
+      matrix: data.values
     };
+  }
+  return {
+    columns: [],
+    matrix: []
+  };
+};
+const ScatterPlot = ({
+  data,
+  xLabel,
+  yLabel
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  if (!data || data.length === 0) return /*#__PURE__*/React.createElement("div", {
+    className: `h-96 flex items-center justify-center ${theme.textSub} italic border ${theme.border} rounded-xl`
+  }, "No interaction data for this pair");
+  const margin = {
+    top: 20,
+    right: 20,
+    bottom: 40,
+    left: 60
+  };
+  const width = 800;
+  const height = 400;
+  const xValues = data.map(d => d.x);
+  const yValues = data.map(d => d.y);
+  const xMin = Math.min(...xValues);
+  const xMax = Math.max(...xValues);
+  const yMin = Math.min(...yValues);
+  const yMax = Math.max(...yValues);
 
-    const StatCard = ({ title, value, icon: Icon, sub, color="blue" }) => {
-      const { theme } = useContext(ThemeContext);
-      return (
-        <div className={`${theme.bgCard} border ${theme.border} p-5 rounded-2xl shadow-xl hover:shadow-${color}-900/10 transition-shadow`}>
-          <div className="flex justify-between items-start mb-3">
-            <span className={`${theme.textMuted} text-sm font-medium`}>{title}</span>
-            <div className={`p-2 rounded-lg bg-${color}-500/10 text-${color}-400`}>
-              <Icon size={18} />
-            </div>
-          </div>
-          <div className={`text-2xl font-mono font-bold ${theme.textPrimary}`}>{value}</div>
-          {sub && <div className={`text-xs ${theme.textSub} mt-1`}>{sub}</div>}
-        </div>
-      );
+  // Add 5% padding to scales
+  const xRange = xMax - xMin || 1;
+  const yRange = yMax - yMin || 1;
+  const xSMin = xMin - xRange * 0.05;
+  const xSMax = xMax + xRange * 0.05;
+  const ySMin = yMin - yRange * 0.05;
+  const ySMax = yMax + yRange * 0.05;
+  const xScale = val => margin.left + (val - xSMin) / (xSMax - xSMin) * (width - margin.left - margin.right);
+  const yScale = val => height - margin.bottom - (val - ySMin) / (ySMax - ySMin) * (height - margin.top - margin.bottom);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    className: `w-full h-auto ${theme.bgCardAlt} rounded-xl border ${theme.border}`
+  }, [0, 0.25, 0.5, 0.75, 1].map(v => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: v
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: margin.left,
+    y1: yScale(ySMin + v * (ySMax - ySMin)),
+    x2: width - margin.right,
+    y2: yScale(ySMin + v * (ySMax - ySMin)),
+    stroke: theme.border,
+    strokeDasharray: "4"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: xScale(xSMin + v * (xSMax - xSMin)),
+    y1: margin.top,
+    x2: xScale(xSMin + v * (xSMax - xSMin)),
+    y2: height - margin.bottom,
+    stroke: theme.border,
+    strokeDasharray: "4"
+  }))), /*#__PURE__*/React.createElement("line", {
+    x1: margin.left,
+    y1: height - margin.bottom,
+    x2: width - margin.right,
+    y2: height - margin.bottom,
+    stroke: theme.textMuted,
+    strokeWidth: "2"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: margin.left,
+    y1: margin.top,
+    x2: margin.left,
+    y2: height - margin.bottom,
+    stroke: theme.textMuted,
+    strokeWidth: "2"
+  }), data.map((d, i) => /*#__PURE__*/React.createElement("circle", {
+    key: i,
+    cx: xScale(d.x),
+    cy: yScale(d.y),
+    r: "3",
+    fill: "rgba(59, 130, 246, 0.6)",
+    className: "hover:fill-blue-400 transition-colors"
+  }, /*#__PURE__*/React.createElement("title", null, `(${d.x.toFixed(4)}, ${d.y.toFixed(4)})`))), /*#__PURE__*/React.createElement("text", {
+    x: width / 2,
+    y: height - 5,
+    textAnchor: "middle",
+    className: `text-xs font-bold fill-current ${theme.textMuted}`
+  }, xLabel), /*#__PURE__*/React.createElement("text", {
+    x: 15,
+    y: height / 2,
+    textAnchor: "middle",
+    transform: `rotate(-90, 15, ${height / 2})`,
+    className: `text-xs font-bold fill-current ${theme.textMuted}`
+  }, yLabel)));
+};
+
+// Filter helper to remove None/Null/NaN bins from histogram charts
+const filterMissingBins = (bins, counts) => {
+  if (!bins || !counts || !Array.isArray(bins) || !Array.isArray(counts)) {
+    return {
+      filteredBins: bins || [],
+      filteredCounts: counts || []
     };
-
-    const NumericHistogram = ({ bins, counts, height = 60, showTooltip = true }) => {
-      const { theme } = useContext(ThemeContext);
-      if (!counts || counts.length === 0) return <div className={`h-full w-full ${theme.bgCardAlt} rounded-lg flex items-center justify-center text-xs ${theme.textSub}`}>No chart data</div>;
-      
-      // Ensure all counts are numbers and filter out any weirdness
-      const numericCounts = counts.map(c => Number(c) || 0);
-      const max = Math.max(...numericCounts, 1);
-      
-      return (
-        <div className={`flex items-end gap-0.5 w-full ${theme.bgCardAlt} p-2 rounded-lg`} style={{ height }}>
-          {numericCounts.map((c, i) => {
-            let binLabel = bins?.[i];
-            if (binLabel !== undefined && !String(binLabel).includes('[') && !Number.isNaN(Number(binLabel))) {
-              binLabel = Number(binLabel) % 1 !== 0 ? Number(binLabel).toFixed(2) : binLabel;
-            }
-
-            return (
-              <div 
-                key={i} 
-                className="bg-blue-500/60 hover:bg-blue-400 transition-all duration-200 rounded-t-sm flex-1 relative group"
-                style={{ height: `${(c / max) * 100}%` }}
-              >
-                {showTooltip && (
-                  <div className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 ${theme.bgCard} border ${theme.border} ${theme.textPrimary} text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-10 pointer-events-none shadow-xl`}>
-                    <div className={`${theme.textMuted} mb-0.5`}>{binLabel ? `Bin: ${binLabel}` : 'Value'}</div>
-                    <div className="font-mono text-blue-300">{c.toLocaleString()} count</div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      );
-    };
-
-    const CategoricalChart = ({ bins, counts, limit = 10 }) => {
-      const { theme } = useContext(ThemeContext);
-      if (!bins || !counts || counts.length === 0) return <div className={`p-4 text-center text-xs ${theme.textSub}`}>No data distribution data</div>;
-      const max = Math.max(...counts);
-      const displayLimit = limit;
-      const topBins = bins.slice(0, displayLimit);
-      const topCounts = counts.slice(0, displayLimit);
-
-      return (
-        <div className={`space-y-3 ${theme.bgCardAlt} p-4 rounded-xl border ${theme.borderAlt}`}>
-          {topBins.map((bin, i) => (
-            <div key={i} className="flex items-center gap-3 text-xs">
-              <div className={`w-24 truncate ${theme.textMuted} font-medium text-right`} title={String(bin)}>
-                {String(bin)}
-              </div>
-              <div className={`flex-1 h-5 ${theme.bgMain} rounded overflow-hidden relative group border ${theme.border}`}>
-                <div 
-                  className="h-full bg-blue-500/50 group-hover:bg-blue-400/80 transition-all rounded-r"
-                  style={{ width: `${(topCounts[i] / (max || 1)) * 100}%` }}
-                />
-              </div>
-              <div className={`w-12 font-mono ${theme.textSecondary} text-right`}>{topCounts[i].toLocaleString()}</div>
-            </div>
-          ))}
-          {bins.length > displayLimit && (
-            <div className={`text-center text-[10px] ${theme.textSub} mt-4 border-t ${theme.borderAlt} pt-2`}>
-              Showing top {displayLimit} of {bins.length} distinct categories
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    const AlertBadge = ({ alert }) => {
-      const { theme } = useContext(ThemeContext);
-      const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
-      const Icon = config.icon;
-      return (
-        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${config.color} ${config.bg} ${config.border}`} title={alert.message}>
-          <Icon size={12} />
-          {alert.alert_type}
-        </span>
-      );
-    };
-
-    const ExtremeValuesList = ({ title, values }) => {
-      const { theme } = useContext(ThemeContext);
-      if (!values || values.length === 0) return null;
-      return (
-        <div className="flex-1">
-          <h5 className={`text-[10px] font-bold ${theme.textSub} uppercase tracking-widest mb-3`}>{title}</h5>
-          <div className="space-y-1.5">
-            {values.map((v, i) => (
-              <div key={i} className={`flex items-center gap-2 text-xs ${theme.bgCardAlt} px-2 py-1.5 rounded border ${theme.border}`}>
-                <span className="text-slate-600 font-mono w-4">{i+1}.</span>
-                <span className={`${theme.textSecondary} font-mono truncate`} title={String(v)}>{String(v)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    };
-
-    const MetricRow = ({ label, val, isPercent = false }) => {
-      const { theme } = useContext(ThemeContext);
-      if (val === undefined || val === null || val === 'null' || val === 'N/A' || (typeof val === 'number' && Number.isNaN(val))) return null;
-      
-      let formattedVal = val;
-      if (isPercent && typeof val === 'number') {
-        formattedVal = `${(val * 100).toFixed(2)}%`;
-      } else if (typeof val === 'number') {
-        if (val !== 0 && Math.abs(val) < 0.001) {
-          formattedVal = val.toExponential(3);
-        } else {
-          formattedVal = val.toLocaleString(undefined, { maximumFractionDigits: 4 });
-        }
-      } else if (typeof val === 'boolean') {
-        formattedVal = val ? 'True' : 'False';
-      } else if (val === 'Skipped') {
-        formattedVal = 'Skipped';
-      }
-
-      return (
-        <div className={`flex justify-between items-center py-1.5 border-b ${theme.borderAlt} last:border-0 hover:bg-slate-800/20 transition-all duration-200 px-1 rounded`}>
-          <span className={`text-xs ${theme.textMuted}`}>{label}</span>
-          <span className={`text-xs font-mono font-bold ${theme.textSecondary}`}>
-            {String(formattedVal)}
-          </span>
-        </div>
-      );
-    };
-
-    const MetricsSection = ({ title, metrics }) => {
-      const { theme } = useContext(ThemeContext);
-      const validMetrics = metrics.filter(m => m.val !== undefined && m.val !== null && m.val !== 'null' && m.val !== 'N/A' && !(typeof m.val === 'number' && Number.isNaN(m.val)));
-      if (validMetrics.length === 0) return null;
-
-      return (
-        <div>
-          <h5 className={`text-[10px] font-bold ${theme.textMuted} uppercase tracking-widest mb-3`}>{title}</h5>
-          <div>
-            {validMetrics.map((m, i) => (
-              <MetricRow key={i} label={m.label} val={m.val} isPercent={m.isPercent} />
-            ))}
-          </div>
-        </div>
-      );
-    };
-
-    const hasValidMetrics = (metrics) => {
-      return metrics.some(m => m.val !== undefined && m.val !== null && m.val !== 'null' && m.val !== 'N/A' && !(typeof m.val === 'number' && Number.isNaN(m.val)));
-    };
-
-    // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
-    const NullityMatrix = ({ data }) => {
-      const { theme } = useContext(ThemeContext);
-      // Data is now a list of dicts: [ {col1: true, col2: false}, ... ]
-      if (!data || !Array.isArray(data) || data.length === 0) return null;
-
-      const columns = Object.keys(data[0]);
-      const numRows = data.length;
-      const numCols = columns.length;
-      
-      // Convert list of dicts to row-major values array for processing
-      const values = data.map(row => columns.map(c => row[c]));
-
-      const svgWidth = 1000;
-      const svgHeight = 400;
-      const colWidth = svgWidth / numCols;
-      const rowHeight = svgHeight / numRows;
-
-      // Determine complete (non-missing) elements per row for the sparkline
-      const rowCompleteness = values.map(row => row.filter(isMissing => !isMissing).length);
-
-      // Helper to consolidate consecutive present data blocks for efficient SVG rendering
-      const getBlocks = (cIdx) => {
-          const blocks = [];
-          let inBlock = false;
-          let start = 0;
-          for (let r = 0; r < numRows; r++) {
-              // 'values' has true for missing. We draw dark blocks for PRESENT data.
-              const isPresent = !values[r][cIdx];
-              if (isPresent && !inBlock) {
-                  inBlock = true;
-                  start = r;
-              } else if (!isPresent && inBlock) {
-                  inBlock = false;
-                  blocks.push({ start, end: r - 1 });
-              }
-          }
-          if (inBlock) {
-              blocks.push({ start, end: numRows - 1 });
-          }
-          return blocks;
-      };
-
-      const sparklinePoints = rowCompleteness.map((count, rIdx) => 
-         `${(count / numCols) * 100},${rIdx * rowHeight + rowHeight / 2}`
-      ).join(' ');
-      const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
-
-      return (
-        <div className={`mt-12 pt-8 border-t ${theme.border}`}>
-          <h3 className={`font-bold text-xl mb-2 ${theme.textPrimary}`}>Nullity Matrix</h3>
-          <p className={`text-sm ${theme.textSub} mb-6`}>Dense visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
-
-          <div className="flex gap-4 items-end" style={{ minWidth: `${Math.max(1000, numCols * 25)}px` }}>
-            <div className="flex-1 relative">
-              {/* Column Labels */}
-              <div className="flex mb-2">
-                 {columns.map((c, i) => (
-                    <div key={c} style={{ width: `${100/numCols}%` }} className="flex justify-start h-32 relative overflow-visible">
-                       <span className={`absolute bottom-1 left-1/2 origin-bottom-left text-[10px] font-mono ${theme.textMuted} whitespace-nowrap ${numCols > 15 ? '-rotate-90' : '-rotate-45'}`}>{c}</span>
-                    </div>
-                 ))}
-              </div>
-              
-              {/* SVG Matrix */}
-              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-[500px] ${theme.bgInput} border ${theme.border} shadow-inner rounded-sm`}>
-                {columns.map((_, cIdx) => (
-                   <g key={cIdx} transform={`translate(${cIdx * colWidth}, 0)`}>
-                      {getBlocks(cIdx).map((block, i) => (
-                         <rect
-                            key={i}
-                            x={colWidth * 0.05}
-                            y={block.start * rowHeight}
-                            width={colWidth * 0.9}
-                            height={(block.end - block.start + 1) * rowHeight}
-                            fill={theme.id === 'light' ? '#475569' : '#cbd5e1'}
-                            className="transition-all hover:fill-blue-400"
-                         />
-                      ))}
-                   </g>
-                ))}
-              </svg>
-            </div>
-
-            {/* Completeness Sparkline */}
-            <div className="w-20 h-[500px] relative flex flex-col items-center">
-              <div className={`text-[10px] ${theme.textSub} font-mono text-center absolute -top-8 w-full`}>Data<br/>Completeness</div>
-              <svg viewBox={`0 0 100 ${svgHeight}`} preserveAspectRatio="none" className={`w-full h-full border-r border-t border-b ${theme.borderAlt} ${theme.bgCardAlt} rounded-r-sm`}>
-                <polygon points={sparkPoly} fill="rgba(59, 130, 246, 0.15)" />
-                <polyline points={sparklinePoints} fill="none" stroke="#3b82f6" strokeWidth="1.5" />
-              </svg>
-              <div className={`absolute top-2 right-2 text-xs font-mono ${theme.textMuted}`}>{numCols}</div>
-              <div className={`absolute bottom-2 right-2 text-xs font-mono ${theme.textMuted}`}>0</div>
-            </div>
-          </div>
-        </div>
-      );
+  }
+  const missingLabels = ['none', 'null', 'nan', 'undefined', ''];
+  const filteredBins = [];
+  const filteredCounts = [];
+  for (let i = 0; i < bins.length; i++) {
+    const binVal = bins[i];
+    if (binVal === null || binVal === undefined) continue;
+    let binStr = "";
+    try {
+      binStr = String(binVal).toLowerCase().trim();
+    } catch (e) {
+      binStr = "";
     }
 
-    // Sub-component for rendering standardized Correlation Matrices
-    const CorrelationMatrixComponent = ({ data }) => {
-      const { theme } = useContext(ThemeContext);
-      const { columns, matrix } = useMemo(() => parseMatrixData(data), [data]);
-      
-      if (!columns || columns.length === 0 || !matrix || matrix.length === 0) {
-        return <div className={`py-12 text-center ${theme.textSub}`}>No data available for this metric.</div>;
+    // Don't filter out range labels like "[10.0, 20.0]"
+    if (!missingLabels.includes(binStr)) {
+      filteredBins.push(binVal);
+      filteredCounts.push(counts[i]);
+    }
+  }
+  return {
+    filteredBins,
+    filteredCounts
+  };
+};
+const StatCard = ({
+  title,
+  value,
+  icon: Icon,
+  sub,
+  color = "blue"
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  return /*#__PURE__*/React.createElement("div", {
+    className: `${theme.bgCard} border ${theme.border} p-5 rounded-2xl shadow-xl hover:shadow-${color}-900/10 transition-shadow`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-start mb-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `${theme.textMuted} text-sm font-medium`
+  }, title), /*#__PURE__*/React.createElement("div", {
+    className: `p-2 rounded-lg bg-${color}-500/10 text-${color}-400`
+  }, /*#__PURE__*/React.createElement(Icon, {
+    size: 18
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: `text-2xl font-mono font-bold ${theme.textPrimary}`
+  }, value), sub && /*#__PURE__*/React.createElement("div", {
+    className: `text-xs ${theme.textSub} mt-1`
+  }, sub));
+};
+const NumericHistogram = ({
+  bins,
+  counts,
+  height = 60,
+  showTooltip = true
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  if (!counts || counts.length === 0) return /*#__PURE__*/React.createElement("div", {
+    className: `h-full w-full ${theme.bgCardAlt} rounded-lg flex items-center justify-center text-xs ${theme.textSub}`
+  }, "No chart data");
+
+  // Ensure all counts are numbers and filter out any weirdness
+  const numericCounts = counts.map(c => Number(c) || 0);
+  const max = Math.max(...numericCounts, 1);
+  return /*#__PURE__*/React.createElement("div", {
+    className: `flex items-end gap-0.5 w-full ${theme.bgCardAlt} p-2 rounded-lg`,
+    style: {
+      height
+    }
+  }, numericCounts.map((c, i) => {
+    let binLabel = bins?.[i];
+    if (binLabel !== undefined && !String(binLabel).includes('[') && !Number.isNaN(Number(binLabel))) {
+      binLabel = Number(binLabel) % 1 !== 0 ? Number(binLabel).toFixed(2) : binLabel;
+    }
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "bg-blue-500/60 hover:bg-blue-400 transition-all duration-200 rounded-t-sm flex-1 relative group",
+      style: {
+        height: `${c / max * 100}%`
       }
+    }, showTooltip && /*#__PURE__*/React.createElement("div", {
+      className: `absolute bottom-full mb-2 left-1/2 -translate-x-1/2 ${theme.bgCard} border ${theme.border} ${theme.textPrimary} text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-10 pointer-events-none shadow-xl`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `${theme.textMuted} mb-0.5`
+    }, binLabel ? `Bin: ${binLabel}` : 'Value'), /*#__PURE__*/React.createElement("div", {
+      className: "font-mono text-blue-300"
+    }, c.toLocaleString(), " count")));
+  }));
+};
+const CategoricalChart = ({
+  bins,
+  counts,
+  limit = 10
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  if (!bins || !counts || counts.length === 0) return /*#__PURE__*/React.createElement("div", {
+    className: `p-4 text-center text-xs ${theme.textSub}`
+  }, "No data distribution data");
+  const max = Math.max(...counts);
+  const displayLimit = limit;
+  const topBins = bins.slice(0, displayLimit);
+  const topCounts = counts.slice(0, displayLimit);
+  return /*#__PURE__*/React.createElement("div", {
+    className: `space-y-3 ${theme.bgCardAlt} p-4 rounded-xl border ${theme.borderAlt}`
+  }, topBins.map((bin, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "flex items-center gap-3 text-xs"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `w-24 truncate ${theme.textMuted} font-medium text-right`,
+    title: String(bin)
+  }, String(bin)), /*#__PURE__*/React.createElement("div", {
+    className: `flex-1 h-5 ${theme.bgMain} rounded overflow-hidden relative group border ${theme.border}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "h-full bg-blue-500/50 group-hover:bg-blue-400/80 transition-all rounded-r",
+    style: {
+      width: `${topCounts[i] / (max || 1) * 100}%`
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: `w-12 font-mono ${theme.textSecondary} text-right`
+  }, topCounts[i].toLocaleString()))), bins.length > displayLimit && /*#__PURE__*/React.createElement("div", {
+    className: `text-center text-[10px] ${theme.textSub} mt-4 border-t ${theme.borderAlt} pt-2`
+  }, "Showing top ", displayLimit, " of ", bins.length, " distinct categories"));
+};
+const AlertBadge = ({
+  alert
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
+  const Icon = config.icon;
+  return /*#__PURE__*/React.createElement("span", {
+    className: `inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${config.color} ${config.bg} ${config.border}`,
+    title: alert.message
+  }, /*#__PURE__*/React.createElement(Icon, {
+    size: 12
+  }), alert.alert_type);
+};
+const ExtremeValuesList = ({
+  title,
+  values
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  if (!values || values.length === 0) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex-1"
+  }, /*#__PURE__*/React.createElement("h5", {
+    className: `text-[10px] font-bold ${theme.textSub} uppercase tracking-widest mb-3`
+  }, title), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5"
+  }, values.map((v, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: `flex items-center gap-2 text-xs ${theme.bgCardAlt} px-2 py-1.5 rounded border ${theme.border}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-600 font-mono w-4"
+  }, i + 1, "."), /*#__PURE__*/React.createElement("span", {
+    className: `${theme.textSecondary} font-mono truncate`,
+    title: String(v)
+  }, String(v))))));
+};
+const MetricRow = ({
+  label,
+  val,
+  isPercent = false
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  if (val === undefined || val === null || val === 'null' || val === 'N/A' || typeof val === 'number' && Number.isNaN(val)) return null;
+  let formattedVal = val;
+  if (isPercent && typeof val === 'number') {
+    formattedVal = `${(val * 100).toFixed(2)}%`;
+  } else if (typeof val === 'number') {
+    if (val !== 0 && Math.abs(val) < 0.001) {
+      formattedVal = val.toExponential(3);
+    } else {
+      formattedVal = val.toLocaleString(undefined, {
+        maximumFractionDigits: 4
+      });
+    }
+  } else if (typeof val === 'boolean') {
+    formattedVal = val ? 'True' : 'False';
+  } else if (val === 'Skipped') {
+    formattedVal = 'Skipped';
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: `flex justify-between items-center py-1.5 border-b ${theme.borderAlt} last:border-0 hover:bg-slate-800/20 transition-all duration-200 px-1 rounded`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `text-xs ${theme.textMuted}`
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: `text-xs font-mono font-bold ${theme.textSecondary}`
+  }, String(formattedVal)));
+};
+const MetricsSection = ({
+  title,
+  metrics
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  const validMetrics = metrics.filter(m => m.val !== undefined && m.val !== null && m.val !== 'null' && m.val !== 'N/A' && !(typeof m.val === 'number' && Number.isNaN(m.val)));
+  if (validMetrics.length === 0) return null;
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h5", {
+    className: `text-[10px] font-bold ${theme.textMuted} uppercase tracking-widest mb-3`
+  }, title), /*#__PURE__*/React.createElement("div", null, validMetrics.map((m, i) => /*#__PURE__*/React.createElement(MetricRow, {
+    key: i,
+    label: m.label,
+    val: m.val,
+    isPercent: m.isPercent
+  }))));
+};
+const hasValidMetrics = metrics => {
+  return metrics.some(m => m.val !== undefined && m.val !== null && m.val !== 'null' && m.val !== 'N/A' && !(typeof m.val === 'number' && Number.isNaN(m.val)));
+};
 
-      return (
-        <div className="overflow-x-auto pb-8">
-          <table className="min-w-max border-collapse">
-            <thead>
-              <tr>
-                <th className="p-1"></th>
-                {columns.map(c => (
-                  <th key={c} className={`p-2 font-mono font-bold ${theme.textMuted} h-32 align-bottom`}>
-                    <div className={`transform origin-bottom-left ml-8 truncate w-32 ${columns.length > 15 ? '-rotate-90' : '-rotate-45'}`}>
-                      {c}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {matrix.map((row, i) => (
-                <tr key={i}>
-                  <td className={`p-2 font-mono font-bold ${theme.textMuted} text-right pr-8 whitespace-nowrap min-w-[150px]`}>
-                    {columns[i]}
-                  </td>
-                  {row.map((cell, j) => {
-                    const isMissing = cell === null || cell === undefined || Number.isNaN(cell);
-                    const bgOpacity = isMissing ? 0 : Math.min(Math.abs(cell), 1);
-                    // Blue for positive correlation, Red for negative
-                    const bgColor = isMissing ? 'transparent' : cell >= 0 ? `rgba(59, 130, 246, ${bgOpacity})` : `rgba(239, 68, 68, ${bgOpacity})`;
-                    
-                    return (
-                      <td 
-                        key={j} 
-                        className={`w-16 h-16 border ${theme.border} text-center hover:scale-105 transition-transform cursor-crosshair relative group`} 
-                        style={{ backgroundColor: bgColor }}
-                      >
-                        {isMissing ? (
-                          <span className={`${theme.textMuted} text-[10px] italic`}>NaN</span>
-                        ) : (
-                          <>
-                            <span className={`font-mono text-xs font-bold ${bgOpacity > 0.5 ? 'text-white' : (theme.id === 'light' ? 'text-slate-900' : 'text-slate-400')}`}>
-                              {cell === 1 ? '1.0' : cell.toFixed(2)}
-                            </span>
-                            <div className={`absolute z-10 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 ${theme.bgCard} ${theme.textPrimary} text-xs rounded whitespace-nowrap shadow-xl border ${theme.border}`}>
-                              {columns[i]} × {columns[j]}
-                              <br/>
-                              <span className="font-mono text-blue-300">{cell.toFixed(4)}</span>
-                            </div>
-                          </>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    };
+// Sub-component for Nullity Matrix Rendering (Missingno style SVG)
+const NullityMatrix = ({
+  data
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  // Data is now a list of dicts: [ {col1: true, col2: false}, ... ]
+  if (!data || !Array.isArray(data) || data.length === 0) return null;
+  const columns = Object.keys(data[0]);
+  const numRows = data.length;
+  const numCols = columns.length;
 
-    const TYPE_LABELS = {
-      Numeric: 'Num',
-      Categorical: 'Cat',
-      Boolean: 'Bool',
-      DateTime: 'Date',
-      Unsupported: 'Other'
-    };
+  // Convert list of dicts to row-major values array for processing
+  const values = data.map(row => columns.map(c => row[c]));
+  const svgWidth = 1000;
+  const svgHeight = 400;
+  const colWidth = svgWidth / numCols;
+  const rowHeight = svgHeight / numRows;
 
-    function AppContent() {
-      const { theme, setTheme } = useContext(ThemeContext);
-      const [reportData, setReportData] = useState(REPORT_DATA);
-      
-      // Initialize activeTab from URL hash if present
-      const getInitialTab = () => {
-        const hash = window.location.hash.slice(1);
-        const validTabs = ['overview', 'variables', 'interactions', 'correlations', 'missing', 'alerts', 'sample'];
-        return validTabs.includes(hash) ? hash : 'overview';
-      };
+  // Determine complete (non-missing) elements per row for the sparkline
+  const rowCompleteness = values.map(row => row.filter(isMissing => !isMissing).length);
 
-      const [activeTab, setActiveTab] = useState(getInitialTab);
-      const [search, setSearch] = useState('');
-      const [imgError, setImgError] = useState(false);
-
-      const numericCols = useMemo(() => {
-        return Object.entries(reportData.variables)
-          .filter(([_, meta]) => meta.type === 'Numeric')
-          .map(([name]) => name);
-      }, [reportData]);
-
-      const interactionCols = useMemo(() => {
-        if (!reportData.interactions) return [];
-        return Object.keys(reportData.interactions).filter(k => k !== '_metadata').sort();
-      }, [reportData]);
-
-      const [interX, setInterX] = useState('');
-      const [interY, setInterY] = useState('');
-
-      useEffect(() => {
-        const cols = interactionCols.length > 0 ? interactionCols : numericCols;
-        if (!interX && cols.length > 0) setInterX(cols[0]);
-        if (!interY && cols.length > 1) setInterY(cols[1]);
-        else if (!interY && cols.length > 0) setInterY(cols[0]);
-      }, [interactionCols, numericCols]);
-
-      const interactionData = useMemo(() => {
-        if (!reportData.interactions || !interX || !interY) return [];
-        return reportData.interactions[interX]?.[interY] || [];
-      }, [reportData.interactions, interX, interY]);
-
-      // Support hash-based switching for deep linking
-      useEffect(() => {
-        const handleHashChange = () => {
-          setActiveTab(getInitialTab());
-        };
-        window.addEventListener('hashchange', handleHashChange);
-        return () => window.removeEventListener('hashchange', handleHashChange);
-      }, []);
-
-      const defaultCorrType = reportData.correlations ? Object.keys(reportData.correlations)[0] || '' : '';
-      const [corrType, setCorrType] = useState(defaultCorrType);
-
-      const filteredVariables = useMemo(() => {
-        if (!reportData || !reportData.variables) return [];
-        return Object.entries(reportData.variables).filter(([key]) => 
-          key.toLowerCase().includes(search.toLowerCase())
-        );
-      }, [search, reportData]);
-
-      const sampleRows = useMemo(() => {
-        if (!reportData || !reportData.sample || !reportData.sample.head) return [];
-        const cols = Object.keys(reportData.sample.head);
-        if (cols.length === 0) return [];
-        const numRows = reportData.sample.head[cols[0]].length;
-        
-        return Array.from({ length: numRows }).map((_, i) => {
-          const row = {};
-          cols.forEach(col => {
-            row[col] = reportData.sample.head[col][i];
-          });
-          return row;
+  // Helper to consolidate consecutive present data blocks for efficient SVG rendering
+  const getBlocks = cIdx => {
+    const blocks = [];
+    let inBlock = false;
+    let start = 0;
+    for (let r = 0; r < numRows; r++) {
+      // 'values' has true for missing. We draw dark blocks for PRESENT data.
+      const isPresent = !values[r][cIdx];
+      if (isPresent && !inBlock) {
+        inBlock = true;
+        start = r;
+      } else if (!isPresent && inBlock) {
+        inBlock = false;
+        blocks.push({
+          start,
+          end: r - 1
         });
-      }, [reportData]);
-
-      const generateAlertMessage = (alert) => {
-        if (alert.message) return alert.message;
-        const fieldStr = alert.fields.join(', ');
-        switch (alert.alert_type) {
-          case 'UNIQUE': return `${fieldStr} contains entirely unique values.`;
-          case 'CONSTANT': return `${fieldStr} has a constant value across all rows.`;
-          case 'HIGH_CARDINALITY': return `${fieldStr} has high cardinality (${alert.value?.toLocaleString() || 'many'} distinct values).`;
-          case 'MISSING': return `${fieldStr} has missing values.`;
-          default: return `${fieldStr} triggered a ${alert.alert_type} alert.`;
-        }
-      };
-
-      const getAlertsForVariable = (varName) => {
-        return reportData.alerts?.filter(a => a.fields.includes(varName)) || [];
-      };
-
-      const currentCorrelationRaw = corrType ? reportData.correlations?.[corrType] : null;
-
-      // Polymorphic Navigation Construction
-      const navItems = [
-        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-        { id: 'variables', label: 'Variables', icon: BarChart3 }
-      ];
-
-      const hasInteractions = reportData.interactions && Object.keys(reportData.interactions).length > 0;
-      if (hasInteractions) {
-        navItems.push({ id: 'interactions', label: 'Interactions', icon: TrendingUp });
       }
-      
-      const hasMissing = reportData.missing && Object.keys(reportData.missing).length > 0;
-      if (hasMissing) {
-        navItems.push({ id: 'missing', label: 'Missing', icon: FileWarning });
-      }
-      
-      const hasCorrelations = reportData.correlations && Object.keys(reportData.correlations).length > 0;
-      if (hasCorrelations) {
-        navItems.push({ id: 'correlations', label: 'Correlations', icon: PieChart });
-      }
-      
-      const hasDuplicates = reportData.duplicates && Object.keys(reportData.duplicates).length > 0;
-      if (hasDuplicates) {
-        navItems.push({ id: 'duplicates', label: 'Duplicates', icon: Layers });
-      }
-      
-      if (reportData.sample && reportData.sample.head && Object.keys(reportData.sample.head).length > 0) {
-        navItems.push({ id: 'sample', label: 'Sample Data', icon: Table });
-      }
-
-      return (
-        <div className={`min-h-screen ${theme.bgMain} ${theme.textSecondary} font-sans pb-20 lg:pb-0 transition-colors duration-300`}>
-          
-          <aside className={`fixed left-0 top-0 bottom-0 w-64 ${theme.bgSidebar} border-r ${theme.border} backdrop-blur-md z-20 hidden lg:block`}>
-            <div className="p-6 h-full flex flex-col">
-              <div className="flex items-center gap-3 mb-10">
-                {imgError ? (
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-                    <Database className="text-white" size={20} />
-                  </div>
-                ) : (
-                  <img 
-                    src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-icon.png" 
-                    alt="Ibis Profiler Logo" 
-                    className={`w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 object-cover border ${theme.borderAlt} ${theme.bgCard} p-1`} 
-                    onError={() => setImgError(true)} 
-                  />
-                )}
-                <div>
-                  <h1 className={`font-bold text-lg leading-tight tracking-tight ${theme.textPrimary}`}>Ibis Profiler</h1>
-                </div>
-              </div>
-
-              <nav className="space-y-1 flex-1">
-                {navItems.map(item => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                        activeTab === item.id 
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                          : `${theme.textMuted} hover:${theme.bgCardAlt} hover:${theme.textPrimary}`
-                      }`}
-                    >
-                      <Icon size={18} />
-                      <span className="font-medium text-sm">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-
-              <div className="mt-auto pt-6 space-y-4">
-                <div className={`p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt}`}>
-                  <div className={`flex items-center gap-2 mb-3 ${theme.textSub}`}>
-                    <Sun size={14} />
-                    <span className="text-xs font-bold uppercase tracking-wider">Appearance</span>
-                  </div>
-                  <div className={`flex items-center p-1 ${theme.bgMain} rounded-lg border ${theme.border}`}>
-                    {Object.values(THEMES).map(t => {
-                      const Icon = t.icon;
-                      return (
-                        <button
-                          key={t.id}
-                          onClick={() => setTheme(t)}
-                          title={t.name}
-                          className={`flex-1 flex justify-center py-1.5 rounded-md transition-all ${
-                            theme.id === t.id ? 'bg-blue-600 text-white shadow-sm' : `${theme.textSub} hover:${theme.textMuted}`
-                          }`}
-                        >
-                          <Icon size={16} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className={`p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt}`}>
-                  <div className={`flex items-center gap-2 mb-2 ${theme.textSub}`}>
-                    <Clock size={14} />
-                    <span className="text-xs">Job Duration</span>
-                  </div>
-                  <div className={`text-sm font-mono ${theme.textSecondary}`}>
-                    {reportData.analysis.duration !== undefined ? (
-                      reportData.analysis.duration > 1000 
-                        ? `${(reportData.analysis.duration / 1000).toFixed(2)} s` 
-                        : `${Number(reportData.analysis.duration).toFixed(0)} ms`
-                    ) : (
-                      `${Math.max(0, new Date(reportData.analysis.date_end) - new Date(reportData.analysis.date_start))} ms`
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <main className="lg:pl-64">
-            
-            <header className={`sticky top-0 ${theme.bgHeader} backdrop-blur-xl border-b ${theme.border} z-10 px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4`}>
-              <div>
-                <h2 className={`text-xl font-bold ${theme.textPrimary}`}>{reportData.analysis.title}</h2>
-                <p className={`text-xs ${theme.textSub} font-mono`}>Analysis run {new Date(reportData.analysis.date_start).toLocaleString()}</p>
-              </div>
-              <div className="relative w-full md:w-80">
-                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${theme.textSub} pointer-events-none`} size={16} />
-                <input 
-                  type="text" 
-                  placeholder="Search attributes..." 
-                  className={`w-full ${theme.bgInput} border ${theme.border} rounded-full py-2 pl-10 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 ${theme.textPrimary}`}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search.length > 0 && (
-                  <button 
-                    onClick={() => setSearch('')} 
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${theme.textMuted} hover:${theme.textPrimary} transition-colors p-1 ${theme.bgCardAlt} rounded-full flex items-center justify-center cursor-pointer z-10`}
-                    type="button"
-                    aria-label="Clear search"
-                  >
-                    <X size={14} strokeWidth={3} />
-                  </button>
-                )}
-              </div>
-            </header>
-
-            <div className="p-8 w-full mx-auto">
-              
-              {/* OVERVIEW TAB */}
-              {activeTab === 'overview' && (
-                <div className="space-y-8 animate-in fade-in duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard 
-                      title="Total Rows" 
-                      value={reportData.table.n.toLocaleString()} 
-                      icon={Database} 
-                      sub={reportData.table.p_duplicates !== undefined ? 
-                        `${(reportData.table.p_duplicates * 100).toFixed(1)}% duplicated rows` : 
-                        "Duplication check skipped"} 
-                    />
-                    <StatCard 
-                      title="Variables" 
-                      value={reportData.table.n_var} 
-                      icon={Table} 
-                      sub={Object.entries(reportData.table.types || {})
-                        .map(([type, count]) => `${count} ${TYPE_LABELS[type] || type.substring(0, 3)}`)
-                        .join(', ')} 
-                      color="purple" 
-                    />
-                    <StatCard 
-                      title="Missing Cells" 
-                      value={`${reportData.table.p_cells_missing === 0 ? '0' : (reportData.table.p_cells_missing * 100).toFixed(2)}%`} 
-                      icon={FileWarning} 
-                      sub={`Across ${reportData.table.n_vars_with_missing} variables`} 
-                      color="red" 
-                    />
-                    <StatCard
-                      title="Memory Size"
-                      value={`${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MiB`}
-                      icon={CheckCircle2}
-                      sub={`${reportData.table.record_size} bytes per record`}
-                      color="green"
-                    />                  </div>
-
-                  <section className={`${theme.bgCard} border ${theme.border} p-6 rounded-2xl shadow-xl`}>
-                    <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${theme.textPrimary}`}>
-                      <AlertTriangle className="text-yellow-500" size={20} /> System Alerts ({reportData.alerts?.length || 0})
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {reportData.alerts?.map((alert, idx) => {
-                        const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
-                        const Icon = config.icon;
-                        return (
-                          <div key={idx} className={`flex items-start gap-3 p-4 ${theme.bgMain} border rounded-xl hover:${theme.bgCardAlt} transition-all duration-200 ${config.border}`}>
-                            <div className={`mt-0.5 ${config.color}`}>
-                              <Icon size={16} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className={`text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded tracking-wider ${config.bg} ${config.color}`}>
-                                  {alert.alert_type}
-                                </span>
-                              </div>
-                              <div className={`text-sm font-medium ${theme.textSecondary}`}>{generateAlertMessage(alert)}</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-
-                  <section>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className={`font-bold text-lg ${theme.textPrimary}`}>Variable Quick View</h3>
-                      <button onClick={() => setActiveTab('variables')} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors">
-                        View detailed stats <ChevronRight size={14} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {Object.entries(reportData.variables).map(([name, meta]) => {
-                        const varAlerts = getAlertsForVariable(name);
-                        const { filteredBins: qvBins, filteredCounts: qvCounts } = filterMissingBins(meta.histogram?.bins, meta.histogram?.counts);
-
-                        return (
-                          <div 
-                            key={name} 
-                            className={`${theme.bgCard} border ${theme.border} p-4 rounded-2xl hover:border-blue-500/30 transition-colors group cursor-pointer flex flex-col h-full shadow-lg`} 
-                            onClick={() => {
-                              setSearch(name);
-                              setActiveTab('variables');
-                            }}
-                          >
-                            <div className="flex justify-between items-start mb-3">
-                              <span className={`font-bold text-sm ${theme.textSecondary} group-hover:text-blue-400 transition-colors truncate pr-2`}>{name}</span>
-                              <span className={`text-[9px] ${theme.bgCardAlt} ${theme.textMuted} px-1.5 py-0.5 rounded uppercase font-bold tracking-wider`}>{meta.type}</span>
-                            </div>
-                            
-                            <div className="flex-1 mb-3">
-                              {meta.type === 'Categorical' || meta.type === 'Boolean' ? (
-                                <div className="h-full flex flex-col justify-center">
-                                  <div className={`h-10 w-full ${theme.bgCardAlt} rounded-lg flex items-end gap-0.5 p-1`}>
-                                    {qvCounts.slice(0, 10).map((c, i) => {
-                                      const max = Math.max(...qvCounts, 1);
-                                      return (
-                                        <div 
-                                          key={i} 
-                                          className="bg-purple-500/40 hover:bg-purple-400 transition-all rounded-t-sm flex-1"
-                                          style={{ height: `${(c / max) * 100}%` }}
-                                          title={`${qvBins[i]}: ${c.toLocaleString()}`}
-                                        />
-                                      );
-                                    })}
-                                  </div>
-                                  <div className={`text-[8px] ${theme.textSub} mt-1 text-center truncate`}>
-                                    {qvBins.length} distinct categories
-                                  </div>
-                                </div>
-                              ) : (
-                                <NumericHistogram bins={qvBins} counts={qvCounts} height={40} showTooltip={false} />
-                              )}
-                            </div>
-
-                            <div className={`flex justify-between items-center mt-auto pt-3 border-t ${theme.borderAlt}`}>
-                              <div className="flex gap-1">
-                                {varAlerts.slice(0, 3).map((a, i) => {
-                                   const config = ALERT_CONFIG[a.alert_type] || ALERT_CONFIG.DEFAULT;
-                                   const Icon = config.icon;
-                                   return <div key={i} className={`${config.color} ${config.bg} p-1 rounded`} title={a.alert_type}><Icon size={10} /></div>;
-                                })}
-                                {varAlerts.length > 3 && <span className={`text-[10px] ${theme.textSub} self-center`}>+{varAlerts.length-3}</span>}
-                              </div>
-                              <span className={`text-[10px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`}>
-                                {((meta.p_missing || 0) * 100).toFixed(1)}% null
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                </div>
-              )}
-
-              {/* VARIABLES TAB */}
-              {activeTab === 'variables' && (
-                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <BarChart3 className="text-blue-400" size={24} />
-                      <h2 className={`text-2xl font-bold ${theme.textPrimary}`}>Variable Details</h2>
-                    </div>
-                    <div className={`text-xs font-mono ${theme.textSub} ${theme.bgCard} border ${theme.border} px-3 py-1.5 rounded-full`}>
-                      Showing {filteredVariables.length} / {reportData.table.n_var}
-                    </div>
-                  </div>
-                  
-                  {filteredVariables.map(([name, meta]) => {
-                    const varAlerts = getAlertsForVariable(name);
-                    const isCategorical = meta.type === 'Categorical' || meta.type === 'Boolean';
-                    const isNumericOrDate = meta.type === 'Numeric' || meta.type === 'DateTime';
-                    const hasExtremeValues = (meta.extreme_values_smallest && meta.extreme_values_smallest.length > 0) || 
-                                             (meta.extreme_values_largest && meta.extreme_values_largest.length > 0);
-
-                    const coreMetrics = [
-                      { label: "Mean", val: meta.mean },
-                      { label: "Std Dev", val: meta.std },
-                      { label: "Min", val: meta.min },
-                      { label: "Max", val: meta.max },
-                      { label: "Mean Length", val: meta.mean_length },
-                      { label: "Min Length", val: meta.min_length },
-                      { label: "Max Length", val: meta.max_length },
-                      { label: "Unique", val: meta.is_unique }
-                    ];
-                    
-                    const dataProperties = [
-                      { label: "Zero Values", val: meta.n_zeros },
-                      { label: "% Zeros", val: meta.p_zeros, isPercent: true },
-                      { label: "Negative Values", val: meta.n_negative },
-                      { label: "% Negative", val: meta.p_negative, isPercent: true },
-                      { label: "Infinite Values", val: meta.n_infinite },
-                      { label: "Hashable", val: meta.hashable },
-                      { label: "Monotonic Inc.", val: meta.monotonic_increasing },
-                      { label: "Monotonic Dec.", val: meta.monotonic_decreasing }
-                    ];
-
-                    const advancedStats = [
-                      { label: "Skewness", val: meta.skewness },
-                      { label: "Kurtosis", val: meta.kurtosis },
-                      { label: "Variance", val: meta.variance },
-                      { label: "Sum", val: meta.sum }
-                    ];
-
-                    const shapeAndScale = [
-                      { label: "Range", val: meta.range },
-                      { label: "IQR", val: meta.iqr },
-                      { label: "Coeff Var (CV)", val: meta.cv },
-                      { label: "Mean Abs Dev (MAD)", val: meta.mad },
-                    ];
-
-                    const renderCol1 = hasValidMetrics(coreMetrics) || hasValidMetrics(dataProperties);
-                    const renderCol2 = hasValidMetrics(shapeAndScale) || hasValidMetrics(advancedStats);
-
-                    // Filter out Nulls/NaNs from charts
-                    const { filteredBins: histBins, filteredCounts: histCounts } = filterMissingBins(meta.histogram?.bins, meta.histogram?.counts);
-
-                    let sortedLengthHistogram = null;
-                    if (meta.length_histogram?.bins && meta.length_histogram?.counts) {
-                      const { filteredBins: lenBins, filteredCounts: lenCounts } = filterMissingBins(meta.length_histogram.bins, meta.length_histogram.counts);
-                      const paired = lenBins.map((bin, i) => ({
-                        bin: Number(bin),
-                        count: lenCounts[i]
-                      }));
-                      paired.sort((a, b) => a.bin - b.bin);
-                      sortedLengthHistogram = {
-                        bins: paired.map(p => String(p.bin)),
-                        counts: paired.map(p => p.count)
-                      };
-                    }
-
-                    return (
-                      <div key={name} className={`${theme.bgCard} border ${theme.border} rounded-2xl overflow-hidden shadow-xl mb-8`}>
-                        
-                        <div className={`${theme.bgCardAlt} p-5 px-6 border-b ${theme.border} flex justify-between items-center flex-wrap gap-4`}>
-                          <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl ${theme.bgMain} border ${theme.border} flex items-center justify-center text-blue-400`}>
-                              {meta.type === 'Numeric' ? <TrendingUp size={20}/> : meta.type === 'Categorical' ? <TextSelect size={20}/> : <ShieldCheck size={20}/>}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-3">
-                                <h3 className={`font-bold text-lg ${theme.textPrimary}`}>{name}</h3>
-                                {varAlerts.map((alert, i) => <AlertBadge key={i} alert={alert} />)}
-                              </div>
-                              <div className="flex gap-3 mt-1">
-                                 <span className={`text-[10px] ${theme.bgMain} ${theme.textMuted} border ${theme.borderAlt} px-2 py-0.5 rounded uppercase font-bold tracking-wider`}>{meta.type}</span>
-                                 {meta.n_distinct !== undefined && (
-                                   <span className={`text-[10px] ${theme.textSub} font-mono`}>{meta.n_distinct.toLocaleString()} distinct</span>
-                                 )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`}>Missingness</div>
-                            <div className={`text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : theme.textSecondary}`}>
-                              {((meta.p_missing || 0) * 100).toFixed(2)}% ({meta.n_missing?.toLocaleString() || 0})
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                          <div className={hasExtremeValues ? "lg:col-span-2" : "lg:col-span-3"}>
-                             
-                             {(histBins && histCounts && histCounts.length > 0) && (
-                               <>
-                                 <h4 className={`text-[10px] font-bold ${theme.textSub} uppercase mb-4 tracking-widest border-b ${theme.border} pb-2 flex items-center gap-2`}>
-                                   <Percent size={14}/> Distribution Overview
-                                 </h4>
-                                 <div className="mb-8">
-                                   {isNumericOrDate ? (
-                                     <>
-                                       <NumericHistogram bins={histBins} counts={histCounts} height={140} showTooltip={true} />
-                                       <div className={`flex justify-between mt-3 px-1 text-[10px] ${theme.textSub} font-mono`}>
-                                          <span>Min: {meta.min !== undefined && meta.min !== null ? meta.min : 'N/A'}</span>
-                                          <span>Max: {meta.max !== undefined && meta.max !== null ? meta.max : 'N/A'}</span>
-                                       </div>
-                                     </>
-                                   ) : (
-                                     <CategoricalChart bins={histBins} counts={histCounts} />
-                                   )}
-                                 </div>
-                               </>
-                             )}
-
-                             {sortedLengthHistogram && sortedLengthHistogram.counts.length > 0 && (
-                               <div className="mb-8">
-                                 <h4 className={`text-[10px] font-bold ${theme.textSub} uppercase mb-3 tracking-widest flex items-center gap-2 border-b ${theme.border} pb-2`}>
-                                   Length Distribution (Chars)
-                                 </h4>
-                                 <CategoricalChart bins={sortedLengthHistogram.bins} counts={sortedLengthHistogram.counts} />
-                               </div>
-                             )}
-                             
-                             {(renderCol1 || renderCol2) && (
-                               <div className={`grid grid-cols-1 ${renderCol1 && renderCol2 ? 'md:grid-cols-2' : ''} gap-8`}>
-                                  {renderCol1 && (
-                                    <div className="space-y-8">
-                                      <MetricsSection title="Core Metrics" metrics={coreMetrics} />
-                                      <MetricsSection title="Data Properties" metrics={dataProperties} />
-                                    </div>
-                                  )}
-                                  {renderCol2 && (
-                                    <div className="space-y-8">
-                                      <MetricsSection title="Shape & Scale" metrics={shapeAndScale} />
-                                      <MetricsSection title="Advanced Stats" metrics={advancedStats} />
-                                    </div>
-                                  )}
-                               </div>
-                             )}
-                          </div>
-
-                          {hasExtremeValues && (
-                            <div className="space-y-6">
-                              <div className={`${theme.bgMain} p-5 rounded-2xl border ${theme.borderAlt}`}>
-                                <h4 className={`text-[10px] font-bold ${theme.textSub} uppercase mb-4 tracking-widest border-b ${theme.border} pb-2`}>Extreme Values</h4>
-                                <div className="flex flex-col gap-6">
-                                  <ExtremeValuesList title="Smallest" values={meta.extreme_values_smallest} />
-                                  <ExtremeValuesList title="Largest" values={meta.extreme_values_largest} />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* INTERACTIONS TAB */}
-              {activeTab === 'interactions' && (
-                <div className="space-y-6 animate-in fade-in duration-700">
-                  <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`}>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                      <div>
-                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
-                          <TrendingUp className="text-blue-400" /> Variable Interactions
-                        </h2>
-                        <p className={`${theme.textSub} text-sm`}>
-                          Pairwise scatter plots of numeric variables (sampled up to 1,000 points).
-                          {reportData.interactions?._metadata?.is_truncated && (
-                            <span className="block mt-1 text-amber-400 font-medium">
-                              <AlertTriangle size={14} className="inline mr-1" />
-                              Displaying Top {reportData.interactions._metadata.active_columns.length} most interactive variables out of {reportData.interactions._metadata.total_numeric_columns} total numeric columns.
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                      <div className="space-y-2">
-                        <label className={`text-xs font-bold uppercase tracking-widest ${theme.textSub}`}>X-Axis Variable</label>
-                        <select 
-                          value={interX} 
-                          onChange={(e) => setInterX(e.target.value)}
-                          className={`w-full ${theme.bgInput} border ${theme.border} rounded-lg p-2.5 text-sm font-mono ${theme.textPrimary} focus:ring-2 focus:ring-blue-500/50 outline-none`}
-                        >
-                          {interactionCols.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className={`text-xs font-bold uppercase tracking-widest ${theme.textSub}`}>Y-Axis Variable</label>
-                        <select 
-                          value={interY} 
-                          onChange={(e) => setInterY(e.target.value)}
-                          className={`w-full ${theme.bgInput} border ${theme.border} rounded-lg p-2.5 text-sm font-mono ${theme.textPrimary} focus:ring-2 focus:ring-blue-500/50 outline-none`}
-                        >
-                          {interactionCols.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-center">
-                      <div className="w-full max-w-5xl">
-                        <ScatterPlot data={interactionData} xLabel={interX} yLabel={interY} />
-                      </div>
-                    </div>
-
-                    <div className={`mt-10 p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt} text-center`}>
-                       <p className={`text-xs ${theme.textSub}`}>
-                         <Info size={14} className="inline mr-1 mb-0.5" /> 
-                         Scatter plots help identify non-linear relationships, clusters, and outliers that correlation coefficients might miss.
-                       </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* MISSING TAB */}
-              {activeTab === 'missing' && (
-                <div className="space-y-6 animate-in fade-in duration-700">
-                  <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`}>
-                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                      <div>
-                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
-                          <FileWarning className="text-red-400" /> Missing Data Analysis
-                        </h2>
-                        <p className={`${theme.textSub} text-sm`}>
-                          Overview of nullity across all variables in the dataset.
-                        </p>
-                      </div>
-                    </div>
-
-                    {reportData.missing?.bar?.matrix?.counts?.every(c => c === 0) ? (
-                      <div className="py-16 text-center border-2 border-dashed border-green-500/20 rounded-xl bg-green-500/5 flex flex-col items-center">
-                         <CheckCircle2 size={48} className="text-green-500 mb-4" />
-                         <h3 className="text-xl font-bold text-green-400 mb-2">100% Data Completeness</h3>
-                         <p className="text-slate-400">No missing values were detected in any of the {reportData.table.n_var} variables.</p>
-                      </div>
-                    ) : (
-                      <CategoricalChart
-                        bins={reportData.missing?.bar?.matrix?.columns}
-                        counts={reportData.missing?.bar?.matrix?.counts}
-                        limit={reportData.missing?.bar?.matrix?.columns?.length || 20}
-                      />
-
-                    )}
-
-                    {reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && (
-                      <NullityMatrix data={reportData.missing.matrix.matrix.matrix} />
-                    )}
-
-                    {reportData.missing?.heatmap?.matrix?.matrix && reportData.missing.heatmap.matrix.matrix.length > 0 && (
-                      <div className={`mt-16 pt-8 border-t ${theme.borderAlt}`}>
-                        <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
-                          <PieChart className="text-blue-500" /> Nullity Correlation Heatmap
-                        </h3>
-                        <p className={`${theme.textSub} text-sm mb-8`}>
-                          {reportData.missing.heatmap.caption || "Pearson correlation of nullity between variables (-1 to 1)."}
-                        </p>
-                        <CorrelationMatrixComponent data={reportData.missing.heatmap.matrix} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* CORRELATIONS TAB */}
-              {activeTab === 'correlations' && (
-                <div className="space-y-6 animate-in fade-in duration-700">
-                  <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`}>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
-                      <div>
-                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
-                          <PieChart className="text-blue-500" /> Correlation Matrix
-                        </h2>
-                        <p className={`${theme.textSub} text-sm`}>
-                          Linear dependence overview. Coloring indicates absolute correlation strength. <span className="text-blue-400">Blue</span> is positive, <span className="text-red-400">Red</span> is negative.
-                          {reportData.correlations?.[corrType]?.sampled && (
-                            <span className="block mt-1 text-amber-400 font-medium">
-                              <Info size={14} className="inline mr-1" />
-                              Sampled estimate: calculated from a representative subset of {reportData.correlations[corrType].sample_size?.toLocaleString()} rows.
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      
-                      {reportData.correlations && (
-                        <div className={`flex ${theme.bgMain} border ${theme.border} rounded-lg p-1`}>
-                          {Object.keys(reportData.correlations).map(type => (
-                            <button
-                              key={type}
-                              onClick={() => setCorrType(type)}
-                              className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
-                                corrType === type ? 'bg-blue-600 text-white shadow-md' : `${theme.textSub} hover:${theme.textMuted}`
-                              }`}
-                            >
-                              {type}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {currentCorrelationRaw && (
-                      <CorrelationMatrixComponent data={currentCorrelationRaw} />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* DUPLICATES TAB */}
-              {activeTab === 'duplicates' && (
-                 <div className={`${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl animate-in zoom-in-95 duration-500`}>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                      <div>
-                        <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
-                          <Layers className="text-blue-500" /> Duplicate Rows
-                        </h2>
-                        <p className={`${theme.textSub} text-sm`}>
-                          Records that are exactly identical across all variables.
-                        </p>
-                      </div>
-                    </div>
-                    <div className={`py-12 text-center ${theme.textSub} border ${theme.borderAlt} border-dashed rounded-xl`}>
-                      Duplicate data overview not available in current payload.
-                    </div>
-                 </div>
-              )}
-
-              {/* SAMPLE DATA TAB */}
-              {activeTab === 'sample' && (
-                 <div className={`${theme.bgCard} border ${theme.border} rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500`}>
-                    <div className={`p-6 border-b ${theme.border} flex justify-between items-center ${theme.bgCardAlt}`}>
-                      <h2 className={`text-xl font-bold flex items-center gap-2 ${theme.textPrimary}`}>
-                        <Table className="text-blue-400" /> Sample Data Preview
-                      </h2>
-                      <span className={`text-xs font-mono ${theme.textSub} ${theme.bgMain} px-3 py-1.5 rounded-lg border ${theme.border}`}>
-                        Showing top {sampleRows.length} rows
-                      </span>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-[11px] leading-tight border-collapse">
-                        <thead className={`${theme.bgMain}/80`}>
-                          <tr>
-                            {sampleRows.length > 0 && Object.keys(sampleRows[0]).map(k => (
-                              <th key={k} className={`px-5 py-4 text-left font-bold uppercase tracking-wider ${theme.textMuted} whitespace-nowrap border-b ${theme.border}`}>
-                                {k}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className={`divide-y ${theme.border}`}>
-                          {sampleRows.map((row, i) => (
-                            <tr key={i} className={`hover:${theme.bgCardAlt} transition-colors`}>
-                              {Object.values(row).map((val, j) => {
-                                const isMissing = val === 'null' || val === null || val === 'NaN' || val === 'nan' || (typeof val === 'number' && Number.isNaN(val));
-                                return (
-                                  <td key={j} className={`px-5 py-4 font-mono whitespace-nowrap ${isMissing ? 'text-red-400/80 italic font-bold' : theme.textSecondary} ${typeof val === 'string' && val.length > 40 ? 'max-w-[200px] truncate' : ''}`} title={String(val)}>
-                                    {isMissing ? 'Null' : (typeof val === 'number' ? val.toLocaleString() : String(val))}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                 </div>
-              )}
-            </div>
-
-            <footer className={`mt-16 pb-8 text-center ${theme.textMuted} text-xs font-mono border-t ${theme.border} pt-8`}>
-              Generated by ibis-profiling v{reportData.package?.version || 'dev'}
-            </footer>
-          </main>
-
-          <div className={`lg:hidden fixed bottom-0 left-0 right-0 ${theme.bgSidebar} border-t ${theme.border} px-4 py-3 flex justify-around z-30 backdrop-blur-md`}>
-             {navItems.map(item => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : `${theme.textSub} hover:${theme.textPrimary}`}`}
-                >
-                  <Icon size={20} />
-                  <span className="text-[9px] font-bold uppercase tracking-widest">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-        </div>
-      );
     }
-
-    function App() {
-      const getInitialTheme = () => {
-        const saved = localStorage.getItem('ibis-profiler-theme');
-        return (saved && THEMES[saved]) ? THEMES[saved] : THEMES.dark;
-      };
-
-      const [theme, setThemeState] = useState(getInitialTheme);
-
-      const setTheme = (t) => {
-        setThemeState(t);
-        localStorage.setItem('ibis-profiler-theme', t.id);
-      };
-
-      useEffect(() => {
-        // Apply global background to body for smooth transitions
-        document.body.className = theme.bgMain;
-        // Also apply a data-theme attribute if needed for CSS
-        document.documentElement.setAttribute('data-theme', theme.id);
-      }, [theme]);
-
-      return (
-        <ThemeContext.Provider value={{ theme, setTheme }}>
-          <AppContent />
-        </ThemeContext.Provider>
-      );
+    if (inBlock) {
+      blocks.push({
+        start,
+        end: numRows - 1
+      });
     }
+    return blocks;
+  };
+  const sparklinePoints = rowCompleteness.map((count, rIdx) => `${count / numCols * 100},${rIdx * rowHeight + rowHeight / 2}`).join(' ');
+  const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
+  return /*#__PURE__*/React.createElement("div", {
+    className: `mt-12 pt-8 border-t ${theme.border}`
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: `font-bold text-xl mb-2 ${theme.textPrimary}`
+  }, "Nullity Matrix"), /*#__PURE__*/React.createElement("p", {
+    className: `text-sm ${theme.textSub} mb-6`
+  }, "Dense visualization of data completeness (first ", numRows, " rows). Gaps indicate missing data."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-4 items-end",
+    style: {
+      minWidth: `${Math.max(1000, numCols * 25)}px`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 relative"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex mb-2"
+  }, columns.map((c, i) => /*#__PURE__*/React.createElement("div", {
+    key: c,
+    style: {
+      width: `${100 / numCols}%`
+    },
+    className: "flex justify-start h-32 relative overflow-visible"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `absolute bottom-1 left-1/2 origin-bottom-left text-[10px] font-mono ${theme.textMuted} whitespace-nowrap ${numCols > 15 ? '-rotate-90' : '-rotate-45'}`
+  }, c)))), /*#__PURE__*/React.createElement("svg", {
+    viewBox: `0 0 ${svgWidth} ${svgHeight}`,
+    preserveAspectRatio: "none",
+    className: `w-full h-[500px] ${theme.bgInput} border ${theme.border} shadow-inner rounded-sm`
+  }, columns.map((_, cIdx) => /*#__PURE__*/React.createElement("g", {
+    key: cIdx,
+    transform: `translate(${cIdx * colWidth}, 0)`
+  }, getBlocks(cIdx).map((block, i) => /*#__PURE__*/React.createElement("rect", {
+    key: i,
+    x: colWidth * 0.05,
+    y: block.start * rowHeight,
+    width: colWidth * 0.9,
+    height: (block.end - block.start + 1) * rowHeight,
+    fill: theme.id === 'light' ? '#475569' : '#cbd5e1',
+    className: "transition-all hover:fill-blue-400"
+  })))))), /*#__PURE__*/React.createElement("div", {
+    className: "w-20 h-[500px] relative flex flex-col items-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `text-[10px] ${theme.textSub} font-mono text-center absolute -top-8 w-full`
+  }, "Data", /*#__PURE__*/React.createElement("br", null), "Completeness"), /*#__PURE__*/React.createElement("svg", {
+    viewBox: `0 0 100 ${svgHeight}`,
+    preserveAspectRatio: "none",
+    className: `w-full h-full border-r border-t border-b ${theme.borderAlt} ${theme.bgCardAlt} rounded-r-sm`
+  }, /*#__PURE__*/React.createElement("polygon", {
+    points: sparkPoly,
+    fill: "rgba(59, 130, 246, 0.15)"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    points: sparklinePoints,
+    fill: "none",
+    stroke: "#3b82f6",
+    strokeWidth: "1.5"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: `absolute top-2 right-2 text-xs font-mono ${theme.textMuted}`
+  }, numCols), /*#__PURE__*/React.createElement("div", {
+    className: `absolute bottom-2 right-2 text-xs font-mono ${theme.textMuted}`
+  }, "0"))));
+};
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
+// Sub-component for rendering standardized Correlation Matrices
+const CorrelationMatrixComponent = ({
+  data
+}) => {
+  const {
+    theme
+  } = useContext(ThemeContext);
+  const {
+    columns,
+    matrix
+  } = useMemo(() => parseMatrixData(data), [data]);
+  if (!columns || columns.length === 0 || !matrix || matrix.length === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: `py-12 text-center ${theme.textSub}`
+    }, "No data available for this metric.");
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "overflow-x-auto pb-8"
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "min-w-max border-collapse"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+    className: "p-1"
+  }), columns.map(c => /*#__PURE__*/React.createElement("th", {
+    key: c,
+    className: `p-2 font-mono font-bold ${theme.textMuted} h-32 align-bottom`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `transform origin-bottom-left ml-8 truncate w-32 ${columns.length > 15 ? '-rotate-90' : '-rotate-45'}`
+  }, c))))), /*#__PURE__*/React.createElement("tbody", null, matrix.map((row, i) => /*#__PURE__*/React.createElement("tr", {
+    key: i
+  }, /*#__PURE__*/React.createElement("td", {
+    className: `p-2 font-mono font-bold ${theme.textMuted} text-right pr-8 whitespace-nowrap min-w-[150px]`
+  }, columns[i]), row.map((cell, j) => {
+    const isMissing = cell === null || cell === undefined || Number.isNaN(cell);
+    const bgOpacity = isMissing ? 0 : Math.min(Math.abs(cell), 1);
+    // Blue for positive correlation, Red for negative
+    const bgColor = isMissing ? 'transparent' : cell >= 0 ? `rgba(59, 130, 246, ${bgOpacity})` : `rgba(239, 68, 68, ${bgOpacity})`;
+    return /*#__PURE__*/React.createElement("td", {
+      key: j,
+      className: `w-16 h-16 border ${theme.border} text-center hover:scale-105 transition-transform cursor-crosshair relative group`,
+      style: {
+        backgroundColor: bgColor
+      }
+    }, isMissing ? /*#__PURE__*/React.createElement("span", {
+      className: `${theme.textMuted} text-[10px] italic`
+    }, "NaN") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+      className: `font-mono text-xs font-bold ${bgOpacity > 0.5 ? 'text-white' : theme.id === 'light' ? 'text-slate-900' : 'text-slate-400'}`
+    }, cell === 1 ? '1.0' : cell.toFixed(2)), /*#__PURE__*/React.createElement("div", {
+      className: `absolute z-10 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 ${theme.bgCard} ${theme.textPrimary} text-xs rounded whitespace-nowrap shadow-xl border ${theme.border}`
+    }, columns[i], " \xD7 ", columns[j], /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+      className: "font-mono text-blue-300"
+    }, cell.toFixed(4)))));
+  }))))));
+};
+const TYPE_LABELS = {
+  Numeric: 'Num',
+  Categorical: 'Cat',
+  Boolean: 'Bool',
+  DateTime: 'Date',
+  Unsupported: 'Other'
+};
+function AppContent() {
+  const {
+    theme,
+    setTheme
+  } = useContext(ThemeContext);
+  const [reportData, setReportData] = useState(REPORT_DATA);
+
+  // Initialize activeTab from URL hash if present
+  const getInitialTab = () => {
+    const hash = window.location.hash.slice(1);
+    const validTabs = ['overview', 'variables', 'interactions', 'correlations', 'missing', 'alerts', 'sample'];
+    return validTabs.includes(hash) ? hash : 'overview';
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [search, setSearch] = useState('');
+  const [imgError, setImgError] = useState(false);
+  const numericCols = useMemo(() => {
+    return Object.entries(reportData.variables).filter(([_, meta]) => meta.type === 'Numeric').map(([name]) => name);
+  }, [reportData]);
+  const interactionCols = useMemo(() => {
+    if (!reportData.interactions) return [];
+    return Object.keys(reportData.interactions).filter(k => k !== '_metadata').sort();
+  }, [reportData]);
+  const [interX, setInterX] = useState('');
+  const [interY, setInterY] = useState('');
+  useEffect(() => {
+    const cols = interactionCols.length > 0 ? interactionCols : numericCols;
+    if (!interX && cols.length > 0) setInterX(cols[0]);
+    if (!interY && cols.length > 1) setInterY(cols[1]);else if (!interY && cols.length > 0) setInterY(cols[0]);
+  }, [interactionCols, numericCols]);
+  const interactionData = useMemo(() => {
+    if (!reportData.interactions || !interX || !interY) return [];
+    return reportData.interactions[interX]?.[interY] || [];
+  }, [reportData.interactions, interX, interY]);
+
+  // Support hash-based switching for deep linking
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveTab(getInitialTab());
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+  const defaultCorrType = reportData.correlations ? Object.keys(reportData.correlations)[0] || '' : '';
+  const [corrType, setCorrType] = useState(defaultCorrType);
+  const filteredVariables = useMemo(() => {
+    if (!reportData || !reportData.variables) return [];
+    return Object.entries(reportData.variables).filter(([key]) => key.toLowerCase().includes(search.toLowerCase()));
+  }, [search, reportData]);
+  const sampleRows = useMemo(() => {
+    if (!reportData || !reportData.sample || !reportData.sample.head) return [];
+    const cols = Object.keys(reportData.sample.head);
+    if (cols.length === 0) return [];
+    const numRows = reportData.sample.head[cols[0]].length;
+    return Array.from({
+      length: numRows
+    }).map((_, i) => {
+      const row = {};
+      cols.forEach(col => {
+        row[col] = reportData.sample.head[col][i];
+      });
+      return row;
+    });
+  }, [reportData]);
+  const generateAlertMessage = alert => {
+    if (alert.message) return alert.message;
+    const fieldStr = alert.fields.join(', ');
+    switch (alert.alert_type) {
+      case 'UNIQUE':
+        return `${fieldStr} contains entirely unique values.`;
+      case 'CONSTANT':
+        return `${fieldStr} has a constant value across all rows.`;
+      case 'HIGH_CARDINALITY':
+        return `${fieldStr} has high cardinality (${alert.value?.toLocaleString() || 'many'} distinct values).`;
+      case 'MISSING':
+        return `${fieldStr} has missing values.`;
+      default:
+        return `${fieldStr} triggered a ${alert.alert_type} alert.`;
+    }
+  };
+  const getAlertsForVariable = varName => {
+    return reportData.alerts?.filter(a => a.fields.includes(varName)) || [];
+  };
+  const currentCorrelationRaw = corrType ? reportData.correlations?.[corrType] : null;
+
+  // Polymorphic Navigation Construction
+  const navItems = [{
+    id: 'overview',
+    label: 'Overview',
+    icon: LayoutDashboard
+  }, {
+    id: 'variables',
+    label: 'Variables',
+    icon: BarChart3
+  }];
+  const hasInteractions = reportData.interactions && Object.keys(reportData.interactions).length > 0;
+  if (hasInteractions) {
+    navItems.push({
+      id: 'interactions',
+      label: 'Interactions',
+      icon: TrendingUp
+    });
+  }
+  const hasMissing = reportData.missing && Object.keys(reportData.missing).length > 0;
+  if (hasMissing) {
+    navItems.push({
+      id: 'missing',
+      label: 'Missing',
+      icon: FileWarning
+    });
+  }
+  const hasCorrelations = reportData.correlations && Object.keys(reportData.correlations).length > 0;
+  if (hasCorrelations) {
+    navItems.push({
+      id: 'correlations',
+      label: 'Correlations',
+      icon: PieChart
+    });
+  }
+  const hasDuplicates = reportData.duplicates && Object.keys(reportData.duplicates).length > 0;
+  if (hasDuplicates) {
+    navItems.push({
+      id: 'duplicates',
+      label: 'Duplicates',
+      icon: Layers
+    });
+  }
+  if (reportData.sample && reportData.sample.head && Object.keys(reportData.sample.head).length > 0) {
+    navItems.push({
+      id: 'sample',
+      label: 'Sample Data',
+      icon: Table
+    });
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: `min-h-screen ${theme.bgMain} ${theme.textSecondary} font-sans pb-20 lg:pb-0 transition-colors duration-300`
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: `fixed left-0 top-0 bottom-0 w-64 ${theme.bgSidebar} border-r ${theme.border} backdrop-blur-md z-20 hidden lg:block`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "p-6 h-full flex flex-col"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3 mb-10"
+  }, imgError ? /*#__PURE__*/React.createElement("div", {
+    className: "w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20"
+  }, /*#__PURE__*/React.createElement(Database, {
+    className: "text-white",
+    size: 20
+  })) : /*#__PURE__*/React.createElement("img", {
+    src: "https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-icon.png",
+    alt: "Ibis Profiler Logo",
+    className: `w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 object-cover border ${theme.borderAlt} ${theme.bgCard} p-1`,
+    onError: () => setImgError(true)
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
+    className: `font-bold text-lg leading-tight tracking-tight ${theme.textPrimary}`
+  }, "Ibis Profiler"))), /*#__PURE__*/React.createElement("nav", {
+    className: "space-y-1 flex-1"
+  }, navItems.map(item => {
+    const Icon = item.icon;
+    return /*#__PURE__*/React.createElement("button", {
+      key: item.id,
+      onClick: () => setActiveTab(item.id),
+      className: `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : `${theme.textMuted} hover:${theme.bgCardAlt} hover:${theme.textPrimary}`}`
+    }, /*#__PURE__*/React.createElement(Icon, {
+      size: 18
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "font-medium text-sm"
+    }, item.label));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "mt-auto pt-6 space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `flex items-center gap-2 mb-3 ${theme.textSub}`
+  }, /*#__PURE__*/React.createElement(Sun, {
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold uppercase tracking-wider"
+  }, "Appearance")), /*#__PURE__*/React.createElement("div", {
+    className: `flex items-center p-1 ${theme.bgMain} rounded-lg border ${theme.border}`
+  }, Object.values(THEMES).map(t => {
+    const Icon = t.icon;
+    return /*#__PURE__*/React.createElement("button", {
+      key: t.id,
+      onClick: () => setTheme(t),
+      title: t.name,
+      className: `flex-1 flex justify-center py-1.5 rounded-md transition-all ${theme.id === t.id ? 'bg-blue-600 text-white shadow-sm' : `${theme.textSub} hover:${theme.textMuted}`}`
+    }, /*#__PURE__*/React.createElement(Icon, {
+      size: 16
+    }));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: `p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `flex items-center gap-2 mb-2 ${theme.textSub}`
+  }, /*#__PURE__*/React.createElement(Clock, {
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs"
+  }, "Job Duration")), /*#__PURE__*/React.createElement("div", {
+    className: `text-sm font-mono ${theme.textSecondary}`
+  }, reportData.analysis.duration !== undefined ? reportData.analysis.duration > 1000 ? `${(reportData.analysis.duration / 1000).toFixed(2)} s` : `${Number(reportData.analysis.duration).toFixed(0)} ms` : `${Math.max(0, new Date(reportData.analysis.date_end) - new Date(reportData.analysis.date_start))} ms`))))), /*#__PURE__*/React.createElement("main", {
+    className: "lg:pl-64"
+  }, /*#__PURE__*/React.createElement("header", {
+    className: `sticky top-0 ${theme.bgHeader} backdrop-blur-xl border-b ${theme.border} z-10 px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4`
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: `text-xl font-bold ${theme.textPrimary}`
+  }, reportData.analysis.title), /*#__PURE__*/React.createElement("p", {
+    className: `text-xs ${theme.textSub} font-mono`
+  }, "Analysis run ", new Date(reportData.analysis.date_start).toLocaleString())), /*#__PURE__*/React.createElement("div", {
+    className: "relative w-full md:w-80"
+  }, /*#__PURE__*/React.createElement(Search, {
+    className: `absolute left-3 top-1/2 -translate-y-1/2 ${theme.textSub} pointer-events-none`,
+    size: 16
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    placeholder: "Search attributes...",
+    className: `w-full ${theme.bgInput} border ${theme.border} rounded-full py-2 pl-10 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 ${theme.textPrimary}`,
+    value: search,
+    onChange: e => setSearch(e.target.value)
+  }), search.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSearch(''),
+    className: `absolute right-3 top-1/2 -translate-y-1/2 ${theme.textMuted} hover:${theme.textPrimary} transition-colors p-1 ${theme.bgCardAlt} rounded-full flex items-center justify-center cursor-pointer z-10`,
+    type: "button",
+    "aria-label": "Clear search"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 14,
+    strokeWidth: 3
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "p-8 w-full mx-auto"
+  }, activeTab === 'overview' && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-8 animate-in fade-in duration-500"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+  }, /*#__PURE__*/React.createElement(StatCard, {
+    title: "Total Rows",
+    value: reportData.table.n.toLocaleString(),
+    icon: Database,
+    sub: reportData.table.p_duplicates !== undefined ? `${(reportData.table.p_duplicates * 100).toFixed(1)}% duplicated rows` : "Duplication check skipped"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    title: "Variables",
+    value: reportData.table.n_var,
+    icon: Table,
+    sub: Object.entries(reportData.table.types || {}).map(([type, count]) => `${count} ${TYPE_LABELS[type] || type.substring(0, 3)}`).join(', '),
+    color: "purple"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    title: "Missing Cells",
+    value: `${reportData.table.p_cells_missing === 0 ? '0' : (reportData.table.p_cells_missing * 100).toFixed(2)}%`,
+    icon: FileWarning,
+    sub: `Across ${reportData.table.n_vars_with_missing} variables`,
+    color: "red"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    title: "Memory Size",
+    value: `${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MiB`,
+    icon: CheckCircle2,
+    sub: `${reportData.table.record_size} bytes per record`,
+    color: "green"
+  }), "                  "), /*#__PURE__*/React.createElement("section", {
+    className: `${theme.bgCard} border ${theme.border} p-6 rounded-2xl shadow-xl`
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: `font-bold text-lg mb-4 flex items-center gap-2 ${theme.textPrimary}`
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    className: "text-yellow-500",
+    size: 20
+  }), " System Alerts (", reportData.alerts?.length || 0, ")"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+  }, reportData.alerts?.map((alert, idx) => {
+    const config = ALERT_CONFIG[alert.alert_type] || ALERT_CONFIG.DEFAULT;
+    const Icon = config.icon;
+    return /*#__PURE__*/React.createElement("div", {
+      key: idx,
+      className: `flex items-start gap-3 p-4 ${theme.bgMain} border rounded-xl hover:${theme.bgCardAlt} transition-all duration-200 ${config.border}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `mt-0.5 ${config.color}`
+    }, /*#__PURE__*/React.createElement(Icon, {
+      size: 16
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 mb-1.5"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: `text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded tracking-wider ${config.bg} ${config.color}`
+    }, alert.alert_type)), /*#__PURE__*/React.createElement("div", {
+      className: `text-sm font-medium ${theme.textSecondary}`
+    }, generateAlertMessage(alert))));
+  }))), /*#__PURE__*/React.createElement("section", null, /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between items-center mb-4"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: `font-bold text-lg ${theme.textPrimary}`
+  }, "Variable Quick View"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setActiveTab('variables'),
+    className: "text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors"
+  }, "View detailed stats ", /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 14
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4"
+  }, Object.entries(reportData.variables).map(([name, meta]) => {
+    const varAlerts = getAlertsForVariable(name);
+    const {
+      filteredBins: qvBins,
+      filteredCounts: qvCounts
+    } = filterMissingBins(meta.histogram?.bins, meta.histogram?.counts);
+    return /*#__PURE__*/React.createElement("div", {
+      key: name,
+      className: `${theme.bgCard} border ${theme.border} p-4 rounded-2xl hover:border-blue-500/30 transition-colors group cursor-pointer flex flex-col h-full shadow-lg`,
+      onClick: () => {
+        setSearch(name);
+        setActiveTab('variables');
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-between items-start mb-3"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: `font-bold text-sm ${theme.textSecondary} group-hover:text-blue-400 transition-colors truncate pr-2`
+    }, name), /*#__PURE__*/React.createElement("span", {
+      className: `text-[9px] ${theme.bgCardAlt} ${theme.textMuted} px-1.5 py-0.5 rounded uppercase font-bold tracking-wider`
+    }, meta.type)), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 mb-3"
+    }, meta.type === 'Categorical' || meta.type === 'Boolean' ? /*#__PURE__*/React.createElement("div", {
+      className: "h-full flex flex-col justify-center"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `h-10 w-full ${theme.bgCardAlt} rounded-lg flex items-end gap-0.5 p-1`
+    }, qvCounts.slice(0, 10).map((c, i) => {
+      const max = Math.max(...qvCounts, 1);
+      return /*#__PURE__*/React.createElement("div", {
+        key: i,
+        className: "bg-purple-500/40 hover:bg-purple-400 transition-all rounded-t-sm flex-1",
+        style: {
+          height: `${c / max * 100}%`
+        },
+        title: `${qvBins[i]}: ${c.toLocaleString()}`
+      });
+    })), /*#__PURE__*/React.createElement("div", {
+      className: `text-[8px] ${theme.textSub} mt-1 text-center truncate`
+    }, qvBins.length, " distinct categories")) : /*#__PURE__*/React.createElement(NumericHistogram, {
+      bins: qvBins,
+      counts: qvCounts,
+      height: 40,
+      showTooltip: false
+    })), /*#__PURE__*/React.createElement("div", {
+      className: `flex justify-between items-center mt-auto pt-3 border-t ${theme.borderAlt}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-1"
+    }, varAlerts.slice(0, 3).map((a, i) => {
+      const config = ALERT_CONFIG[a.alert_type] || ALERT_CONFIG.DEFAULT;
+      const Icon = config.icon;
+      return /*#__PURE__*/React.createElement("div", {
+        key: i,
+        className: `${config.color} ${config.bg} p-1 rounded`,
+        title: a.alert_type
+      }, /*#__PURE__*/React.createElement(Icon, {
+        size: 10
+      }));
+    }), varAlerts.length > 3 && /*#__PURE__*/React.createElement("span", {
+      className: `text-[10px] ${theme.textSub} self-center`
+    }, "+", varAlerts.length - 3)), /*#__PURE__*/React.createElement("span", {
+      className: `text-[10px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`
+    }, ((meta.p_missing || 0) * 100).toFixed(1), "% null")));
+  })))), activeTab === 'variables' && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6 animate-in slide-in-from-bottom-4 duration-500"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement(BarChart3, {
+    className: "text-blue-400",
+    size: 24
+  }), /*#__PURE__*/React.createElement("h2", {
+    className: `text-2xl font-bold ${theme.textPrimary}`
+  }, "Variable Details")), /*#__PURE__*/React.createElement("div", {
+    className: `text-xs font-mono ${theme.textSub} ${theme.bgCard} border ${theme.border} px-3 py-1.5 rounded-full`
+  }, "Showing ", filteredVariables.length, " / ", reportData.table.n_var)), filteredVariables.map(([name, meta]) => {
+    const varAlerts = getAlertsForVariable(name);
+    const isCategorical = meta.type === 'Categorical' || meta.type === 'Boolean';
+    const isNumericOrDate = meta.type === 'Numeric' || meta.type === 'DateTime';
+    const hasExtremeValues = meta.extreme_values_smallest && meta.extreme_values_smallest.length > 0 || meta.extreme_values_largest && meta.extreme_values_largest.length > 0;
+    const coreMetrics = [{
+      label: "Mean",
+      val: meta.mean
+    }, {
+      label: "Std Dev",
+      val: meta.std
+    }, {
+      label: "Min",
+      val: meta.min
+    }, {
+      label: "Max",
+      val: meta.max
+    }, {
+      label: "Mean Length",
+      val: meta.mean_length
+    }, {
+      label: "Min Length",
+      val: meta.min_length
+    }, {
+      label: "Max Length",
+      val: meta.max_length
+    }, {
+      label: "Unique",
+      val: meta.is_unique
+    }];
+    const dataProperties = [{
+      label: "Zero Values",
+      val: meta.n_zeros
+    }, {
+      label: "% Zeros",
+      val: meta.p_zeros,
+      isPercent: true
+    }, {
+      label: "Negative Values",
+      val: meta.n_negative
+    }, {
+      label: "% Negative",
+      val: meta.p_negative,
+      isPercent: true
+    }, {
+      label: "Infinite Values",
+      val: meta.n_infinite
+    }, {
+      label: "Hashable",
+      val: meta.hashable
+    }, {
+      label: "Monotonic Inc.",
+      val: meta.monotonic_increasing
+    }, {
+      label: "Monotonic Dec.",
+      val: meta.monotonic_decreasing
+    }];
+    const advancedStats = [{
+      label: "Skewness",
+      val: meta.skewness
+    }, {
+      label: "Kurtosis",
+      val: meta.kurtosis
+    }, {
+      label: "Variance",
+      val: meta.variance
+    }, {
+      label: "Sum",
+      val: meta.sum
+    }];
+    const shapeAndScale = [{
+      label: "Range",
+      val: meta.range
+    }, {
+      label: "IQR",
+      val: meta.iqr
+    }, {
+      label: "Coeff Var (CV)",
+      val: meta.cv
+    }, {
+      label: "Mean Abs Dev (MAD)",
+      val: meta.mad
+    }];
+    const renderCol1 = hasValidMetrics(coreMetrics) || hasValidMetrics(dataProperties);
+    const renderCol2 = hasValidMetrics(shapeAndScale) || hasValidMetrics(advancedStats);
+
+    // Filter out Nulls/NaNs from charts
+    const {
+      filteredBins: histBins,
+      filteredCounts: histCounts
+    } = filterMissingBins(meta.histogram?.bins, meta.histogram?.counts);
+    let sortedLengthHistogram = null;
+    if (meta.length_histogram?.bins && meta.length_histogram?.counts) {
+      const {
+        filteredBins: lenBins,
+        filteredCounts: lenCounts
+      } = filterMissingBins(meta.length_histogram.bins, meta.length_histogram.counts);
+      const paired = lenBins.map((bin, i) => ({
+        bin: Number(bin),
+        count: lenCounts[i]
+      }));
+      paired.sort((a, b) => a.bin - b.bin);
+      sortedLengthHistogram = {
+        bins: paired.map(p => String(p.bin)),
+        counts: paired.map(p => p.count)
+      };
+    }
+    return /*#__PURE__*/React.createElement("div", {
+      key: name,
+      className: `${theme.bgCard} border ${theme.border} rounded-2xl overflow-hidden shadow-xl mb-8`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `${theme.bgCardAlt} p-5 px-6 border-b ${theme.border} flex justify-between items-center flex-wrap gap-4`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-4"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `w-10 h-10 rounded-xl ${theme.bgMain} border ${theme.border} flex items-center justify-center text-blue-400`
+    }, meta.type === 'Numeric' ? /*#__PURE__*/React.createElement(TrendingUp, {
+      size: 20
+    }) : meta.type === 'Categorical' ? /*#__PURE__*/React.createElement(TextSelect, {
+      size: 20
+    }) : /*#__PURE__*/React.createElement(ShieldCheck, {
+      size: 20
+    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-3"
+    }, /*#__PURE__*/React.createElement("h3", {
+      className: `font-bold text-lg ${theme.textPrimary}`
+    }, name), varAlerts.map((alert, i) => /*#__PURE__*/React.createElement(AlertBadge, {
+      key: i,
+      alert: alert
+    }))), /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-3 mt-1"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: `text-[10px] ${theme.bgMain} ${theme.textMuted} border ${theme.borderAlt} px-2 py-0.5 rounded uppercase font-bold tracking-wider`
+    }, meta.type), meta.n_distinct !== undefined && /*#__PURE__*/React.createElement("span", {
+      className: `text-[10px] ${theme.textSub} font-mono`
+    }, meta.n_distinct.toLocaleString(), " distinct")))), /*#__PURE__*/React.createElement("div", {
+      className: "text-right"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`
+    }, "Missingness"), /*#__PURE__*/React.createElement("div", {
+      className: `text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : theme.textSecondary}`
+    }, ((meta.p_missing || 0) * 100).toFixed(2), "% (", meta.n_missing?.toLocaleString() || 0, ")"))), /*#__PURE__*/React.createElement("div", {
+      className: "p-6 grid grid-cols-1 lg:grid-cols-3 gap-8"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: hasExtremeValues ? "lg:col-span-2" : "lg:col-span-3"
+    }, histBins && histCounts && histCounts.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h4", {
+      className: `text-[10px] font-bold ${theme.textSub} uppercase mb-4 tracking-widest border-b ${theme.border} pb-2 flex items-center gap-2`
+    }, /*#__PURE__*/React.createElement(Percent, {
+      size: 14
+    }), " Distribution Overview"), /*#__PURE__*/React.createElement("div", {
+      className: "mb-8"
+    }, isNumericOrDate ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(NumericHistogram, {
+      bins: histBins,
+      counts: histCounts,
+      height: 140,
+      showTooltip: true
+    }), /*#__PURE__*/React.createElement("div", {
+      className: `flex justify-between mt-3 px-1 text-[10px] ${theme.textSub} font-mono`
+    }, /*#__PURE__*/React.createElement("span", null, "Min: ", meta.min !== undefined && meta.min !== null ? meta.min : 'N/A'), /*#__PURE__*/React.createElement("span", null, "Max: ", meta.max !== undefined && meta.max !== null ? meta.max : 'N/A'))) : /*#__PURE__*/React.createElement(CategoricalChart, {
+      bins: histBins,
+      counts: histCounts
+    }))), sortedLengthHistogram && sortedLengthHistogram.counts.length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "mb-8"
+    }, /*#__PURE__*/React.createElement("h4", {
+      className: `text-[10px] font-bold ${theme.textSub} uppercase mb-3 tracking-widest flex items-center gap-2 border-b ${theme.border} pb-2`
+    }, "Length Distribution (Chars)"), /*#__PURE__*/React.createElement(CategoricalChart, {
+      bins: sortedLengthHistogram.bins,
+      counts: sortedLengthHistogram.counts
+    })), (renderCol1 || renderCol2) && /*#__PURE__*/React.createElement("div", {
+      className: `grid grid-cols-1 ${renderCol1 && renderCol2 ? 'md:grid-cols-2' : ''} gap-8`
+    }, renderCol1 && /*#__PURE__*/React.createElement("div", {
+      className: "space-y-8"
+    }, /*#__PURE__*/React.createElement(MetricsSection, {
+      title: "Core Metrics",
+      metrics: coreMetrics
+    }), /*#__PURE__*/React.createElement(MetricsSection, {
+      title: "Data Properties",
+      metrics: dataProperties
+    })), renderCol2 && /*#__PURE__*/React.createElement("div", {
+      className: "space-y-8"
+    }, /*#__PURE__*/React.createElement(MetricsSection, {
+      title: "Shape & Scale",
+      metrics: shapeAndScale
+    }), /*#__PURE__*/React.createElement(MetricsSection, {
+      title: "Advanced Stats",
+      metrics: advancedStats
+    })))), hasExtremeValues && /*#__PURE__*/React.createElement("div", {
+      className: "space-y-6"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `${theme.bgMain} p-5 rounded-2xl border ${theme.borderAlt}`
+    }, /*#__PURE__*/React.createElement("h4", {
+      className: `text-[10px] font-bold ${theme.textSub} uppercase mb-4 tracking-widest border-b ${theme.border} pb-2`
+    }, "Extreme Values"), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col gap-6"
+    }, /*#__PURE__*/React.createElement(ExtremeValuesList, {
+      title: "Smallest",
+      values: meta.extreme_values_smallest
+    }), /*#__PURE__*/React.createElement(ExtremeValuesList, {
+      title: "Largest",
+      values: meta.extreme_values_largest
+    }))))));
+  })), activeTab === 'interactions' && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6 animate-in fade-in duration-700"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: `text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`
+  }, /*#__PURE__*/React.createElement(TrendingUp, {
+    className: "text-blue-400"
+  }), " Variable Interactions"), /*#__PURE__*/React.createElement("p", {
+    className: `${theme.textSub} text-sm`
+  }, "Pairwise scatter plots of numeric variables (sampled up to 1,000 points).", reportData.interactions?._metadata?.is_truncated && /*#__PURE__*/React.createElement("span", {
+    className: "block mt-1 text-amber-400 font-medium"
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 14,
+    className: "inline mr-1"
+  }), "Displaying Top ", reportData.interactions._metadata.active_columns.length, " most interactive variables out of ", reportData.interactions._metadata.total_numeric_columns, " total numeric columns.")))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 gap-8 mb-10"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: `text-xs font-bold uppercase tracking-widest ${theme.textSub}`
+  }, "X-Axis Variable"), /*#__PURE__*/React.createElement("select", {
+    value: interX,
+    onChange: e => setInterX(e.target.value),
+    className: `w-full ${theme.bgInput} border ${theme.border} rounded-lg p-2.5 text-sm font-mono ${theme.textPrimary} focus:ring-2 focus:ring-blue-500/50 outline-none`
+  }, interactionCols.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c,
+    value: c
+  }, c)))), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: `text-xs font-bold uppercase tracking-widest ${theme.textSub}`
+  }, "Y-Axis Variable"), /*#__PURE__*/React.createElement("select", {
+    value: interY,
+    onChange: e => setInterY(e.target.value),
+    className: `w-full ${theme.bgInput} border ${theme.border} rounded-lg p-2.5 text-sm font-mono ${theme.textPrimary} focus:ring-2 focus:ring-blue-500/50 outline-none`
+  }, interactionCols.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c,
+    value: c
+  }, c))))), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-full max-w-5xl"
+  }, /*#__PURE__*/React.createElement(ScatterPlot, {
+    data: interactionData,
+    xLabel: interX,
+    yLabel: interY
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: `mt-10 p-4 ${theme.bgCardAlt} rounded-xl border ${theme.borderAlt} text-center`
+  }, /*#__PURE__*/React.createElement("p", {
+    className: `text-xs ${theme.textSub}`
+  }, /*#__PURE__*/React.createElement(Info, {
+    size: 14,
+    className: "inline mr-1 mb-0.5"
+  }), "Scatter plots help identify non-linear relationships, clusters, and outliers that correlation coefficients might miss.")))), activeTab === 'missing' && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6 animate-in fade-in duration-700"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: `text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`
+  }, /*#__PURE__*/React.createElement(FileWarning, {
+    className: "text-red-400"
+  }), " Missing Data Analysis"), /*#__PURE__*/React.createElement("p", {
+    className: `${theme.textSub} text-sm`
+  }, "Overview of nullity across all variables in the dataset."))), reportData.missing?.bar?.matrix?.counts?.every(c => c === 0) ? /*#__PURE__*/React.createElement("div", {
+    className: "py-16 text-center border-2 border-dashed border-green-500/20 rounded-xl bg-green-500/5 flex flex-col items-center"
+  }, /*#__PURE__*/React.createElement(CheckCircle2, {
+    size: 48,
+    className: "text-green-500 mb-4"
+  }), /*#__PURE__*/React.createElement("h3", {
+    className: "text-xl font-bold text-green-400 mb-2"
+  }, "100% Data Completeness"), /*#__PURE__*/React.createElement("p", {
+    className: "text-slate-400"
+  }, "No missing values were detected in any of the ", reportData.table.n_var, " variables.")) : /*#__PURE__*/React.createElement(CategoricalChart, {
+    bins: reportData.missing?.bar?.matrix?.columns,
+    counts: reportData.missing?.bar?.matrix?.counts,
+    limit: reportData.missing?.bar?.matrix?.columns?.length || 20
+  }), reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement(NullityMatrix, {
+    data: reportData.missing.matrix.matrix.matrix
+  }), reportData.missing?.heatmap?.matrix?.matrix && reportData.missing.heatmap.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: `mt-16 pt-8 border-t ${theme.borderAlt}`
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: `text-xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`
+  }, /*#__PURE__*/React.createElement(PieChart, {
+    className: "text-blue-500"
+  }), " Nullity Correlation Heatmap"), /*#__PURE__*/React.createElement("p", {
+    className: `${theme.textSub} text-sm mb-8`
+  }, reportData.missing.heatmap.caption || "Pearson correlation of nullity between variables (-1 to 1)."), /*#__PURE__*/React.createElement(CorrelationMatrixComponent, {
+    data: reportData.missing.heatmap.matrix
+  })))), activeTab === 'correlations' && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-6 animate-in fade-in duration-700"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: `text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`
+  }, /*#__PURE__*/React.createElement(PieChart, {
+    className: "text-blue-500"
+  }), " Correlation Matrix"), /*#__PURE__*/React.createElement("p", {
+    className: `${theme.textSub} text-sm`
+  }, "Linear dependence overview. Coloring indicates absolute correlation strength. ", /*#__PURE__*/React.createElement("span", {
+    className: "text-blue-400"
+  }, "Blue"), " is positive, ", /*#__PURE__*/React.createElement("span", {
+    className: "text-red-400"
+  }, "Red"), " is negative.", reportData.correlations?.[corrType]?.sampled && /*#__PURE__*/React.createElement("span", {
+    className: "block mt-1 text-amber-400 font-medium"
+  }, /*#__PURE__*/React.createElement(Info, {
+    size: 14,
+    className: "inline mr-1"
+  }), "Sampled estimate: calculated from a representative subset of ", reportData.correlations[corrType].sample_size?.toLocaleString(), " rows."))), reportData.correlations && /*#__PURE__*/React.createElement("div", {
+    className: `flex ${theme.bgMain} border ${theme.border} rounded-lg p-1`
+  }, Object.keys(reportData.correlations).map(type => /*#__PURE__*/React.createElement("button", {
+    key: type,
+    onClick: () => setCorrType(type),
+    className: `px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${corrType === type ? 'bg-blue-600 text-white shadow-md' : `${theme.textSub} hover:${theme.textMuted}`}`
+  }, type)))), currentCorrelationRaw && /*#__PURE__*/React.createElement(CorrelationMatrixComponent, {
+    data: currentCorrelationRaw
+  }))), activeTab === 'duplicates' && /*#__PURE__*/React.createElement("div", {
+    className: `${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl animate-in zoom-in-95 duration-500`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: `text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`
+  }, /*#__PURE__*/React.createElement(Layers, {
+    className: "text-blue-500"
+  }), " Duplicate Rows"), /*#__PURE__*/React.createElement("p", {
+    className: `${theme.textSub} text-sm`
+  }, "Records that are exactly identical across all variables."))), /*#__PURE__*/React.createElement("div", {
+    className: `py-12 text-center ${theme.textSub} border ${theme.borderAlt} border-dashed rounded-xl`
+  }, "Duplicate data overview not available in current payload.")), activeTab === 'sample' && /*#__PURE__*/React.createElement("div", {
+    className: `${theme.bgCard} border ${theme.border} rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `p-6 border-b ${theme.border} flex justify-between items-center ${theme.bgCardAlt}`
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: `text-xl font-bold flex items-center gap-2 ${theme.textPrimary}`
+  }, /*#__PURE__*/React.createElement(Table, {
+    className: "text-blue-400"
+  }), " Sample Data Preview"), /*#__PURE__*/React.createElement("span", {
+    className: `text-xs font-mono ${theme.textSub} ${theme.bgMain} px-3 py-1.5 rounded-lg border ${theme.border}`
+  }, "Showing top ", sampleRows.length, " rows")), /*#__PURE__*/React.createElement("div", {
+    className: "overflow-x-auto"
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "w-full text-[11px] leading-tight border-collapse"
+  }, /*#__PURE__*/React.createElement("thead", {
+    className: `${theme.bgMain}/80`
+  }, /*#__PURE__*/React.createElement("tr", null, sampleRows.length > 0 && Object.keys(sampleRows[0]).map(k => /*#__PURE__*/React.createElement("th", {
+    key: k,
+    className: `px-5 py-4 text-left font-bold uppercase tracking-wider ${theme.textMuted} whitespace-nowrap border-b ${theme.border}`
+  }, k)))), /*#__PURE__*/React.createElement("tbody", {
+    className: `divide-y ${theme.border}`
+  }, sampleRows.map((row, i) => /*#__PURE__*/React.createElement("tr", {
+    key: i,
+    className: `hover:${theme.bgCardAlt} transition-colors`
+  }, Object.values(row).map((val, j) => {
+    const isMissing = val === 'null' || val === null || val === 'NaN' || val === 'nan' || typeof val === 'number' && Number.isNaN(val);
+    return /*#__PURE__*/React.createElement("td", {
+      key: j,
+      className: `px-5 py-4 font-mono whitespace-nowrap ${isMissing ? 'text-red-400/80 italic font-bold' : theme.textSecondary} ${typeof val === 'string' && val.length > 40 ? 'max-w-[200px] truncate' : ''}`,
+      title: String(val)
+    }, isMissing ? 'Null' : typeof val === 'number' ? val.toLocaleString() : String(val));
+  })))))))), /*#__PURE__*/React.createElement("footer", {
+    className: `mt-16 pb-8 text-center ${theme.textMuted} text-xs font-mono border-t ${theme.border} pt-8`
+  }, "Generated by ibis-profiling v", reportData.package?.version || 'dev')), /*#__PURE__*/React.createElement("div", {
+    className: `lg:hidden fixed bottom-0 left-0 right-0 ${theme.bgSidebar} border-t ${theme.border} px-4 py-3 flex justify-around z-30 backdrop-blur-md`
+  }, navItems.map(item => {
+    const Icon = item.icon;
+    return /*#__PURE__*/React.createElement("button", {
+      key: item.id,
+      onClick: () => setActiveTab(item.id),
+      className: `flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : `${theme.textSub} hover:${theme.textPrimary}`}`
+    }, /*#__PURE__*/React.createElement(Icon, {
+      size: 20
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-[9px] font-bold uppercase tracking-widest"
+    }, item.label));
+  })));
+}
+function App() {
+  const getInitialTheme = () => {
+    const saved = localStorage.getItem('ibis-profiler-theme');
+    return saved && THEMES[saved] ? THEMES[saved] : THEMES.dark;
+  };
+  const [theme, setThemeState] = useState(getInitialTheme);
+  const setTheme = t => {
+    setThemeState(t);
+    localStorage.setItem('ibis-profiler-theme', t.id);
+  };
+  useEffect(() => {
+    // Apply global background to body for smooth transitions
+    document.body.className = theme.bgMain;
+    // Also apply a data-theme attribute if needed for CSS
+    document.documentElement.setAttribute('data-theme', theme.id);
+  }, [theme]);
+  return /*#__PURE__*/React.createElement(ThemeContext.Provider, {
+    value: {
+      theme,
+      setTheme
+    }
+  }, /*#__PURE__*/React.createElement(AppContent, null));
+}
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(/*#__PURE__*/React.createElement(App, null));</script>
 </body>
 </html>

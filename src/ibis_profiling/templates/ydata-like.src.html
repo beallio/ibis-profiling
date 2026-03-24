@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ibis Profiling Report</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Babel for in-browser JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- React & Dependencies (UMD Builds for local file portability) -->
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script>window.react = window.React;</script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      background-color: #f3f4f6; /* Tailwind gray-100 */
+      color: #1f2937; /* Tailwind gray-800 */
+    }
+    /* Custom Scrollbar for specific containers */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      display: block;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9; 
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1; 
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8; 
+    }
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    
+    /* Hide scrollbar for tabs */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    section {
+      padding-top: 1rem;
+      margin-top: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+    }
+    section:first-of-type {
+      border-top: none;
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React Application -->
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+    const { 
+      AlertTriangle, 
+      Info, 
+      BarChart2, 
+      Hash, 
+      AlignLeft, 
+      Grid, 
+      Database,
+      ChevronRight,
+      ChevronDown,
+      ToggleLeft,
+      AlertCircle,
+      PieChart,
+      ScatterChart
+    } = LucideReact;
+
+    // Securely decode the Base64-encoded payload (Unicode-safe)
+    const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
+    const bytes = Uint8Array.from(atob(ENCODED_REPORT_DATA), c => c.charCodeAt(0));
+    const REPORT_DATA = JSON.parse(new TextDecoder().decode(bytes));
+
+    // --- FORMATTING HELPERS ---
+    const formatBytes = (bytes) => {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
+    const formatPct = (val) => {
+      if (val === undefined || val === null) return '0.0%';
+      return (val * 100).toFixed(1) + '%';
+    };
+
+    const formatNum = (val) => {
+      if (val === undefined || val === null) return '-';
+      return typeof val === 'number' ? (Number.isInteger(val) ? val.toLocaleString() : val.toFixed(2)) : val;
+    };
+
+    // Helper: Safely parse different matrix JSON structures
+    const parseMatrixData = (data) => {
+      if (!data) return { columns: [], matrix: [] };
+      
+      // 1) Handle { matrix: [ {col1: v1, ...}, ... ] } - new standard
+      if (data.matrix && Array.isArray(data.matrix) && data.matrix.length > 0 && typeof data.matrix[0] === 'object' && !Array.isArray(data.matrix[0])) {
+          const columns = Object.keys(data.matrix[0]);
+          const matrix = data.matrix.map(row => columns.map(col => row[col]));
+          return { columns, matrix };
+      }
+
+      // 2) Handle array of objects format (e.g. from missing heatmap or correlations)
+      if (Array.isArray(data)) {
+        if (data.length === 0) return { columns: [], matrix: [] };
+        const columns = Object.keys(data[0]);
+        const matrix = data.map(row => columns.map(col => row[col]));
+        return { columns, matrix };
+      }
+      
+      // 3) Standard { columns, matrix } or { columns, values }
+      if (data.columns) {
+        if (data.matrix) return { columns: data.columns, matrix: data.matrix };
+        if (data.values) return { columns: data.columns, matrix: data.values };
+      }
+      
+      return { columns: [], matrix: [] };
+    };
+
+    // --- UTILITY COMPONENTS ---
+    const TypeIcon = ({ type }) => {
+      switch (type) {
+        case 'Numeric': return <Hash size={16} className="text-blue-500" />;
+        case 'Categorical': return <AlignLeft size={16} className="text-blue-500" />;
+        case 'Boolean': return <ToggleLeft size={16} className="text-blue-500" />;
+        default: return <Database size={16} className="text-blue-500" />;
+      }
+    };
+
+    const HistogramChart = ({ data, isCategorical = false }) => {
+      if (!data || !data.bins || !data.counts || data.bins.length === 0) return null;
+      
+      const maxCount = Math.max(...data.counts);
+      const total = data.counts.reduce((a, b) => a + b, 0);
+      
+      const chartData = data.bins.map((bin, i) => ({
+        label: bin,
+        count: data.counts[i],
+        percent: ((data.counts[i] / total) * 100).toFixed(1)
+      }));
+
+      if (isCategorical) {
+        return (
+          <div className="flex flex-col gap-3 mt-4 w-full max-w-md">
+            {chartData.map((d, i) => (
+              <div key={i} className="flex flex-col text-sm">
+                <div className="flex justify-between text-gray-600 mb-1">
+                  <span className="truncate pr-4 font-medium">{d.label}</span>
+                  <span className="font-mono text-xs whitespace-nowrap">{formatNum(d.count)} ({d.percent}%)</span>
+                </div>
+                <div className="w-full bg-gray-100 h-5 rounded-sm overflow-hidden flex">
+                  <div 
+                    className="h-full bg-blue-500" 
+                    style={{ width: `${(d.count / maxCount) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex items-end h-40 gap-1.5 w-full max-w-md mt-6 mb-10">
+          {chartData.map((d, i) => {
+            const showLabel = i === 0 || i === chartData.length - 1 || i % 5 === 0;
+            return (
+              <div key={i} className="flex-1 flex flex-col justify-end group relative h-full">
+                <div 
+                  className="w-full bg-blue-500 hover:bg-blue-600 transition-colors rounded-t-sm" 
+                  style={{ height: `${Math.max((d.count / maxCount) * 100, 2)}%` }}
+                  title={`${d.label}: ${d.count}`}
+                ></div>
+                {showLabel && (
+                  <div className="text-[11px] text-gray-500 absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    {String(d.label).replace(/[[\]()]/g, '').split(',')[0]}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
+    const StatRow = ({ label, value, subValue = null, alert = false, compact = false }) => (
+      <div className={`flex justify-between ${compact ? 'py-0' : 'py-1.5'} ${compact ? '' : 'border-b border-gray-100'} last:border-0 text-sm`}>
+        <span className="text-gray-600">{label}</span>
+        <div className="text-right">
+          <span className={`font-medium ${alert ? 'text-red-600' : 'text-gray-800'}`}>{value}</span>
+          {subValue && <span className="text-gray-400 text-xs ml-2">{subValue}</span>}
+        </div>
+      </div>
+    );
+
+    const getAlertColor = (type) => {
+      const colors = {
+        'CONSTANT': 'bg-gray-100 text-gray-800 border-gray-200',
+        'ZEROS': 'bg-orange-100 text-orange-800 border-orange-200',
+        'HIGH_CARDINALITY': 'bg-purple-100 text-purple-800 border-purple-200',
+        'SKEWED': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        'MISSING': 'bg-red-100 text-red-800 border-red-200',
+        'UNIQUE': 'bg-blue-100 text-blue-800 border-blue-200',
+        'REJECTED': 'bg-slate-200 text-slate-900 border-slate-300'
+      };
+      return colors[type] || 'bg-blue-100 text-blue-800 border-blue-200';
+    };
+
+    // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
+    const NullityMatrix = ({ data }) => {
+      // Data is now a list of dicts: [ {col1: true, col2: false}, ... ]
+      if (!data || !Array.isArray(data) || data.length === 0) return null;
+
+      const columns = Object.keys(data[0]);
+      const numRows = data.length;
+      const numCols = columns.length;
+      
+      // Convert list of dicts to row-major values array for processing
+      const values = data.map(row => columns.map(c => row[c]));
+
+      const svgWidth = 1000;
+      const svgHeight = 400;
+      const colWidth = svgWidth / numCols;
+      const rowHeight = svgHeight / numRows;
+
+      const rowCompleteness = values.map(row => row.filter(isMissing => !isMissing).length);
+
+      const getBlocks = (cIdx) => {
+          const blocks = [];
+          let inBlock = false;
+          let start = 0;
+          for (let r = 0; r < numRows; r++) {
+              const isPresent = !values[r][cIdx];
+              if (isPresent && !inBlock) {
+                  inBlock = true;
+                  start = r;
+              } else if (!isPresent && inBlock) {
+                  inBlock = false;
+                  blocks.push({ start, end: r - 1 });
+              }
+          }
+          if (inBlock) {
+              blocks.push({ start, end: numRows - 1 });
+          }
+          return blocks;
+      };
+
+      const sparklinePoints = rowCompleteness.map((count, rIdx) => 
+         `${(count / numCols) * 100},${rIdx * rowHeight + rowHeight / 2}`
+      ).join(' ');
+      const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
+
+      return (
+        <div className="overflow-x-auto mt-8 pt-4 border-t border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800 mb-2">Matrix</h3>
+          <p className="text-sm text-gray-500 mb-6">Visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
+
+          <div className="flex gap-4 items-end" style={{ minWidth: `${Math.max(800, numCols * 25)}px` }}>
+            <div className="flex-1 relative">
+              <div className="flex mb-2">
+                 {columns.map((c, i) => (
+                    <div key={c} style={{ width: `${100/numCols}%` }} className="flex justify-start h-32 relative overflow-visible">
+                       <span className={`absolute bottom-1 left-1/2 origin-bottom-left text-[10px] font-mono text-gray-500 whitespace-nowrap ${numCols > 15 ? '-rotate-90' : '-rotate-45'}`}>{c}</span>
+                    </div>
+                 ))}
+              </div>
+              
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className="w-full h-[500px] bg-gray-50 border border-gray-200 shadow-inner rounded-sm">
+                {columns.map((_, cIdx) => (
+                   <g key={cIdx} transform={`translate(${cIdx * colWidth}, 0)`}>
+                      <line x1={colWidth/2} y1="0" x2={colWidth/2} y2={svgHeight} stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="4 4" />
+                      
+                      {getBlocks(cIdx).map((block, i) => (
+                         <rect
+                            key={i}
+                            x={colWidth * 0.05}
+                            y={block.start * rowHeight}
+                            width={colWidth * 0.9}
+                            height={(block.end - block.start + 1) * rowHeight}
+                            fill="#475569"
+                            className="transition-all hover:fill-blue-500"
+                         />
+                      ))}
+                   </g>
+                ))}
+              </svg>
+            </div>
+
+            <div className="w-20 h-[500px] relative flex flex-col items-center">
+              <div className="text-[10px] text-gray-400 font-mono text-center absolute -top-8 w-full">Data<br/>Completeness</div>
+              <svg viewBox={`0 0 100 ${svgHeight}`} preserveAspectRatio="none" className="w-full h-full border-r border-t border-b border-gray-200 bg-gray-50 rounded-r-sm">
+                <polygon points={sparkPoly} fill="rgba(59, 130, 246, 0.15)" />
+                <polyline points={sparklinePoints} fill="none" stroke="#3b82f6" strokeWidth="1.5" />
+              </svg>
+              <div className="absolute top-2 right-2 text-xs font-mono text-gray-400">{numCols}</div>
+              <div className="absolute bottom-2 right-2 text-xs font-mono text-gray-400">0</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Sub-component for rendering standardized Correlation Matrices
+    const CorrelationMatrixComponent = ({ data }) => {
+      const { columns, matrix } = useMemo(() => parseMatrixData(data), [data]);
+      
+      if (!columns || columns.length === 0 || !matrix || matrix.length === 0) {
+        return <div className="py-12 text-center text-gray-500">No data available for this metric.</div>;
+      }
+
+      return (
+        <div className="overflow-x-auto pb-4">
+          <table className="mx-auto text-xs border-collapse">
+            <thead>
+              <tr>
+                <th className="p-1"></th>
+                {columns.map(c => (
+                  <th key={c} className="p-2 font-mono font-bold text-gray-500 h-28 align-bottom">
+                    <div className={`transform origin-bottom-left ml-6 truncate w-24 ${columns.length > 15 ? '-rotate-90' : '-rotate-45'}`}>
+                      {c}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {matrix.map((row, i) => (
+                <tr key={i}>
+                  <td className="p-2 font-mono font-bold text-gray-500 text-right pr-6 whitespace-nowrap">
+                    {columns[i]}
+                  </td>
+                  {row.map((cell, j) => {
+                    const isMissing = cell === null || cell === undefined || Number.isNaN(cell);
+                    const bgOpacity = isMissing ? 0 : Math.min(Math.abs(cell), 1);
+                    const bgColor = isMissing ? 'transparent' : cell >= 0 ? `rgba(59, 130, 246, ${bgOpacity})` : `rgba(239, 68, 68, ${bgOpacity})`;
+                    
+                    return (
+                      <td 
+                        key={j} 
+                        className="w-12 h-12 border border-gray-100 text-center hover:scale-105 transition-transform cursor-crosshair relative group" 
+                        style={{ backgroundColor: bgColor }}
+                      >
+                        {isMissing ? (
+                          <span className="text-gray-400 text-[10px] italic">Null</span>
+                        ) : (
+                          <>
+                            <span className={`font-mono text-[10px] ${bgOpacity > 0.5 ? 'text-white' : 'text-gray-800'}`}>
+                              {cell === 1 ? '1.0' : cell.toFixed(2)}
+                            </span>
+                          </>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+
+    // --- MAIN SECTIONS ---
+    const OverviewSection = ({ data }) => {
+      const table = data.table;
+      const types = Object.entries(table.types || {});
+
+      return (
+        <div id="overview" className="space-y-2 animate-fadeIn section-top">
+          <div className="flex items-center gap-2 mb-4">
+            <Info size={24} className="text-slate-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Overview</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-6">
+              <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider">Dataset statistics</h3>
+              <div className="grid grid-cols-1 gap-0 flex-1">
+                <StatRow label="Number of variables" value={formatNum(table.n_var)} compact={true} />
+                <StatRow label="Number of observations" value={formatNum(table.n)} compact={true} />
+                <StatRow label="Missing cells" value={formatNum(table.n_cells_missing)} compact={true} />
+                <StatRow label="Missing cells (%)" value={formatPct(table.p_cells_missing)} compact={true} />
+                <StatRow label="Variables with missing values" value={formatNum(table.n_vars_with_missing)} compact={true} />
+                <StatRow label="Variables with all missing values" value={formatNum(table.n_vars_all_missing)} compact={true} />
+                {table.n_vars_constant !== undefined && (
+                  <StatRow label="Constant variables" value={formatNum(table.n_vars_constant)} compact={true} />
+                )}
+                {table.n_duplicates !== undefined && (
+                  <>
+                    <StatRow label="Duplicate rows" value={formatNum(table.n_duplicates)} compact={true} />
+                    <StatRow label="Duplicate rows (%)" value={formatPct(table.p_duplicates)} compact={true} />
+                  </>
+                )}
+                <StatRow label="Total size in memory" value={formatBytes(table.memory_size)} compact={true} />
+                <StatRow label="Average record size in memory" value={`${formatNum(table.record_size)} B`} compact={true} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-2">
+              <h3 className="text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider">Variable types</h3>
+              <div className="grid grid-cols-1 gap-0 flex-1">
+                {types.length > 0 ? types.map(([type, count]) => (
+                  <StatRow key={type} label={type} value={count} compact={true} />
+                )) : (
+                  <span className="text-gray-400 text-sm italic">No type data available.</span>
+                )}
+              </div>
+            </div>
+
+            {data.alerts && data.alerts.length > 0 ? (
+              <div className="bg-white rounded-md shadow-sm border border-gray-200 flex flex-col overflow-hidden lg:col-span-4">
+                <div className="bg-gray-50 p-2 border-b border-gray-200 flex items-center shrink-0">
+                  <AlertTriangle size={16} className="text-yellow-500 mr-2" />
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Alerts</h3>
+                </div>
+                <div className="p-0 overflow-y-auto max-h-[300px] flex-1">
+                  <ul className="divide-y divide-gray-100">
+                    {data.alerts.map((alert, idx) => {
+                      return (
+                        <li key={idx} className="p-2 hover:bg-gray-50 transition-colors flex items-start gap-3 text-xs">
+                          <span className={`
+                            inline-block px-1.5 py-0.5 text-[10px] rounded border font-medium whitespace-nowrap mt-0.5
+                            ${getAlertColor(alert.alert_type)}
+                          `}>
+                            {alert.alert_type.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-gray-700">
+                            <strong>{alert.fields.join(', ')}</strong> has a {alert.alert_type.toLowerCase().replace(/_/g, ' ')} condition
+                            {alert.value !== undefined ? ` (${typeof alert.value === 'number' && alert.value < 1 ? formatPct(alert.value) : formatNum(alert.value)})` : ''}.
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-md shadow-sm border border-gray-200 p-3 flex items-center justify-center lg:col-span-4 text-gray-400 italic text-sm">
+                No alerts detected.
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const VariableDetails = ({ variable }) => {
+      const isNumeric = variable.type === 'Numeric';
+      const isCategorical = variable.type === 'Categorical' || variable.type === 'Boolean';
+
+      return (
+        <div className={`mt-6 ${isNumeric ? 'border-t border-gray-100 pt-6' : ''} animate-fadeIn`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {isNumeric && (
+              <>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Quantile statistics</h4>
+                  <div className="bg-gray-50 p-4 rounded border border-gray-100">
+                    <StatRow label="Minimum" value={formatNum(variable.min)} />
+                    <StatRow label="5-th percentile" value={formatNum(variable["5%"])} />
+                    <StatRow label="Q1" value={formatNum(variable["25%"])} />
+                    <StatRow label="Median" value={formatNum(variable["50%"])} />
+                    <StatRow label="Q3" value={formatNum(variable["75%"])} />
+                    <StatRow label="95-th percentile" value={formatNum(variable["95%"])} />
+                    <StatRow label="Maximum" value={formatNum(variable.max)} />
+                    <StatRow label="Range" value={formatNum(variable.range)} />
+                    <StatRow label="Interquartile range" value={formatNum(variable.iqr)} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Descriptive statistics</h4>
+                  <div className="bg-gray-50 p-4 rounded border border-gray-100">
+                    <StatRow label="Standard deviation" value={formatNum(variable.std)} />
+                    <StatRow label="Coefficient of variation" value={formatNum(variable.cv)} />
+                    <StatRow label="Kurtosis" value={formatNum(variable.kurtosis)} />
+                    <StatRow label="Mean" value={formatNum(variable.mean)} />
+                    <StatRow label="MAD" value={formatNum(variable.mad)} />
+                    <StatRow label="Skewness" value={formatNum(variable.skewness)} />
+                    <StatRow label="Variance" value={formatNum(variable.variance)} />
+                    <StatRow label="Monotonicity" value={variable.monotonic_increasing === 'Skipped' ? 'Skipped' : (variable.monotonic_increasing ? 'Increasing' : variable.monotonic_decreasing ? 'Decreasing' : 'None')} />
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {isCategorical && (
+              <>
+                {variable.mean_length !== undefined && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Length (characters)</h4>
+                    <div className="bg-gray-50 p-4 rounded border border-gray-100">
+                      <StatRow label="Max length" value={formatNum(variable.max_length)} />
+                      <StatRow label="Mean length" value={formatNum(variable.mean_length)} />
+                      <StatRow label="Min length" value={formatNum(variable.min_length)} />
+                    </div>
+                  </div>
+                )}
+                <div>
+                   <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Frequency Summary</h4>
+                   <div className="bg-gray-50 p-4 rounded border border-gray-100">
+                      {variable.histogram && variable.histogram.bins.slice(0, 5).map((bin, i) => (
+                        <StatRow key={i} label={String(bin)} value={formatNum(variable.histogram.counts[i])} subValue={`(${((variable.histogram.counts[i] / REPORT_DATA.table.n) * 100).toFixed(1)}%)`} />
+                      ))}
+                      {(!variable.histogram || variable.histogram.bins.length === 0) && (
+                        <div className="h-24 flex items-center justify-center text-gray-400 text-sm italic">
+                          No frequency data available.
+                        </div>
+                      )}
+                   </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const VariableCard = ({ name, variable }) => {
+      const isNumeric = variable.type === 'Numeric';
+      const isCategorical = variable.type === 'Categorical' || variable.type === 'Boolean';
+      const [expanded, setExpanded] = useState(true);
+      const isHighCardinality = variable.type === 'Categorical' && variable.p_distinct > 0.5;
+
+      return (
+        <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4">
+          <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <div className="flex items-center gap-3">
+              <TypeIcon type={variable.type} />
+              <h3 className="text-lg font-bold text-gray-800">{name}</h3>
+            </div>
+            <div className="flex gap-2">
+               <span className="px-2.5 py-1 bg-gray-200 text-gray-700 text-xs rounded-full font-medium">
+                 {variable.type}
+               </span>
+               {isHighCardinality && (
+                 <span className="px-2.5 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium border border-yellow-200">
+                   High cardinality
+                 </span>
+               )}
+               {variable.is_unique && (
+                 <span className="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium border border-blue-200">
+                   Unique
+                 </span>
+               )}
+            </div>
+          </div>
+
+          <div className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+                  <div className="col-span-2 mb-3"><h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Overview</h4></div>
+                  
+                  <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Distinct</div>
+                  <div className="text-sm font-medium text-right py-1 border-b border-gray-50">{formatNum(variable.n_distinct)} <span className="text-gray-400 text-xs font-normal">({formatPct(variable.p_distinct)})</span></div>
+                  
+                  <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Missing</div>
+                  <div className="text-sm font-medium text-right py-1 border-b border-gray-50">
+                    <span className={variable.n_missing > 0 ? 'text-red-600' : ''}>{formatNum(variable.n_missing)}</span>
+                    <span className="text-gray-400 text-xs font-normal ml-1">({formatPct(variable.p_missing)})</span>
+                  </div>
+                  
+                  {isNumeric && (
+                    <>
+                      <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Infinite</div>
+                      <div className="text-sm font-medium text-right py-1 border-b border-gray-50">{formatNum(variable.n_infinite)} <span className="text-gray-400 text-xs font-normal">({formatPct(variable.p_infinite)})</span></div>
+                      
+                      <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Mean</div>
+                      <div className="text-sm font-medium text-right py-1 border-b border-gray-50">{formatNum(variable.mean)}</div>
+                      
+                      <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Minimum</div>
+                      <div className="text-sm font-medium text-right py-1 border-b border-gray-50">{formatNum(variable.min)}</div>
+                      
+                      <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Maximum</div>
+                      <div className="text-sm font-medium text-right py-1 border-b border-gray-50">{formatNum(variable.max)}</div>
+                      
+                      <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Zeros</div>
+                      <div className="text-sm font-medium text-right py-1 border-b border-gray-50">
+                         <span className={variable.n_zeros > 0 ? 'text-yellow-600' : ''}>{formatNum(variable.n_zeros)}</span>
+                         <span className="text-gray-400 text-xs font-normal ml-1">({formatPct(variable.p_zeros)})</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-center items-center pb-6">
+                {variable.histogram && (
+                   <HistogramChart 
+                     data={variable.histogram} 
+                     isCategorical={isCategorical} 
+                   />
+                )}
+                {(!variable.histogram || variable.histogram.bins.length === 0) && isHighCardinality && (
+                   <div className="text-gray-400 text-sm flex flex-col items-center justify-center h-full text-center p-4">
+                     <Grid size={32} className="mb-2 opacity-20" />
+                     High cardinality variable.<br/>Too many distinct values to display distribution.
+                   </div>
+                )}
+              </div>
+            </div>
+
+            {isNumeric && (
+              <div className="mt-4 flex justify-end">
+                <button 
+                  onClick={() => setExpanded(!expanded)}
+                  className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded"
+                >
+                  {expanded ? 'Hide details' : 'More details'}
+                  {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
+              </div>
+            )}
+
+            {(expanded || !isNumeric) && <VariableDetails variable={variable} />}
+          </div>
+        </div>
+      );
+    };
+
+    const MissingValuesSection = ({ data }) => {
+      const missingBar = data.missing?.bar?.matrix || data.missing?.bar || null;
+      
+      if (!data.missing || Object.keys(data.missing).length === 0) {
+        return null;
+      }
+
+      const total = data.table.n;
+      let missingData = [];
+      
+      if (missingBar && Array.isArray(missingBar.columns) && Array.isArray(missingBar.counts)) {
+        missingData = missingBar.columns.map((name, i) => {
+          const missingCount = missingBar.counts[i];
+          const present = total - missingCount;
+          return { name, present, missing: missingCount, percent: (present / total) * 100 };
+        });
+      }
+
+      return (
+        <div id="missing" className="space-y-4 animate-fadeIn section">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle size={24} className="text-slate-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Missing values</h2>
+          </div>
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
+            {missingData.length > 0 && (
+              <div className="mb-12">
+                <h3 className="text-lg font-medium text-gray-800 mb-6">Count</h3>
+                <div className="flex flex-col gap-3 w-full max-w-4xl">
+                  {missingData.map((d, i) => (
+                    <div key={i} className="flex items-center gap-4 text-sm group">
+                      <div className="w-48 text-gray-600 text-right truncate font-mono font-medium" title={d.name}>
+                        {d.name}
+                      </div>
+                      <div className="flex-1 bg-gray-100 h-6 rounded-sm overflow-hidden flex border border-gray-200 shadow-inner group-hover:border-gray-300 transition-colors">
+                        <div 
+                          className="h-full bg-slate-700 group-hover:bg-slate-800 transition-colors" 
+                          style={{ width: `${d.percent}%` }}
+                          title={`${d.name}: ${d.missing} missing`}
+                        ></div>
+                        <div 
+                          className="h-full bg-red-100/50" 
+                          style={{ width: `${100 - d.percent}%` }}
+                        ></div>
+                      </div>
+                      <div className="font-mono text-xs whitespace-nowrap text-gray-500 w-48">
+                        <span className="font-bold text-slate-700">{formatNum(d.present)}</span> present / <span className="text-red-600">{formatNum(d.missing)}</span> missing
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {data.missing?.matrix?.matrix?.matrix && <NullityMatrix data={data.missing.matrix.matrix.matrix} />}
+            
+            {data.missing?.heatmap?.matrix?.matrix && data.missing.heatmap.matrix.matrix.length > 0 && (
+              <div className="mt-8 pt-8 border-t border-gray-100">
+                <h3 className="text-lg font-medium text-gray-800 mb-10">Heatmap</h3>
+                <div className="flex justify-center">
+                  <CorrelationMatrixComponent data={data.missing.heatmap.matrix.matrix} />
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    };
+
+    const CorrelationsSection = ({ data }) => {
+      if (!data.correlations || Object.keys(data.correlations).length === 0) return null;
+      const [corrType, setCorrType] = useState(Object.keys(data.correlations)[0]);
+
+      return (
+        <div id="correlations" className="space-y-4 animate-fadeIn section">
+          <div className="flex items-center gap-2 mb-4">
+            <PieChart size={24} className="text-slate-600" />
+            <div className="flex flex-col">
+              <h2 className="text-2xl font-bold text-gray-800">Correlations</h2>
+              {data.correlations?.[corrType]?.sampled && (
+                <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                  <Info size={12} /> Sampled estimate ({data.correlations[corrType].sample_size?.toLocaleString()} rows)
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
+            <div className="flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar">
+              {Object.keys(data.correlations).map(type => (
+                <button
+                  key={type}
+                  onClick={() => setCorrType(type)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    corrType === type ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-center">
+               <CorrelationMatrixComponent data={data.correlations[corrType]} />
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const SampleSection = ({ data }) => {
+      const sampleData = data.sample?.head || data.sample;
+      if (!sampleData || (Array.isArray(sampleData) && sampleData.length === 0)) return null;
+      
+      let columns = [];
+      let rows = [];
+      
+      if (Array.isArray(sampleData)) {
+        columns = Object.keys(sampleData[0]);
+        rows = sampleData;
+      } else {
+        columns = Object.keys(sampleData);
+        const numRows = sampleData[columns[0]].length;
+        rows = Array.from({ length: numRows }).map((_, i) => {
+          const row = {};
+          columns.forEach(col => {
+            row[col] = sampleData[col][i];
+          });
+          return row;
+        });
+      }
+
+      return (
+        <div id="sample" className="space-y-4 animate-fadeIn section">
+          <div className="flex items-center gap-2 mb-4">
+            <AlignLeft size={24} className="text-slate-600" />
+            <h2 className="text-2xl font-bold text-gray-800">Sample</h2>
+          </div>
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-800">First rows</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr>
+                    {columns.map(col => (
+                      <th key={col} className="py-3 px-4 bg-gray-100 font-semibold text-sm text-gray-700 border-b border-gray-200 border-r last:border-r-0 whitespace-nowrap">
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                      {columns.map(col => {
+                        const val = row[col];
+                        const isNull = val === null || val === 'NaN' || (typeof val === 'number' && Number.isNaN(val));
+                        return (
+                          <td key={col} className={`py-2.5 px-4 text-sm border-r border-gray-100 last:border-r-0 font-mono ${isNull ? 'text-red-400 italic' : 'text-gray-600'}`}>
+                            {isNull ? 'Null' : String(val)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const ScatterPlot = ({ points, xLabel, yLabel }) => {
+      if (!points || points.length === 0) return (
+        <div className="h-96 flex items-center justify-center text-gray-400 italic bg-gray-50 border border-dashed border-gray-200 rounded">
+          No data points available for this pair.
+        </div>
+      );
+
+      const padding = 60;
+      const width = 800;
+      const height = 600;
+
+      const xValues = points.map(p => p.x);
+      const yValues = points.map(p => p.y);
+      const xMin = Math.min(...xValues);
+      const xMax = Math.max(...xValues);
+      const yMin = Math.min(...yValues);
+      const yMax = Math.max(...yValues);
+
+      const xRange = xMax - xMin || 1;
+      const yRange = yMax - yMin || 1;
+
+      const scaleX = (x) => padding + ((x - xMin) / xRange) * (width - 2 * padding);
+      const scaleY = (y) => height - padding - ((y - yMin) / yRange) * (height - 2 * padding);
+
+      return (
+        <div className="flex flex-col items-center w-full">
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto bg-white max-h-[700px]">
+            {/* Grid lines */}
+            {[0, 0.25, 0.5, 0.75, 1].map(v => (
+              <React.Fragment key={v}>
+                <line 
+                  x1={padding} y1={height - padding - v * (height - 2 * padding)} 
+                  x2={width - padding} y2={height - padding - v * (height - 2 * padding)} 
+                  stroke="#f1f5f9" strokeWidth="1" 
+                />
+                <line 
+                  x1={padding + v * (width - 2 * padding)} y1={padding} 
+                  x2={padding + v * (width - 2 * padding)} y2={height - padding} 
+                  stroke="#f1f5f9" strokeWidth="1" 
+                />
+              </React.Fragment>
+            ))}
+
+            {/* Axes */}
+            <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#94a3b8" strokeWidth="2" />
+            <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#94a3b8" strokeWidth="2" />
+
+            {/* Points */}
+            {points.map((p, i) => (
+              <circle 
+                key={i} 
+                cx={scaleX(p.x)} 
+                cy={scaleY(p.y)} 
+                r="3" 
+                fill="#3b82f6" 
+                fillOpacity="0.6"
+                className="hover:fill-blue-800 transition-colors"
+              >
+                <title>{`(${formatNum(p.x)}, ${formatNum(p.y)})`}</title>
+              </circle>
+            ))}
+
+            {/* Axis Labels */}
+            <text x={width / 2} y={height - 10} textAnchor="middle" className="text-xs font-medium fill-gray-500 uppercase tracking-wider">{xLabel}</text>
+            <text x={15} y={height / 2} textAnchor="middle" transform={`rotate(-90, 15, ${height / 2})`} className="text-xs font-medium fill-gray-500 uppercase tracking-wider">{yLabel}</text>
+            
+            {/* Min/Max Labels */}
+            <text x={padding} y={height - padding + 20} textAnchor="middle" className="text-[10px] fill-gray-400 font-mono">{formatNum(xMin)}</text>
+            <text x={width - padding} y={height - padding + 20} textAnchor="middle" className="text-[10px] fill-gray-400 font-mono">{formatNum(xMax)}</text>
+            <text x={padding - 10} y={height - padding} textAnchor="end" className="text-[10px] fill-gray-400 font-mono">{formatNum(yMin)}</text>
+            <text x={padding - 10} y={padding} textAnchor="end" className="text-[10px] fill-gray-400 font-mono">{formatNum(yMax)}</text>
+          </svg>
+        </div>
+      );
+    };
+
+    const InteractionsSection = ({ data }) => {
+      if (!data.interactions || Object.keys(data.interactions).length === 0) return null;
+
+      const columns = Object.keys(data.interactions).filter(k => k !== '_metadata').sort();
+      const [colX, setColX] = useState(columns[0]);
+      const [colY, setColY] = useState(columns[1] || columns[0]);
+
+      const points = useMemo(() => {
+        if (data.interactions[colX] && data.interactions[colX][colY]) {
+          return data.interactions[colX][colY];
+        }
+        return [];
+      }, [data.interactions, colX, colY]);
+
+      return (
+        <div id="interactions" className="space-y-4 animate-fadeIn section">
+          <div className="flex items-center gap-2 mb-4">
+            <ScatterChart size={24} className="text-slate-600" />
+            <div className="flex flex-col">
+              <h2 className="text-2xl font-bold text-gray-800">Interactions</h2>
+              {data.interactions?._metadata?.is_truncated && (
+                <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                  <AlertTriangle size={12} /> Top {data.interactions._metadata.active_columns.length} most interactive variables shown
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="md:col-span-1 space-y-6">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">X-Axis</label>
+                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1">
+                    {columns.map(col => (
+                      <button
+                        key={col}
+                        onClick={() => setColX(col)}
+                        className={`text-left px-3 py-2 text-sm rounded transition-colors ${colX === col ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        {col}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Y-Axis</label>
+                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1">
+                    {columns.map(col => (
+                      <button
+                        key={col}
+                        onClick={() => setColY(col)}
+                        className={`text-left px-3 py-2 text-sm rounded transition-colors ${colY === col ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        {col}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="md:col-span-3 flex items-center justify-center min-h-[500px]">
+                <ScatterPlot points={points} xLabel={colX} yLabel={colY} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    function App() {
+      const [imgError, setImgError] = useState(false);
+
+      if (!REPORT_DATA || !REPORT_DATA.analysis || !REPORT_DATA.table || !REPORT_DATA.variables) {
+        return (
+          <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+            <div className="bg-white p-6 rounded-md shadow border border-red-200 text-center max-w-md">
+              <AlertTriangle className="text-red-500 mx-auto mb-4" size={48} />
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Invalid Payload</h2>
+              <p className="text-gray-600 text-sm">
+                The provided JSON payload does not match the expected <code>ibis-profiling</code> specification.
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      const navItems = [
+        { id: 'overview', label: 'Overview', icon: <Info size={16} /> },
+        { id: 'variables', label: 'Variables', icon: <Hash size={16} /> }
+      ];
+
+      if (REPORT_DATA.correlations && Object.keys(REPORT_DATA.correlations).length > 0) {
+        navItems.push({ id: 'correlations', label: 'Correlations', icon: <PieChart size={16} /> });
+      }
+
+      if (REPORT_DATA.interactions && Object.keys(REPORT_DATA.interactions).length > 0) {
+        navItems.push({ id: 'interactions', label: 'Interactions', icon: <ScatterChart size={16} /> });
+      }
+
+      if (REPORT_DATA.missing && Object.keys(REPORT_DATA.missing).length > 0) {
+        navItems.push({ id: 'missing', label: 'Missing values', icon: <AlertTriangle size={16} /> });
+      }
+
+      navItems.push({ id: 'sample', label: 'Sample', icon: <AlignLeft size={16} /> });
+
+      return (
+        <div className="min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-blue-200 pb-12">
+          <header className="bg-slate-800 text-white shadow-md sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-14">
+                <div className="flex items-center gap-3">
+                  {imgError ? (
+                    <div className="bg-blue-500 text-white p-1.5 rounded-md">
+                      <BarChart2 size={20} />
+                    </div>
+                  ) : (
+                    <img 
+                      src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-icon.png" 
+                      alt="Ibis Profiler Logo" 
+                      className="w-8 h-8 rounded-md bg-white p-0.5 object-contain" 
+                      onError={() => setImgError(true)} 
+                    />
+                  )}
+                  <h1 className="text-xl font-bold tracking-tight">Profiling Report</h1>
+                </div>
+                <div className="text-slate-300 text-sm font-mono bg-slate-900 px-3 py-1 rounded truncate max-w-[200px] md:max-w-md">
+                  {REPORT_DATA.analysis.title}
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-slate-50 border-b border-slate-200 shadow-sm">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav className="flex space-x-1 overflow-x-auto no-scrollbar justify-center">
+                  {navItems.map((item) => (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300 transition-all"
+                    >
+                      {item.icon}
+                      {item.label}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+            <OverviewSection data={REPORT_DATA} />
+            
+            <div id="variables" className="space-y-4 section">
+              <div className="flex items-center gap-2 mb-4">
+                <Hash size={24} className="text-slate-600" />
+                <h2 className="text-2xl font-bold text-gray-800">Variables</h2>
+              </div>
+              <div className="animate-fadeIn">
+                {Object.entries(REPORT_DATA.variables).map(([colName, variableData]) => (
+                  <VariableCard key={colName} name={colName} variable={variableData} />
+                ))}
+              </div>
+            </div>
+
+            <CorrelationsSection data={REPORT_DATA} />
+
+            <InteractionsSection data={REPORT_DATA} />
+
+            <MissingValuesSection data={REPORT_DATA} />
+            
+            <SampleSection data={REPORT_DATA} />
+          </main>
+
+          <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center text-sm text-gray-500 mt-8 border-t border-gray-200 pt-6">
+            <span>Report generated via Ibis Profiling</span>
+            <span className="font-mono text-xs">{REPORT_DATA.package?.version || 'ibis-profiling'}</span>
+          </footer>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

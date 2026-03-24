@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Fix report portability and CORS errors for local files",
+  "files_modified": [
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.html",
+    "README.md"
+  ],
+  "tests_added": [
+    "scripts/debug_frontend.py (temporary)"
+  ],
+  "design_decisions": [
+    "Switched from ES modules (esm.sh) to UMD builds (unpkg.com) to support opening reports via file:// protocol.",
+    "Added 'window.react = window.React' alias to satisfy Lucide-React v0.292.0 UMD requirements.",
+    "Removed 'data-type=module' from Babel script tags to avoid CORS and module restrictions on local files.",
+    "Updated React mounting to use global ReactDOM variable directly."
+  ],
+  "results": "Reports now render correctly when opened as local files in Edge and other modern browsers. E2E frontend tests pass. Release v0.1.9 published."
+}
