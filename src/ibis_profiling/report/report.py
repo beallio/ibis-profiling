@@ -117,7 +117,7 @@ class ProfileReport:
 
             self.table = {
                 "n": n,
-                "n_var": len(self.schema),
+                "n_var": len(self.variables),
                 "memory_size": self._to_json_serializable(dataset_meta.get("memory_size", 0)),
                 "record_size": self._to_json_serializable(dataset_meta.get("record_size", 0)),
                 "n_cells_missing": 0,
