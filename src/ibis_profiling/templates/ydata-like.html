@@ -11,16 +11,11 @@
   <!-- Babel for in-browser JSX compilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Import Map for React and Dependencies -->
-  <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
-      }
-    }
-  </script>
+  <!-- React & Dependencies (UMD Builds for local file portability) -->
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script>window.react = window.React;</script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js"></script>
 
   <style>
     html {
@@ -82,10 +77,9 @@
   <div id="root"></div>
 
   <!-- React Application -->
-  <script type="text/babel" data-type="module">
-    import React, { useState, useMemo, useEffect } from 'react';
-    import { createRoot } from 'react-dom/client';
-    import { 
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+    const { 
       AlertTriangle, 
       Info, 
       BarChart2, 
@@ -99,7 +93,7 @@
       AlertCircle,
       PieChart,
       ScatterChart
-    } from 'lucide-react';
+    } = LucideReact;
 
     // Securely decode the Base64-encoded payload (Unicode-safe)
     const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
@@ -1083,7 +1077,7 @@
       );
     }
 
-    const root = createRoot(document.getElementById('root'));
+    const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
 </body>
