@@ -5,6 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ibis Profiling Report</title>
   
+  <script>
+    // Silence JIT-related production warnings
+    (function() {
+      const originalWarn = console.warn;
+      const originalError = console.error;
+      console.warn = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && (
+          args[0].includes('cdn.tailwindcss.com') || 
+          args[0].includes('in-browser Babel transformer')
+        )) return;
+        originalWarn.apply(console, args);
+      };
+      console.error = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && (
+          args[0].includes('-webkit-text-size-adjust') ||
+          args[0].includes('bad selector')
+        )) return;
+        originalError.apply(console, args);
+      };
+    })();
+  </script>
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
