@@ -1,0 +1,16 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Fix n_var metadata inflation in ProfileReport",
+  "files_modified": [
+    "src/ibis_profiling/report/report.py"
+  ],
+  "tests_added": [
+    "tests/test_n_var_metadata.py"
+  ],
+  "design_decisions": [
+    "Changed ProfileReport._build to use len(self.variables) instead of len(self.schema) for n_var computation.",
+    "Ensured that the synthetic _dataset entry does not count as a variable in the summary table.",
+    "Verified that p_cells_missing is correctly calculated using the updated n_var."
+  ],
+  "results": "n_var now accurately reflects the number of real columns, and derived metrics are no longer skewed by metadata. Full test suite passes with 91% coverage."
+}

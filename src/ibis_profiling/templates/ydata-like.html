@@ -415,6 +415,11 @@
                 <StatRow label="Number of observations" value={formatNum(table.n)} compact={true} />
                 <StatRow label="Missing cells" value={formatNum(table.n_cells_missing)} compact={true} />
                 <StatRow label="Missing cells (%)" value={formatPct(table.p_cells_missing)} compact={true} />
+                <StatRow label="Variables with missing values" value={formatNum(table.n_vars_with_missing)} compact={true} />
+                <StatRow label="Variables with all missing values" value={formatNum(table.n_vars_all_missing)} compact={true} />
+                {table.n_vars_constant !== undefined && (
+                  <StatRow label="Constant variables" value={formatNum(table.n_vars_constant)} compact={true} />
+                )}
                 {table.n_duplicates !== undefined && (
                   <>
                     <StatRow label="Duplicate rows" value={formatNum(table.n_duplicates)} compact={true} />

@@ -838,13 +838,17 @@
                       title="Total Rows" 
                       value={reportData.table.n.toLocaleString()} 
                       icon={Database} 
-                      sub={`${(reportData.table.p_duplicates * 100).toFixed(1)}% duplicated rows`} 
+                      sub={reportData.table.p_duplicates !== undefined ? 
+                        `${(reportData.table.p_duplicates * 100).toFixed(1)}% duplicated rows` : 
+                        "Duplication check skipped"} 
                     />
                     <StatCard 
                       title="Variables" 
                       value={reportData.table.n_var} 
                       icon={Table} 
-                      sub={`${reportData.table.types.Numeric || 0} Num, ${reportData.table.types.Categorical || 0} Cat, ${reportData.table.types.Boolean || 0} Bool`} 
+                      sub={Object.entries(reportData.table.types || {})
+                        .map(([type, count]) => `${count} ${type.substring(0, 3)}`)
+                        .join(', ')} 
                       color="purple" 
                     />
                     <StatCard 

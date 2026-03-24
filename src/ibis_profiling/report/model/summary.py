@@ -23,9 +23,11 @@ class SummaryEngine:
                 mapped_type = "DateTime"
             elif isinstance(dtype, dt.String):
                 mapped_type = "Categorical"
+            elif isinstance(dtype, (dt.Array, dt.Map, dt.Struct, dt.JSON)):
+                mapped_type = "Unsupported"
             else:
-                # Default to Categorical for unknown/complex types
-                mapped_type = "Categorical"
+                # Default to Unsupported for unknown/complex types
+                mapped_type = "Unsupported"
 
             # Initialize base model
             variables[col_name] = {

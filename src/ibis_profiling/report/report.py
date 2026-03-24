@@ -123,6 +123,7 @@ class ProfileReport:
                 "n_cells_missing": 0,
                 "n_vars_with_missing": 0,
                 "n_vars_all_missing": 0,
+                "n_vars_constant": 0,
                 "types": {},
             }
 
@@ -146,6 +147,12 @@ class ProfileReport:
 
             stats["count"] = n - m_count
             stats["is_unique"] = stats.get("n_distinct", 0) == n
+
+            # Constant detection
+            if stats.get("n_distinct", 0) == 1:
+                current_c = self.table.get("n_vars_constant", 0)
+                if isinstance(current_c, int):
+                    self.table["n_vars_constant"] = current_c + 1
 
             n_cells_missing += m_count
             if m_count > 0:
