@@ -435,6 +435,15 @@ class Profiler:
                 report.add_metric(col_name, "monotonic_decreasing", "Skipped")
             return
 
+        if self.monotonicity_order_by not in self.table.schema():
+            report.analysis.setdefault("warnings", []).append(
+                f"Skipped monotonicity checks. The requested 'monotonicity_order_by' column '{self.monotonicity_order_by}' was not found in the table schema."
+            )
+            for col_name in numeric_cols:
+                report.add_metric(col_name, "monotonic_increasing", "Skipped")
+                report.add_metric(col_name, "monotonic_decreasing", "Skipped")
+            return
+
         mono_checks = []
         # Use order_by column for deterministic window
         win = ibis.window(order_by=self.monotonicity_order_by)

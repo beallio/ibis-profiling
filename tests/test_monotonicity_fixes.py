@@ -69,3 +69,16 @@ def test_monotonicity_html_skipped_rendering():
 
     # Verify "Skipped" is in the HTML
     assert "Skipped" in html
+
+
+def test_monotonicity_invalid_order_by():
+    """Verify that an invalid order_by column doesn't crash and emits a warning."""
+    data = {"a": [1, 2, 3]}
+    table = ibis.memtable(pd.DataFrame(data))
+
+    # This should NOT crash if fixed
+    report = ProfileReport(table, monotonicity_order_by="non_existent", cardinality_threshold=0)
+    desc = report.get_description()
+
+    assert desc["variables"]["a"]["monotonic_increasing"] == "Skipped"
+    assert any("non_existent" in w for w in desc["analysis"]["warnings"])
