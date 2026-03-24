@@ -129,7 +129,8 @@
 
     // Securely decode the Base64-encoded payload (Unicode-safe)
     const ENCODED_REPORT_DATA = "{{REPORT_DATA}}";
-    const REPORT_DATA = JSON.parse(decodeURIComponent(escape(atob(ENCODED_REPORT_DATA))));
+    const bytes = Uint8Array.from(atob(ENCODED_REPORT_DATA), c => c.charCodeAt(0));
+    const REPORT_DATA = JSON.parse(new TextDecoder().decode(bytes));
 
     // Helper: Safely parse different matrix JSON structures
     const parseMatrixData = (data) => {
