@@ -201,16 +201,49 @@ class Profiler:
                 col = col.epoch_seconds().cast("float64")
                 v_min_raw = stats.get("min")
                 v_max_raw = stats.get("max")
-                if v_min_raw and v_max_raw:
-                    import dateutil.parser
 
-                    try:
-                        v_min = dateutil.parser.isoparse(v_min_raw).timestamp()
-                        v_max = dateutil.parser.isoparse(v_max_raw).timestamp()
-                    except Exception:
-                        v_min, v_max = None, None
-                else:
-                    v_min, v_max = None, None
+                def to_timestamp(val):
+                    if val is None:
+                        return None
+                    # 1. Handle string/bytes (fallback to isoparse)
+                    if isinstance(val, (str, bytes)):
+                        import dateutil.parser
+
+                        try:
+                            return dateutil.parser.isoparse(val).timestamp()
+                        except Exception:
+                            return None
+                    # 2. Handle datetime objects
+                    from datetime import datetime, date
+
+                    if isinstance(val, datetime):
+                        return val.timestamp()
+                    if isinstance(val, date):
+                        return datetime.combine(val, datetime.min.time()).timestamp()
+                    # 3. Handle pandas/numpy/others if available
+                    if hasattr(val, "timestamp") and callable(val.timestamp):
+                        try:
+                            return val.timestamp()
+                        except Exception:
+                            pass
+                    # 4. Handle numpy.datetime64 specifically if it doesn't have .timestamp()
+                    if hasattr(val, "astype") and "datetime64" in str(getattr(val, "dtype", "")):
+                        import numpy as np
+
+                        try:
+                            return val.astype("datetime64[s]").astype(np.int64)
+                        except Exception:
+                            pass
+                    return None
+
+                v_min = to_timestamp(v_min_raw)
+                v_max = to_timestamp(v_max_raw)
+
+                if v_min_raw and v_max_raw and (v_min is None or v_max is None):
+                    report.analysis.setdefault("warnings", []).append(
+                        f"Histogram failed for {col_name}: Could not convert min/max "
+                        f"({v_min_raw}/{v_max_raw}) to timestamp."
+                    )
             else:
                 mean = stats.get("mean")
                 std = stats.get("std")
