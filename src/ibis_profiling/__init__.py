@@ -8,11 +8,19 @@ from .metrics import registry, safe_col
 from .planner import QueryPlanner
 from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
-from ._version import __version__
-
-
 from typing import Callable, cast
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+def __getattr__(name):
+    if name == "__version__":
+        from ._version import get_version
+
+        v = get_version()
+        # Cache it in the module's globals for subsequent accesses
+        globals()["__version__"] = v
+        return v
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
 class Profiler:

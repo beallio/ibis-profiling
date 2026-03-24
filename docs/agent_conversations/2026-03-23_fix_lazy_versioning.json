@@ -1,0 +1,13 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Fix import-time version resolution latency and git dependency",
+  "files_modified": [
+    "src/ibis_profiling/_version.py",
+    "src/ibis_profiling/__init__.py"
+  ],
+  "tests_added": [
+    "tests/test_version_latency.py"
+  ],
+  "design_decisions": "Implemented lazy version resolution using module-level __getattr__ in ibis_profiling.__init__. This ensures that the expensive git describe subprocess call (or even metadata lookup) only occurs if __version__ is explicitly accessed, significantly reducing import latency.",
+  "results": "Import latency test confirmed 0 git calls during import. All version-related tests pass."
+}
