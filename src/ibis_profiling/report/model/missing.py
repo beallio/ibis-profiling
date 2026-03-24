@@ -81,13 +81,14 @@ class MissingEngine:
 
         sample_masks = [safe_col(table[c]).isnull().name(c) for c in columns]
         # We use limit() for deterministic matrix or sample() for random
-        # execute() returns a polars dataframe in our current setup
-        sample_df = table.projection(sample_masks).limit(sample_size).execute()
+        # to_pyarrow() returns a pyarrow Table, which is backend-agnostic
+        sample_table = table.projection(sample_masks).limit(sample_size).to_pyarrow()
 
         # Convert to list of lists for JSON
         # Template expects matrix: { columns: [], matrix: [row1, row2, ...] }
         # where row is [True, False, ...]
-        matrix_values = sample_df.to_numpy().tolist()
+        # We iterate over rows from pyarrow to get a consistent list of lists
+        matrix_values = [[row[c] for c in columns] for row in sample_table.to_pylist()]
 
         return {
             "bar": {
