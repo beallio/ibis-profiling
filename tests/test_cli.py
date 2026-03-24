@@ -61,3 +61,19 @@ def test_cli_invalid_file(runner):
     result = runner.invoke(main, ["--file-path", "nonexistent.csv"])
     assert result.exit_code != 0
     assert "Error: File not found" in result.output
+
+
+def test_cli_version(runner):
+    from ibis_profiling import __version__
+
+    result = runner.invoke(main, ["--version"])
+    assert result.exit_code == 0
+    assert __version__ in result.output
+
+
+def test_cli_help(runner):
+    result = runner.invoke(main, ["--help"])
+    assert result.exit_code == 0
+    assert "Ultra-high-performance data profiling natively for Ibis" in result.output
+    assert "--version" in result.output
+    assert "-h, --help" in result.output

@@ -2,20 +2,36 @@ import click
 import ibis
 import os
 import sys
-from ibis_profiling import ProfileReport
+from ibis_profiling import ProfileReport, __version__
 
 
-@click.command()
+@click.command(context_settings=dict(help_option_names=["-h", "--help"]))
+@click.version_option(version=__version__, prog_name="ibis-profiling")
 @click.option(
-    "--file-path", "-f", required=True, help="Path to the input file (CSV, Parquet, Excel)."
+    "--file-path",
+    "-f",
+    required=True,
+    help="Path to the input file (CSV, Parquet, Excel).",
 )
-@click.option("--output", "-o", default="report.html", help="Path to the output report file.")
-@click.option("--title", "-t", default="Ibis Profiling Report", help="Title of the report.")
-@click.option("--minimal", is_flag=True, help="Generate a minimal report.")
+@click.option(
+    "--output",
+    "-o",
+    default="report.html",
+    show_default=True,
+    help="Path to the output report file.",
+)
+@click.option(
+    "--title",
+    "-t",
+    default="Ibis Profiling Report",
+    show_default=True,
+    help="Title of the report.",
+)
+@click.option("--minimal", is_flag=True, help="Generate a minimal report with fewer metrics.")
 @click.option(
     "--correlations/--no-correlations",
     default=None,
-    help="Explicitly enable or disable correlations.",
+    help="Explicitly enable or disable correlations calculation.",
 )
 @click.option(
     "--monotonicity/--no-monotonicity",
@@ -31,7 +47,8 @@ from ibis_profiling import ProfileReport
     "--monotonicity-threshold",
     type=int,
     default=100_000,
-    help="Row count threshold above which monotonicity is skipped (default 100k).",
+    show_default=True,
+    help="Row count threshold above which monotonicity is skipped.",
 )
 @click.option(
     "--monotonicity-order-by",
@@ -42,6 +59,7 @@ from ibis_profiling import ProfileReport
     "--theme",
     type=click.Choice(["default", "ydata-like"]),
     default="default",
+    show_default=True,
     help="Report theme (HTML only).",
 )
 @click.option(
@@ -63,7 +81,12 @@ def main(
     theme,
     output_format,
 ):
-    """Profile a dataset using Ibis and generate a report."""
+    """
+    Ultra-high-performance data profiling natively for Ibis.
+
+    This tool reads a dataset (CSV, Parquet, or Excel) and generates a
+    comprehensive profiling report in HTML or JSON format.
+    """
     if not os.path.exists(file_path):
         click.echo(f"Error: File not found: {file_path}", err=True)
         sys.exit(1)
