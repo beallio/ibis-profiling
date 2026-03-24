@@ -1,0 +1,18 @@
+{
+  "date": "2026-03-23",
+  "task_objective": "Address code review regarding deprecated escape(atob(...)) decoding in HTML reports.",
+  "files_modified": [
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.html",
+    "docs/plans/fix_html_report_decoding.md"
+  ],
+  "tests_added": [
+    "tests/test_utf8_reports.py",
+    "tests/test_large_report.py"
+  ],
+  "design_decisions": [
+    "Replaced deprecated atob/escape pattern with TextDecoder and Uint8Array.from in HTML templates.",
+    "Maintained Base64 encoding on the Python side to preserve XSS protection while improving client-side robustness."
+  ],
+  "results": "Successfully refactored HTML decoding logic in both templates and verified with UTF-8 stress tests and large payload tests. Full regression suite passed with 92% coverage."
+}
