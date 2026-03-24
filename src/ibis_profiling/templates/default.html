@@ -589,6 +589,14 @@
       );
     };
 
+    const TYPE_LABELS = {
+      Numeric: 'Num',
+      Categorical: 'Cat',
+      Boolean: 'Bool',
+      DateTime: 'Date',
+      Unsupported: 'Other'
+    };
+
     function AppContent() {
       const { theme, setTheme } = useContext(ThemeContext);
       const [reportData, setReportData] = useState(REPORT_DATA);
@@ -847,7 +855,7 @@
                       value={reportData.table.n_var} 
                       icon={Table} 
                       sub={Object.entries(reportData.table.types || {})
-                        .map(([type, count]) => `${count} ${type.substring(0, 3)}`)
+                        .map(([type, count]) => `${count} ${TYPE_LABELS[type] || type.substring(0, 3)}`)
                         .join(', ')} 
                       color="purple" 
                     />
