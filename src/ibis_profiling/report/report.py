@@ -146,7 +146,7 @@ class ProfileReport:
             )
 
             stats["count"] = n - m_count
-            stats["is_unique"] = stats.get("n_distinct", 0) == n
+            stats["is_unique"] = n > 0 and stats.get("n_distinct", 0) == n
 
             # Constant detection
             if stats.get("n_distinct", 0) == 1:
