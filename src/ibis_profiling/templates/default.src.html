@@ -1257,6 +1257,12 @@
 
                     )}
 
+                    {reportData.missing?.matrix?.matrix?._metadata?.truncated && (
+                      <div className="mb-4 text-amber-400 text-sm font-medium flex items-center gap-2">
+                        <AlertTriangle size={16} />
+                        Displaying first {reportData.missing.matrix.matrix._metadata.limit} columns out of {reportData.missing.matrix.matrix._metadata.original_count} total.
+                      </div>
+                    )}
                     {reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && (
                       <NullityMatrix data={reportData.missing.matrix.matrix.matrix} />
                     )}
@@ -1266,6 +1272,12 @@
                         <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
                           <PieChart className="text-blue-500" /> Nullity Correlation Heatmap
                         </h3>
+                        {reportData.missing.heatmap.matrix._metadata?.truncated && (
+                          <div className="mb-4 text-amber-400 text-sm font-medium flex items-center gap-2">
+                            <AlertTriangle size={16} />
+                            Correlation matrix truncated to top {reportData.missing.heatmap.matrix._metadata.limit} variables with most missing values (out of {reportData.missing.heatmap.matrix._metadata.original_count}).
+                          </div>
+                        )}
                         <p className={`${theme.textSub} text-sm mb-8`}>
                           {reportData.missing.heatmap.caption || "Pearson correlation of nullity between variables (-1 to 1)."}
                         </p>
@@ -1285,6 +1297,12 @@
                         <h2 className={`text-2xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
                           <PieChart className="text-blue-500" /> Correlation Matrix
                         </h2>
+                        {reportData.correlations?._metadata?.truncated && (
+                          <div className="mb-4 text-amber-400 text-sm font-medium flex items-center gap-2">
+                            <AlertTriangle size={16} />
+                            Matrix truncated to top {reportData.correlations._metadata.limit} variables out of {reportData.correlations._metadata.original_count}.
+                          </div>
+                        )}
                         <p className={`${theme.textSub} text-sm`}>
                           Linear dependence overview. Coloring indicates absolute correlation strength. <span className="text-blue-400">Blue</span> is positive, <span className="text-red-400">Red</span> is negative.
                           {reportData.correlations?.[corrType]?.sampled && (
