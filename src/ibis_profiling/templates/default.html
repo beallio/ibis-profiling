@@ -573,7 +573,8 @@ const hasValidMetrics = metrics => {
 
 // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
 const NullityMatrix = ({
-  data
+  data,
+  metadata
 }) => {
   const {
     theme
@@ -627,7 +628,11 @@ const NullityMatrix = ({
     className: `mt-12 pt-8 border-t ${theme.border}`
   }, /*#__PURE__*/React.createElement("h3", {
     className: `font-bold text-xl mb-2 ${theme.textPrimary}`
-  }, "Nullity Matrix"), /*#__PURE__*/React.createElement("p", {
+  }, "Nullity Matrix"), metadata?.truncated && /*#__PURE__*/React.createElement("div", {
+    className: "mb-4 text-amber-400 text-sm font-medium flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 16
+  }), "Displaying first ", metadata.limit, " columns out of ", metadata.original_count, " total."), /*#__PURE__*/React.createElement("p", {
     className: `text-sm ${theme.textSub} mb-6`
   }, "Dense visualization of data completeness (first ", numRows, " rows). Gaps indicate missing data."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 items-end",
@@ -1394,12 +1399,9 @@ function AppContent() {
     bins: reportData.missing?.bar?.matrix?.columns,
     counts: reportData.missing?.bar?.matrix?.counts,
     limit: reportData.missing?.bar?.matrix?.columns?.length || 20
-  }), reportData.missing?.matrix?.matrix?._metadata?.truncated && /*#__PURE__*/React.createElement("div", {
-    className: "mb-4 text-amber-400 text-sm font-medium flex items-center gap-2"
-  }, /*#__PURE__*/React.createElement(AlertTriangle, {
-    size: 16
-  }), "Displaying first ", reportData.missing.matrix.matrix._metadata.limit, " columns out of ", reportData.missing.matrix.matrix._metadata.original_count, " total."), reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement(NullityMatrix, {
-    data: reportData.missing.matrix.matrix.matrix
+  }), reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement(NullityMatrix, {
+    data: reportData.missing.matrix.matrix.matrix,
+    metadata: reportData.missing.matrix.matrix._metadata
   }), reportData.missing?.heatmap?.matrix?.matrix && reportData.missing.heatmap.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: `mt-16 pt-8 border-t ${theme.borderAlt}`
   }, /*#__PURE__*/React.createElement("h3", {
@@ -1441,7 +1443,7 @@ function AppContent() {
     className: "inline mr-1"
   }), "Sampled estimate: calculated from a representative subset of ", reportData.correlations[corrType].sample_size?.toLocaleString(), " rows."))), reportData.correlations && /*#__PURE__*/React.createElement("div", {
     className: `flex ${theme.bgMain} border ${theme.border} rounded-lg p-1`
-  }, Object.keys(reportData.correlations).map(type => /*#__PURE__*/React.createElement("button", {
+  }, Object.keys(reportData.correlations).filter(type => type !== '_metadata').map(type => /*#__PURE__*/React.createElement("button", {
     key: type,
     onClick: () => setCorrType(type),
     className: `px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${corrType === type ? 'bg-blue-600 text-white shadow-md' : `${theme.textSub} hover:${theme.textMuted}`}`

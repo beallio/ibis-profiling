@@ -259,7 +259,7 @@
     };
 
     // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
-    const NullityMatrix = ({ data }) => {
+    const NullityMatrix = ({ data, metadata }) => {
       // Data is now a list of dicts: [ {col1: true, col2: false}, ... ]
       if (!data || !Array.isArray(data) || data.length === 0) return null;
 
@@ -305,6 +305,13 @@
       return (
         <div className="overflow-x-auto mt-8 pt-4 border-t border-gray-100">
           <h3 className="text-lg font-medium text-gray-800 mb-2">Matrix</h3>
+
+          {metadata?.truncated && (
+            <div className="mb-4 text-amber-600 text-xs font-medium flex items-center gap-1">
+              <AlertTriangle size={12} /> Matrix truncated to first {metadata.limit} columns out of {metadata.original_count}
+            </div>
+          )}
+
           <p className="text-sm text-gray-500 mb-6">Visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
 
           <div className="flex gap-4 items-end" style={{ minWidth: `${Math.max(800, numCols * 25)}px` }}>
@@ -723,12 +730,12 @@
               </div>
             )}
 
-            {data.missing?.matrix?.matrix?._metadata?.truncated && (
-              <div className="mb-6 text-amber-600 text-xs font-medium flex items-center gap-1">
-                <AlertTriangle size={12} /> Matrix truncated to first {data.missing.matrix.matrix._metadata.limit} columns out of {data.missing.matrix.matrix._metadata.original_count}
-              </div>
+            {data.missing?.matrix?.matrix?.matrix && (
+               <NullityMatrix 
+                  data={data.missing.matrix.matrix.matrix} 
+                  metadata={data.missing.matrix.matrix._metadata}
+                />
             )}
-            {data.missing?.matrix?.matrix?.matrix && <NullityMatrix data={data.missing.matrix.matrix.matrix} />}
             
             {data.missing?.heatmap?.matrix?.matrix && data.missing.heatmap.matrix.matrix.length > 0 && (
               <div className="mt-8 pt-8 border-t border-gray-100">
@@ -741,7 +748,7 @@
                   )}
                 </div>
                 <div className="flex justify-center">
-                  <CorrelationMatrixComponent data={data.missing.heatmap.matrix.matrix} />
+                  <CorrelationMatrixComponent data={data.missing.heatmap.matrix} />
                 </div>
               </div>
             )}
@@ -775,7 +782,7 @@
           </div>
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-8">
             <div className="flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar">
-              {Object.keys(data.correlations).map(type => (
+              {Object.keys(data.correlations).filter(type => type !== '_metadata').map(type => (
                 <button
                   key={type}
                   onClick={() => setCorrType(type)}

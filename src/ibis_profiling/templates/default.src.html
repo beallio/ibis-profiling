@@ -444,7 +444,7 @@
     };
 
     // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
-    const NullityMatrix = ({ data }) => {
+    const NullityMatrix = ({ data, metadata }) => {
       const { theme } = useContext(ThemeContext);
       // Data is now a list of dicts: [ {col1: true, col2: false}, ... ]
       if (!data || !Array.isArray(data) || data.length === 0) return null;
@@ -494,6 +494,14 @@
       return (
         <div className={`mt-12 pt-8 border-t ${theme.border}`}>
           <h3 className={`font-bold text-xl mb-2 ${theme.textPrimary}`}>Nullity Matrix</h3>
+          
+          {metadata?.truncated && (
+            <div className="mb-4 text-amber-400 text-sm font-medium flex items-center gap-2">
+              <AlertTriangle size={16} />
+              Displaying first {metadata.limit} columns out of {metadata.original_count} total.
+            </div>
+          )}
+
           <p className={`text-sm ${theme.textSub} mb-6`}>Dense visualization of data completeness (first {numRows} rows). Gaps indicate missing data.</p>
 
           <div className="flex gap-4 items-end" style={{ minWidth: `${Math.max(1000, numCols * 25)}px` }}>
@@ -1257,16 +1265,12 @@
 
                     )}
 
-                    {reportData.missing?.matrix?.matrix?._metadata?.truncated && (
-                      <div className="mb-4 text-amber-400 text-sm font-medium flex items-center gap-2">
-                        <AlertTriangle size={16} />
-                        Displaying first {reportData.missing.matrix.matrix._metadata.limit} columns out of {reportData.missing.matrix.matrix._metadata.original_count} total.
-                      </div>
-                    )}
                     {reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && (
-                      <NullityMatrix data={reportData.missing.matrix.matrix.matrix} />
+                      <NullityMatrix 
+                         data={reportData.missing.matrix.matrix.matrix} 
+                         metadata={reportData.missing.matrix.matrix._metadata}
+                       />
                     )}
-
                     {reportData.missing?.heatmap?.matrix?.matrix && reportData.missing.heatmap.matrix.matrix.length > 0 && (
                       <div className={`mt-16 pt-8 border-t ${theme.borderAlt}`}>
                         <h3 className={`text-xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`}>
@@ -1316,8 +1320,9 @@
                       
                       {reportData.correlations && (
                         <div className={`flex ${theme.bgMain} border ${theme.border} rounded-lg p-1`}>
-                          {Object.keys(reportData.correlations).map(type => (
+                          {Object.keys(reportData.correlations).filter(type => type !== '_metadata').map(type => (
                             <button
+
                               key={type}
                               onClick={() => setCorrType(type)}
                               className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${

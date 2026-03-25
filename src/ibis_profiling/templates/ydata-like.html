@@ -304,7 +304,8 @@ const getAlertColor = type => {
 
 // Sub-component for Nullity Matrix Rendering (Missingno style SVG)
 const NullityMatrix = ({
-  data
+  data,
+  metadata
 }) => {
   // Data is now a list of dicts: [ {col1: true, col2: false}, ... ]
   if (!data || !Array.isArray(data) || data.length === 0) return null;
@@ -350,7 +351,11 @@ const NullityMatrix = ({
     className: "overflow-x-auto mt-8 pt-4 border-t border-gray-100"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "text-lg font-medium text-gray-800 mb-2"
-  }, "Matrix"), /*#__PURE__*/React.createElement("p", {
+  }, "Matrix"), metadata?.truncated && /*#__PURE__*/React.createElement("div", {
+    className: "mb-4 text-amber-600 text-xs font-medium flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 12
+  }), " Matrix truncated to first ", metadata.limit, " columns out of ", metadata.original_count), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 mb-6"
   }, "Visualization of data completeness (first ", numRows, " rows). Gaps indicate missing data."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-4 items-end",
@@ -828,12 +833,9 @@ const MissingValuesSection = ({
     className: "font-bold text-slate-700"
   }, formatNum(d.present)), " present / ", /*#__PURE__*/React.createElement("span", {
     className: "text-red-600"
-  }, formatNum(d.missing)), " missing"))))), data.missing?.matrix?.matrix?._metadata?.truncated && /*#__PURE__*/React.createElement("div", {
-    className: "mb-6 text-amber-600 text-xs font-medium flex items-center gap-1"
-  }, /*#__PURE__*/React.createElement(AlertTriangle, {
-    size: 12
-  }), " Matrix truncated to first ", data.missing.matrix.matrix._metadata.limit, " columns out of ", data.missing.matrix.matrix._metadata.original_count), data.missing?.matrix?.matrix?.matrix && /*#__PURE__*/React.createElement(NullityMatrix, {
-    data: data.missing.matrix.matrix.matrix
+  }, formatNum(d.missing)), " missing"))))), data.missing?.matrix?.matrix?.matrix && /*#__PURE__*/React.createElement(NullityMatrix, {
+    data: data.missing.matrix.matrix.matrix,
+    metadata: data.missing.matrix.matrix._metadata
   }), data.missing?.heatmap?.matrix?.matrix && data.missing.heatmap.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mt-8 pt-8 border-t border-gray-100"
   }, /*#__PURE__*/React.createElement("div", {
@@ -847,7 +849,7 @@ const MissingValuesSection = ({
   }), " Truncated to top ", data.missing.heatmap.matrix._metadata.limit, " variables with most missing values")), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center"
   }, /*#__PURE__*/React.createElement(CorrelationMatrixComponent, {
-    data: data.missing.heatmap.matrix.matrix
+    data: data.missing.heatmap.matrix
   })))));
 };
 const CorrelationsSection = ({
@@ -879,7 +881,7 @@ const CorrelationsSection = ({
     className: "bg-white rounded-md shadow-sm border border-gray-200 p-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar"
-  }, Object.keys(data.correlations).map(type => /*#__PURE__*/React.createElement("button", {
+  }, Object.keys(data.correlations).filter(type => type !== '_metadata').map(type => /*#__PURE__*/React.createElement("button", {
     key: type,
     onClick: () => setCorrType(type),
     className: `px-4 py-2 text-sm font-medium rounded-md transition-colors ${corrType === type ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`
