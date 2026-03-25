@@ -301,7 +301,8 @@ class Profiler:
         def run_hist(p):
             col_name, plan, v_min, v_max, nbins = p
             try:
-                res = plan.execute()
+                # Use to_pyarrow().to_pydict() for backend-agnostic results
+                res = plan.to_pyarrow().to_pydict()
                 return col_name, res, v_min, v_max, nbins, None
             except Exception as exc:
                 return col_name, None, v_min, v_max, nbins, exc
@@ -323,13 +324,31 @@ class Profiler:
                 continue
 
             try:
-                c_key = "count" if "count" in res.columns else res.columns[1]
-                l_key = res.columns[0]
-                counts_dict = {
-                    int(k): v
-                    for k, v in zip(res[l_key], res[c_key])
-                    if k is not None and not (isinstance(k, float) and math.isnan(k))
-                }
+                # res is now a dict: {col_name: [...], count_col: [...]}
+                # The first column is the label/bin_idx, the second is the count
+                keys = list(res.keys())
+                if len(keys) < 2:
+                    continue
+
+                l_key = keys[0]
+                # Look for "count" or fallback to second column
+                c_key = "count" if "count" in keys else keys[1]
+
+                l_values = res[l_key]
+                c_values = res[c_key]
+
+                counts_dict = {}
+                for k, v in zip(l_values, c_values):
+                    if k is not None:
+                        try:
+                            # Handle numeric bin indices or labels
+                            if isinstance(k, float) and math.isnan(k):
+                                continue
+                            counts_dict[int(k)] = v
+                        except (ValueError, TypeError):
+                            # Fallback for non-integer keys (like categorical labels)
+                            counts_dict[str(k)] = v
+
                 report.add_metric(
                     col_name,
                     "numeric_histogram",

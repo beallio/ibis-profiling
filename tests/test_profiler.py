@@ -130,19 +130,24 @@ def test_histogram_failure_warning():
     """Verify that histogram failures are recorded as warnings instead of swallowed."""
     table = ibis.memtable({"a": [1.0, 2.0, 3.0]})
 
-    # We'll mock ibis.expr.types.Table.execute because histograms (value_counts)
-    # return a Table, whereas many other setup metrics return Scalars.
+    # We'll mock ibis.expr.types.Table.to_pyarrow because histograms (value_counts)
+    # return a Table.
 
-    real_execute = ir.Table.execute
+    real_to_pa = ir.Table.to_pyarrow
 
     def side_effect(self, *args, **kwargs):
         # We want to fail when it's the histogram calculation.
-        # Check for any column containing 'count'.
-        if any("count" in str(c).lower() for c in self.columns):
-            raise ValueError("Histogram calculation failed!")
-        return real_execute(self, *args, **kwargs)
+        import ibis.expr.operations as ops
 
-    with mock.patch.object(ir.Table, "execute", autospec=True, side_effect=side_effect):
+        is_agg = isinstance(self.op(), ops.Aggregate)
+        is_row_count = "_dataset__row_count" in self.columns
+        is_stats = any(c.endswith("__skewness") or c.endswith("__mad") for c in self.columns)
+
+        if is_agg and not is_row_count and not is_stats:
+            raise ValueError("Histogram calculation failed!")
+        return real_to_pa(self, *args, **kwargs)
+
+    with mock.patch.object(ir.Table, "to_pyarrow", autospec=True, side_effect=side_effect):
         report = profile(table)
 
         # Check that warnings are present in analysis
