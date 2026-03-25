@@ -33,9 +33,18 @@ def test_correlations_truncation():
 
     corrs = desc.get("correlations", {})
     assert "pearson" in corrs
+
+    # Verify metadata is nested
+    assert "_metadata" in corrs
+    meta = corrs["_metadata"]
+    assert meta["truncated"] is True
+    assert meta["original_count"] == 30
+    assert meta["limit"] == 15
+
     # In the formatted output, 'columns' is removed and matrix is list of dicts
     matrix = corrs["pearson"]["matrix"]
     assert len(matrix) == 15
+
     columns = list(matrix[0].keys())
     assert len(columns) == 15
 
@@ -64,9 +73,11 @@ def test_correlations_no_truncation():
     desc = report.get_description()
 
     corrs = desc.get("correlations", {})
-    assert not corrs.get("truncated")
+    assert "_metadata" in corrs
+    assert not corrs["_metadata"].get("truncated")
     # Formatted matrix check
     assert len(corrs["pearson"]["matrix"]) == 2
+
     assert len(corrs["pearson"]["matrix"][0].keys()) == 2
 
     warnings = desc["analysis"].get("warnings", [])

@@ -42,9 +42,11 @@ class CorrelationEngine:
             return {
                 "pearson": {"columns": numeric_cols, "matrix": [], "sampled": False},
                 "spearman": {"columns": numeric_cols, "matrix": [], "sampled": False},
-                "truncated": is_truncated,
-                "original_count": original_count,
-                "limit": max_columns,
+                "_metadata": {
+                    "truncated": is_truncated,
+                    "original_count": original_count,
+                    "limit": max_columns,
+                },
             }
 
         # Robust row count detection for sampling
@@ -142,9 +144,11 @@ class CorrelationEngine:
         return {
             "pearson": pearson,
             "spearman": spearman,
-            "truncated": is_truncated,
-            "original_count": original_count,
-            "limit": max_columns,
+            "_metadata": {
+                "truncated": is_truncated,
+                "original_count": original_count,
+                "limit": max_columns,
+            },
         }
 
     @staticmethod

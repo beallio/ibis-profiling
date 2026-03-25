@@ -844,7 +844,8 @@ const CorrelationsSection = ({
   data
 }) => {
   if (!data.correlations || Object.keys(data.correlations).length === 0) return null;
-  const [corrType, setCorrType] = useState(Object.keys(data.correlations)[0]);
+  const correlationTypes = Object.keys(data.correlations).filter(k => k !== '_metadata');
+  const [corrType, setCorrType] = useState(correlationTypes[0]);
   return /*#__PURE__*/React.createElement("div", {
     id: "correlations",
     className: "space-y-4 animate-fadeIn section"
@@ -865,7 +866,7 @@ const CorrelationsSection = ({
     className: "bg-white rounded-md shadow-sm border border-gray-200 p-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar"
-  }, Object.keys(data.correlations).map(type => /*#__PURE__*/React.createElement("button", {
+  }, correlationTypes.map(type => /*#__PURE__*/React.createElement("button", {
     key: type,
     onClick: () => setCorrType(type),
     className: `px-4 py-2 text-sm font-medium rounded-md transition-colors ${corrType === type ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`

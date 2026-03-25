@@ -787,7 +787,7 @@ function AppContent() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
-  const defaultCorrType = reportData.correlations ? Object.keys(reportData.correlations)[0] || '' : '';
+  const defaultCorrType = reportData.correlations ? Object.keys(reportData.correlations).filter(k => k !== '_metadata')[0] || '' : '';
   const [corrType, setCorrType] = useState(defaultCorrType);
   const filteredVariables = useMemo(() => {
     if (!reportData || !reportData.variables) return [];
@@ -1429,7 +1429,7 @@ function AppContent() {
     className: "inline mr-1"
   }), "Sampled estimate: calculated from a representative subset of ", reportData.correlations[corrType].sample_size?.toLocaleString(), " rows."))), reportData.correlations && /*#__PURE__*/React.createElement("div", {
     className: `flex ${theme.bgMain} border ${theme.border} rounded-lg p-1`
-  }, Object.keys(reportData.correlations).map(type => /*#__PURE__*/React.createElement("button", {
+  }, Object.keys(reportData.correlations).filter(k => k !== '_metadata').map(type => /*#__PURE__*/React.createElement("button", {
     key: type,
     onClick: () => setCorrType(type),
     className: `px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${corrType === type ? 'bg-blue-600 text-white shadow-md' : `${theme.textSub} hover:${theme.textMuted}`}`

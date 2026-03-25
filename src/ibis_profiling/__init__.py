@@ -425,9 +425,10 @@ class Profiler:
                 sample_size=self.correlations_sample_size,
                 max_columns=self.correlations_max_columns,
             )
-            if res.get("truncated"):
+            meta = res.get("_metadata", {})
+            if meta.get("truncated"):
                 report.analysis.setdefault("warnings", []).append(
-                    f"Correlations truncated to top {res['limit']} columns (out of {res['original_count']}) "
+                    f"Correlations truncated to top {meta['limit']} columns (out of {meta['original_count']}) "
                     "to ensure performance."
                 )
             report.correlations = res
