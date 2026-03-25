@@ -1,0 +1,18 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "fix: Sanitize non-finite correlations before scoring interactions",
+  "files_modified": [
+    "src/ibis_profiling/report/model/interactions.py",
+    "docs/plans/fix_interaction_nan_correlations.md"
+  ],
+  "tests_added": [
+    "tests/test_interaction_nan_fix.py",
+    "tests/reproduce_nan_interactions.py"
+  ],
+  "design_decisions": [
+    "Treated None, NaN, and Infinity as 0.0 in InteractionEngine score calculation.",
+    "Ensured average absolute correlation scoring is deterministic and stable.",
+    "Verified that AlertEngine and Report serialization already handle non-finite values (NaN/Inf) by converting them to None or skipping them in rule checks."
+  ],
+  "results": "Non-finite correlations no longer propagate to column scores, ensuring stable selection of interaction variables even with zero-variance columns. Other parts of the codebase were found to be robust due to existing JSON serialization sanitization."
+}
