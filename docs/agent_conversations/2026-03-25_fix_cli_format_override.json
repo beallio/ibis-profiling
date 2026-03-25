@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "fix: Honor --format override regardless of output extension",
+  "files_modified": [
+    "src/ibis_profiling/cli.py",
+    "docs/plans/fix_cli_format_override.md"
+  ],
+  "tests_added": [
+    "tests/test_cli_format_override.py"
+  ],
+  "design_decisions": [
+    "Modified the CLI to directly call report.to_json() or report.to_html() based on the output_format variable.",
+    "Removed the automatic appending of .json to output filenames to respect explicit user intent.",
+    "Bypassed report.to_file() in the CLI to avoid its extension-based format inference when --format is provided."
+  ],
+  "results": "The --format CLI flag now strictly overrides output file extensions, ensuring user intent is always honored."
+}

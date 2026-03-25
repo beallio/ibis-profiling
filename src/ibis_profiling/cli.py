@@ -207,12 +207,12 @@ def main(
 
         click.echo(f"Generating {output_format.upper()} report...")
         if output_format == "json":
-            # Ensure output ends in .json if forced but filename doesn't
-            if not output.endswith(".json") and output_format == "json":
-                output += ".json"
-            report.to_file(output)
+            content = report.to_json()
         else:
-            report.to_file(output, theme=theme)
+            content = report.to_html(theme=theme)
+
+        with open(output, "w") as f:
+            f.write(content)
 
         click.echo(f"Report successfully generated: {output}")
 
