@@ -1412,7 +1412,13 @@ function AppContent() {
     className: `${theme.textSub} text-sm mb-8`
   }, reportData.missing.heatmap.caption || "Pearson correlation of nullity between variables (-1 to 1)."), /*#__PURE__*/React.createElement(CorrelationMatrixComponent, {
     data: reportData.missing.heatmap.matrix
-  })))), activeTab === 'correlations' && /*#__PURE__*/React.createElement("div", {
+  }), reportData.missing.heatmap.matrix._metadata?.truncated && /*#__PURE__*/React.createElement("div", {
+    className: `mt-10 p-4 ${theme.bgCardAlt} rounded-xl border border-amber-500/20 text-center`
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-amber-400 text-xs flex items-center justify-center gap-2"
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", null, "Missingness heatmap truncated to top ", reportData.missing.heatmap.matrix._metadata.limit, " columns (out of ", reportData.missing.heatmap.matrix._metadata.original_count, ") with most missing values.")))))), activeTab === 'correlations' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6 animate-in fade-in duration-700"
   }, /*#__PURE__*/React.createElement("div", {
     className: `${theme.bgCard} border ${theme.border} rounded-2xl p-10 shadow-2xl`
