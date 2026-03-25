@@ -51,6 +51,13 @@ from ibis_profiling import ProfileReport, __version__
     help="Row count threshold above which monotonicity is skipped.",
 )
 @click.option(
+    "--duplicates-threshold",
+    type=int,
+    default=50_000_000,
+    show_default=True,
+    help="Row count threshold above which duplicate check is skipped.",
+)
+@click.option(
     "--monotonicity-order-by",
     type=str,
     help="Column name to order by for monotonicity checks.",
@@ -77,6 +84,7 @@ def main(
     monotonicity,
     duplicates,
     monotonicity_threshold,
+    duplicates_threshold,
     monotonicity_order_by,
     theme,
     output_format,
@@ -105,6 +113,7 @@ def main(
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
+                duplicates_threshold=duplicates_threshold,
                 monotonicity_order_by=monotonicity_order_by,
             )
         elif ext == ".parquet":
@@ -112,27 +121,31 @@ def main(
             table = ibis.read_parquet(file_path)
             report = ProfileReport(
                 table,
-                minimal=minimal,
                 title=title,
+                minimal=minimal,
                 correlations=correlations,
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
+                duplicates_threshold=duplicates_threshold,
                 monotonicity_order_by=monotonicity_order_by,
             )
+
         elif ext == ".csv":
             click.echo(f"Loading CSV file: {file_path}...")
             table = ibis.read_csv(file_path)
             report = ProfileReport(
                 table,
-                minimal=minimal,
                 title=title,
+                minimal=minimal,
                 correlations=correlations,
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
+                duplicates_threshold=duplicates_threshold,
                 monotonicity_order_by=monotonicity_order_by,
             )
+
         else:
             # Fallback/Attempt to load as Parquet or CSV
             try:
@@ -143,12 +156,13 @@ def main(
                 table = ibis.read_csv(file_path)
             report = ProfileReport(
                 table,
-                minimal=minimal,
                 title=title,
+                minimal=minimal,
                 correlations=correlations,
                 monotonicity=monotonicity,
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
+                duplicates_threshold=duplicates_threshold,
                 monotonicity_order_by=monotonicity_order_by,
             )
 

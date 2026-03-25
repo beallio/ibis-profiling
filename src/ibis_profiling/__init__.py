@@ -40,6 +40,7 @@ class Profiler:
         correlations_sampling_threshold: int = 1_000_000,
         correlations_sample_size: int = 1_000_000,
         monotonicity_threshold: int = 100_000,
+        duplicates_threshold: int = 50_000_000,
         monotonicity_order_by: str | None = None,
         parallel: bool = False,
         pool_size: int = 4,
@@ -54,11 +55,13 @@ class Profiler:
         self.compute_monotonicity = not minimal if monotonicity is None else monotonicity
         self.explicit_monotonicity = monotonicity is True
         self.compute_duplicates = not minimal if compute_duplicates is None else compute_duplicates
+        self.explicit_duplicates = compute_duplicates is True
         self.cardinality_threshold = cardinality_threshold
         self.max_interaction_pairs = max_interaction_pairs
         self.correlations_sampling_threshold = correlations_sampling_threshold
         self.correlations_sample_size = correlations_sample_size
         self.monotonicity_threshold = monotonicity_threshold
+        self.duplicates_threshold = duplicates_threshold
         self.monotonicity_order_by = monotonicity_order_by
         self.parallel = parallel
         self.pool_size = pool_size
@@ -120,15 +123,27 @@ class Profiler:
 
             # 4. Duplicates (if not minimal) (10%)
             if self.compute_duplicates:
-                self._update_progress(10, "Checking for duplicates...")
-                n_distinct_rows = self.table.distinct().count().execute()
-                report.table["n_distinct_rows"] = n_distinct_rows
                 n_total = report.table.get("n", 0)
-                if isinstance(n_total, (int, float)):
-                    report.table["n_duplicates"] = n_total - n_distinct_rows
-                    report.table["p_duplicates"] = (
-                        (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
+                n_total_int = int(n_total) if isinstance(n_total, (int, float)) else 0
+
+                if n_total_int > self.duplicates_threshold and not self.explicit_duplicates:
+                    self._update_progress(10, "Skipping duplicate check for large dataset...")
+                    report.analysis.setdefault("warnings", []).append(
+                        f"Skipped duplicate check for large dataset ({n_total_int:,} rows). "
+                        f"Threshold: {self.duplicates_threshold:,}. Set compute_duplicates=True to force."
                     )
+                    report.table["n_distinct_rows"] = "Skipped"
+                    report.table["n_duplicates"] = "Skipped"
+                    report.table["p_duplicates"] = "Skipped"
+                else:
+                    self._update_progress(10, "Checking for duplicates...")
+                    n_distinct_rows = self.table.distinct().count().execute()
+                    report.table["n_distinct_rows"] = n_distinct_rows
+                    if isinstance(n_total, (int, float)):
+                        report.table["n_duplicates"] = n_total - n_distinct_rows
+                        report.table["p_duplicates"] = (
+                            (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
+                        )
             else:
                 if not self.minimal:
                     self._update_progress(10, "Skipping duplicate check...")
@@ -509,6 +524,7 @@ def profile(
     correlations_sampling_threshold: int = 1_000_000,
     correlations_sample_size: int = 1_000_000,
     monotonicity_threshold: int = 100_000,
+    duplicates_threshold: int = 50_000_000,
     monotonicity_order_by: str | None = None,
     parallel: bool = False,
     pool_size: int = 4,
@@ -527,6 +543,7 @@ def profile(
         correlations_sampling_threshold=correlations_sampling_threshold,
         correlations_sample_size=correlations_sample_size,
         monotonicity_threshold=monotonicity_threshold,
+        duplicates_threshold=duplicates_threshold,
         monotonicity_order_by=monotonicity_order_by,
         parallel=parallel,
         pool_size=pool_size,
@@ -553,6 +570,7 @@ class ProfileReport:
         monotonicity: bool | None = None,
         compute_duplicates: bool | None = None,
         monotonicity_threshold: int = 100_000,
+        duplicates_threshold: int = 50_000_000,
         monotonicity_order_by: str | None = None,
         **kwargs,
     ):
@@ -563,6 +581,7 @@ class ProfileReport:
         self.monotonicity = monotonicity
         self.compute_duplicates = compute_duplicates
         self.monotonicity_threshold = monotonicity_threshold
+        self.duplicates_threshold = duplicates_threshold
         self.monotonicity_order_by = monotonicity_order_by
         self.kwargs = kwargs
 
@@ -577,6 +596,7 @@ class ProfileReport:
             compute_duplicates=compute_duplicates,
             cardinality_threshold=kwargs.get("cardinality_threshold", 20),
             monotonicity_threshold=monotonicity_threshold,
+            duplicates_threshold=duplicates_threshold,
             monotonicity_order_by=monotonicity_order_by,
             max_interaction_pairs=kwargs.get("max_interaction_pairs", 10),
             correlations_sampling_threshold=kwargs.get(
