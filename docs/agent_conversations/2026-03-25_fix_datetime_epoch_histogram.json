@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "Fix DateTime histogram conversion for numeric epochs and truthiness checks",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py"
+  ],
+  "tests_added": [
+    "tests/reproduce_datetime_epoch_0.py (temporary)"
+  ],
+  "design_decisions": [
+    "Updated `to_timestamp` helper to explicitly handle `int` and `float` types as numeric epochs.",
+    "Replaced truthiness checks `if v_min_raw and v_max_raw` with explicit `is not None` checks to ensure epoch 0 is handled correctly."
+  ],
+  "results": "DateTime histograms are no longer dropped when epoch 0 is encountered. Numeric epoch values in stats are now correctly converted to timestamps. Full test suite passes."
+}
