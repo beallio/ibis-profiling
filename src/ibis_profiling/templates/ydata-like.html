@@ -874,7 +874,13 @@ const CorrelationsSection = ({
     className: "flex justify-center"
   }, /*#__PURE__*/React.createElement(CorrelationMatrixComponent, {
     data: data.correlations[corrType]
-  }))));
+  })), data.correlations?._metadata?.truncated && /*#__PURE__*/React.createElement("div", {
+    className: "mt-8 p-4 bg-amber-50 border border-amber-100 rounded text-center"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-amber-700 text-xs flex items-center justify-center gap-2"
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", null, "Correlations truncated to top ", data.correlations._metadata.limit, " columns (out of ", data.correlations._metadata.original_count, ") to ensure performance.")))));
 };
 const SampleSection = ({
   data
