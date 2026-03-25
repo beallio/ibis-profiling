@@ -23,6 +23,8 @@ class CorrelationEngine:
         numeric_cols = [c for c, t in schema.items() if isinstance(t, (dt.Numeric, dt.Boolean))]
 
         # Truncate if necessary to avoid O(n^2) blowups
+        # Enforce minimum of 2 columns for a matrix, otherwise return empty
+        max_columns = max(2, max_columns)
         original_count = len(numeric_cols)
         is_truncated = False
         if original_count > max_columns:
@@ -31,9 +33,18 @@ class CorrelationEngine:
             # Deterministic Selection: Top by missingness (ASC) and variance (DESC)
             def sort_key(c):
                 stats = variables.get(c, {})
-                n_missing = stats.get("n_missing", 0)
-                # Negate variance for descending sort
-                variance = -float(stats.get("variance", 0) or 0)
+                # Coerce to safe numeric defaults before sorting
+                try:
+                    n_missing = float(stats.get("n_missing", 0) or 0)
+                except (TypeError, ValueError):
+                    n_missing = 0.0
+
+                try:
+                    # Negate variance for descending sort
+                    variance = -float(stats.get("variance", 0) or 0)
+                except (TypeError, ValueError):
+                    variance = 0.0
+
                 return (n_missing, variance, c)
 
             numeric_cols = sorted(numeric_cols, key=sort_key)[:max_columns]

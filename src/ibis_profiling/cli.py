@@ -59,10 +59,10 @@ from ibis_profiling import ProfileReport, __version__
 )
 @click.option(
     "--correlations-max-columns",
-    type=int,
+    type=click.IntRange(min=2),
     default=15,
     show_default=True,
-    help="Maximum number of columns to include in correlation matrix.",
+    help="Maximum number of columns to include in correlation matrix (min 2).",
 )
 @click.option(
     "--monotonicity-order-by",

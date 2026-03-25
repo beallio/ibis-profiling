@@ -6,6 +6,8 @@ from ibis_profiling import ProfileReport
 
 def test_correlations_truncation():
     """Verify that correlations are truncated and the 'best' columns are selected."""
+    # Seed randomness for CI stability
+    np.random.seed(42)
     n_rows = 100
 
     # good: 0 missing, high variance
@@ -82,3 +84,38 @@ def test_correlations_no_truncation():
 
     warnings = desc["analysis"].get("warnings", [])
     assert not any("Correlations truncated" in w for w in warnings)
+
+
+def test_correlations_invalid_max_columns():
+    """Verify that correlations_max_columns enforces a minimum of 2."""
+    data = {"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]}
+    table = ibis.memtable(data)
+
+    # Passing 0 should be coerced to 2
+    report = ProfileReport(table, correlations_max_columns=0)
+    desc = report.get_description()
+    corrs = desc.get("correlations", {})
+    assert len(corrs["pearson"]["matrix"]) == 2
+
+    # Passing negative should be coerced to 2
+    report = ProfileReport(table, correlations_max_columns=-10)
+    desc = report.get_description()
+    corrs = desc.get("correlations", {})
+    assert len(corrs["pearson"]["matrix"]) == 2
+
+
+def test_correlations_safe_sorting():
+    """Verify that sorting handles None/missing metadata safely."""
+    from ibis_profiling.report.model.correlations import CorrelationEngine
+
+    table = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]})
+    # Mock variables with missing stats
+    variables = {
+        "a": {"n_missing": None, "variance": None},
+        "b": {"n_missing": 10},  # missing variance
+        "c": {"variance": 100},  # missing n_missing
+    }
+
+    # Should not throw
+    res = CorrelationEngine.compute_all(table, variables, max_columns=2)
+    assert len(res["pearson"]["columns"]) == 2

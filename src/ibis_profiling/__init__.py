@@ -61,7 +61,8 @@ class Profiler:
         self.max_interaction_pairs = max_interaction_pairs
         self.correlations_sampling_threshold = correlations_sampling_threshold
         self.correlations_sample_size = correlations_sample_size
-        self.correlations_max_columns = correlations_max_columns
+        # Enforce minimum of 2 columns for correlations
+        self.correlations_max_columns = max(2, correlations_max_columns)
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
         self.monotonicity_order_by = monotonicity_order_by
