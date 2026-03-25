@@ -1,0 +1,22 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "Fix code review findings regarding _metadata leak in UI, parallel guard alias matching, and lazy executor init",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/templates/default.src.html",
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.src.html",
+    "src/ibis_profiling/templates/ydata-like.html",
+    "tests/test_e2e_frontend.py"
+  ],
+  "tests_added": [
+    "tests/test_e2e_frontend.py::test_correlation_metadata_filtered"
+  ],
+  "design_decisions": [
+    "Updated both HTML templates to ensure `defaultCorrType` filters out `_metadata` when selecting the initial correlation tab, preventing a blank UI state.",
+    "Modified `_check_parallel_safety` to lowercase the backend name and check against a set of aliases (e.g., 'duckdb', 'sqlite', 'sqlite3') to prevent the guard from failing open.",
+    "Refactored executor creation in `Profiler` to lazily instantiate `ThreadPoolExecutor` during the `run()` method only if the backend is deemed safe, avoiding unnecessary resource allocation.",
+    "Added an E2E Playwright test to verify that `_metadata` is not visible as a selectable correlation button and does not cause a blank default state in both templates."
+  ],
+  "results": "Addressed all code review findings. E2E and unit tests passed, confirming correlation state defaults correctly and executors are properly managed based on backend safety."
+}
