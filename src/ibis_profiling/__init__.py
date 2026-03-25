@@ -39,6 +39,7 @@ class Profiler:
         max_interaction_pairs: int = 10,
         correlations_sampling_threshold: int = 1_000_000,
         correlations_sample_size: int = 1_000_000,
+        correlations_max_columns: int = 15,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
         monotonicity_order_by: str | None = None,
@@ -60,6 +61,7 @@ class Profiler:
         self.max_interaction_pairs = max_interaction_pairs
         self.correlations_sampling_threshold = correlations_sampling_threshold
         self.correlations_sample_size = correlations_sample_size
+        self.correlations_max_columns = correlations_max_columns
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
         self.monotonicity_order_by = monotonicity_order_by
@@ -421,7 +423,13 @@ class Profiler:
                 row_count=cast(int | None, report.table.get("n")),
                 sampling_threshold=self.correlations_sampling_threshold,
                 sample_size=self.correlations_sample_size,
+                max_columns=self.correlations_max_columns,
             )
+            if res.get("truncated"):
+                report.analysis.setdefault("warnings", []).append(
+                    f"Correlations truncated to top {res['limit']} columns (out of {res['original_count']}) "
+                    "to ensure performance."
+                )
             report.correlations = res
 
     def _run_monotonicity(self, report: InternalProfileReport):
@@ -523,6 +531,7 @@ def profile(
     max_interaction_pairs: int = 10,
     correlations_sampling_threshold: int = 1_000_000,
     correlations_sample_size: int = 1_000_000,
+    correlations_max_columns: int = 15,
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
     monotonicity_order_by: str | None = None,
@@ -542,6 +551,7 @@ def profile(
         max_interaction_pairs=max_interaction_pairs,
         correlations_sampling_threshold=correlations_sampling_threshold,
         correlations_sample_size=correlations_sample_size,
+        correlations_max_columns=correlations_max_columns,
         monotonicity_threshold=monotonicity_threshold,
         duplicates_threshold=duplicates_threshold,
         monotonicity_order_by=monotonicity_order_by,
@@ -571,6 +581,7 @@ class ProfileReport:
         compute_duplicates: bool | None = None,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
+        correlations_max_columns: int = 15,
         monotonicity_order_by: str | None = None,
         **kwargs,
     ):
@@ -582,6 +593,7 @@ class ProfileReport:
         self.compute_duplicates = compute_duplicates
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
+        self.correlations_max_columns = correlations_max_columns
         self.monotonicity_order_by = monotonicity_order_by
         self.kwargs = kwargs
 
@@ -597,6 +609,7 @@ class ProfileReport:
             cardinality_threshold=kwargs.get("cardinality_threshold", 20),
             monotonicity_threshold=monotonicity_threshold,
             duplicates_threshold=duplicates_threshold,
+            correlations_max_columns=correlations_max_columns,
             monotonicity_order_by=monotonicity_order_by,
             max_interaction_pairs=kwargs.get("max_interaction_pairs", 10),
             correlations_sampling_threshold=kwargs.get(

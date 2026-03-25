@@ -12,6 +12,7 @@ class CorrelationEngine:
         row_count: int | None = None,
         sampling_threshold: int = 1_000_000,
         sample_size: int = 1_000_000,
+        max_columns: int = 15,
     ) -> Dict[str, Any]:
         """Calculates all supported correlation matrices with sampling for large datasets."""
         import ibis.expr.types as ir
@@ -21,10 +22,29 @@ class CorrelationEngine:
         # Use schema as source of truth for "Numeric" suitability
         numeric_cols = [c for c, t in schema.items() if isinstance(t, (dt.Numeric, dt.Boolean))]
 
+        # Truncate if necessary to avoid O(n^2) blowups
+        original_count = len(numeric_cols)
+        is_truncated = False
+        if original_count > max_columns:
+            is_truncated = True
+
+            # Deterministic Selection: Top by missingness (ASC) and variance (DESC)
+            def sort_key(c):
+                stats = variables.get(c, {})
+                n_missing = stats.get("n_missing", 0)
+                # Negate variance for descending sort
+                variance = -float(stats.get("variance", 0) or 0)
+                return (n_missing, variance, c)
+
+            numeric_cols = sorted(numeric_cols, key=sort_key)[:max_columns]
+
         if len(numeric_cols) < 2:
             return {
                 "pearson": {"columns": numeric_cols, "matrix": [], "sampled": False},
                 "spearman": {"columns": numeric_cols, "matrix": [], "sampled": False},
+                "truncated": is_truncated,
+                "original_count": original_count,
+                "limit": max_columns,
             }
 
         # Robust row count detection for sampling
@@ -122,6 +142,9 @@ class CorrelationEngine:
         return {
             "pearson": pearson,
             "spearman": spearman,
+            "truncated": is_truncated,
+            "original_count": original_count,
+            "limit": max_columns,
         }
 
     @staticmethod

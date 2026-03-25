@@ -58,6 +58,13 @@ from ibis_profiling import ProfileReport, __version__
     help="Row count threshold above which duplicate check is skipped.",
 )
 @click.option(
+    "--correlations-max-columns",
+    type=int,
+    default=15,
+    show_default=True,
+    help="Maximum number of columns to include in correlation matrix.",
+)
+@click.option(
     "--monotonicity-order-by",
     type=str,
     help="Column name to order by for monotonicity checks.",
@@ -85,6 +92,7 @@ def main(
     duplicates,
     monotonicity_threshold,
     duplicates_threshold,
+    correlations_max_columns,
     monotonicity_order_by,
     theme,
     output_format,
@@ -114,6 +122,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                correlations_max_columns=correlations_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
         elif ext == ".parquet":
@@ -128,6 +137,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                correlations_max_columns=correlations_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
 
@@ -143,6 +153,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                correlations_max_columns=correlations_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
 
@@ -163,6 +174,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                correlations_max_columns=correlations_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
 
