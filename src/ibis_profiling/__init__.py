@@ -93,9 +93,34 @@ class Profiler:
         if self.on_progress:
             self.on_progress(inc, label)
 
+    def _check_parallel_safety(self) -> str | None:
+        """
+        Checks if the current backend is safe for parallel execution on a shared connection.
+        Returns the backend name if unsafe, None if safe or undetermined.
+        """
+        # Ibis backends that are known to be unsafe for concurrent queries on one connection.
+        # DuckDB is explicitly unsafe for this.
+        UNSAFE_BACKENDS = ["duckdb", "sqlite"]
+
+        try:
+            # Get the backend name from the table's associated connection
+            # Use ibis.get_backend(self.table) or self.table.get_backend()
+            con = self.table.get_backend()
+            if con and hasattr(con, "name"):
+                backend_name = con.name
+                if backend_name in UNSAFE_BACKENDS:
+                    return backend_name
+        except Exception:
+            # If we can't determine, we could be conservative, but let's only block known bads
+            pass
+        return None
+
     def run(self) -> InternalProfileReport:
         """Executes all phases of profiling."""
         try:
+            # Parallel Safety Guard: Many backends are not thread-safe for concurrent queries.
+            unsafe_backend = self._check_parallel_safety() if self.parallel else None
+
             # Start at 0
             self._update_progress(0, "Analyzing dataset...")
 
@@ -118,6 +143,16 @@ class Profiler:
 
             report = InternalProfileReport(raw_results, self.col_types, title=self.title)
             report.analysis["date_start"] = self.start_time.isoformat()
+
+            if unsafe_backend:
+                report.analysis.setdefault("warnings", []).append(
+                    f"Parallel mode disabled for {unsafe_backend} backend due to thread-safety "
+                    "concerns. Execution will proceed sequentially."
+                )
+                if self.executor:
+                    self.executor.shutdown(wait=False)
+                    self.executor = None
+                self.parallel = False
 
             # 3. Reclassification & Static Analysis (10%)
             self._update_progress(5, "Reclassifying variables...")
@@ -307,7 +342,7 @@ class Profiler:
             except Exception as exc:
                 return col_name, None, v_min, v_max, nbins, exc
 
-        if self.executor and histogram_plans:
+        if self.parallel and self.executor and histogram_plans:
             futures = [self.executor.submit(run_hist, p) for p in histogram_plans]
             results = [f.result() for f in as_completed(futures)]
         else:
@@ -418,7 +453,7 @@ class Profiler:
             except Exception as exc:
                 return col_name, metric_name, None, exc
 
-        if self.executor and table_plans:
+        if self.parallel and self.executor and table_plans:
             futures = [self.executor.submit(run_table_plan, p) for p in table_plans]
             results = [f.result() for f in as_completed(futures)]
         else:

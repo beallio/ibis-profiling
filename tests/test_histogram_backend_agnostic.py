@@ -44,8 +44,9 @@ def test_histogram_dict_processing_logic():
         mock_future.result.return_value = ("a", mock_dict, 1.0, 3.0, 20, None)
         mock_as_completed.return_value = [mock_future]
 
-        # We need to ensure histogram_plans is populated
+        # We need to ensure histogram_plans is populated and parallel is True
         profiler.executor = mock.MagicMock()
+        profiler.parallel = True
 
         profiler._run_advanced_pass(report)
 
