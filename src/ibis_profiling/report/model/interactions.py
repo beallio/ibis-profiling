@@ -33,14 +33,21 @@ class InteractionEngine:
             p_matrix = pearson.get("matrix", [])
 
             if p_cols and p_matrix:
+                import math
+
                 col_scores = []
                 for i, col in enumerate(p_cols):
                     # Score is average absolute correlation with other numeric cols
-                    corrs = [
-                        abs(p_matrix[i][j])
-                        for j in range(len(p_cols))
-                        if i != j and p_matrix[i][j] is not None
-                    ]
+                    corrs = []
+                    for j in range(len(p_cols)):
+                        if i != j:
+                            val = p_matrix[i][j]
+                            # Treat None, NaN, and Inf as 0.0 for scoring purposes
+                            if val is None or not math.isfinite(val):
+                                corrs.append(0.0)
+                            else:
+                                corrs.append(abs(val))
+
                     score = sum(corrs) / len(corrs) if corrs else 0.0
                     col_scores.append((col, score))
 
