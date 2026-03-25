@@ -331,7 +331,7 @@ class ProfileReport:
                 if matrix and isinstance(matrix[0], list):
                     formatted_matrix = [dict(zip(cols, row)) for row in matrix]
                     # Create result with matrix and any other metadata (like 'sampled')
-                    res = {"matrix": formatted_matrix}
+                    res = {"matrix": formatted_matrix, "columns": cols}
                     for k, v in obj.items():
                         if k not in ["columns", "matrix"]:
                             res[k] = v

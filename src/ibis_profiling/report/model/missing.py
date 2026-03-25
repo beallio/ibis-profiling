@@ -6,7 +6,9 @@ class MissingEngine:
     """Computes missing value distributions and patterns following ydata schema."""
 
     @staticmethod
-    def compute(table: ibis.Table, variables: dict) -> Dict[str, Any]:
+    def compute(
+        table: ibis.Table, variables: dict, max_heatmap_columns: int = 15
+    ) -> Dict[str, Any]:
         """Assembles missing value model from variable statistics and nullity correlations."""
         import ibis.expr.types as ir
         import ibis.expr.datatypes as dt
@@ -37,6 +39,18 @@ class MissingEngine:
         # We only include columns that have at least some missing values to avoid constant correlation errors
         cols_with_missing = [c for c in columns if variables[c].get("n_missing", 0) > 0]
         heatmap_data = {"columns": [], "matrix": []}
+
+        # Truncate if necessary to avoid O(n^2) blowups
+        original_missing_count = len(cols_with_missing)
+        is_truncated = False
+        limit = max(2, max_heatmap_columns)
+
+        if original_missing_count > limit:
+            is_truncated = True
+            # Prioritize columns with MOST missing values
+            cols_with_missing = sorted(
+                cols_with_missing, key=lambda c: variables[c].get("n_missing", 0), reverse=True
+            )[:limit]
 
         if len(cols_with_missing) >= 2:
             # Create nullity masks (1 if null, 0 if not)
@@ -115,6 +129,11 @@ class MissingEngine:
                     "columns": heatmap_data["columns"],
                     "matrix": heatmap_data["matrix"],
                     "sampled": False,
+                    "_metadata": {
+                        "truncated": is_truncated,
+                        "original_count": original_missing_count,
+                        "limit": limit,
+                    },
                 },
             },
         }

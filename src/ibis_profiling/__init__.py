@@ -40,6 +40,7 @@ class Profiler:
         correlations_sampling_threshold: int = 1_000_000,
         correlations_sample_size: int = 1_000_000,
         correlations_max_columns: int = 15,
+        missing_heatmap_max_columns: int = 15,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
         monotonicity_order_by: str | None = None,
@@ -63,6 +64,7 @@ class Profiler:
         self.correlations_sample_size = correlations_sample_size
         # Enforce minimum of 2 columns for correlations
         self.correlations_max_columns = max(2, correlations_max_columns)
+        self.missing_heatmap_max_columns = max(2, missing_heatmap_max_columns)
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
         self.monotonicity_order_by = monotonicity_order_by
@@ -502,7 +504,16 @@ class Profiler:
             self._update_progress(2, "Missing values matrix...")
             from .report.model.missing import MissingEngine
 
-            report.missing = MissingEngine.compute(self.table, report.variables)
+            report.missing = MissingEngine.compute(
+                self.table, report.variables, max_heatmap_columns=self.missing_heatmap_max_columns
+            )
+            # Record truncation warning if applicable
+            m_meta = report.missing.get("heatmap", {}).get("matrix", {}).get("_metadata", {})
+            if m_meta.get("truncated"):
+                report.analysis.setdefault("warnings", []).append(
+                    f"Missingness heatmap truncated to top {m_meta['limit']} columns "
+                    f"(out of {m_meta['original_count']}) with most missing values."
+                )
             self._update_progress(1, "Pairwise interactions...")
             from .report.model.interactions import InteractionEngine
 
@@ -534,6 +545,7 @@ def profile(
     correlations_sampling_threshold: int = 1_000_000,
     correlations_sample_size: int = 1_000_000,
     correlations_max_columns: int = 15,
+    missing_heatmap_max_columns: int = 15,
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
     monotonicity_order_by: str | None = None,
@@ -554,6 +566,7 @@ def profile(
         correlations_sampling_threshold=correlations_sampling_threshold,
         correlations_sample_size=correlations_sample_size,
         correlations_max_columns=correlations_max_columns,
+        missing_heatmap_max_columns=missing_heatmap_max_columns,
         monotonicity_threshold=monotonicity_threshold,
         duplicates_threshold=duplicates_threshold,
         monotonicity_order_by=monotonicity_order_by,
@@ -584,6 +597,7 @@ class ProfileReport:
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
         correlations_max_columns: int = 15,
+        missing_heatmap_max_columns: int = 15,
         monotonicity_order_by: str | None = None,
         **kwargs,
     ):
@@ -596,6 +610,7 @@ class ProfileReport:
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
         self.correlations_max_columns = correlations_max_columns
+        self.missing_heatmap_max_columns = missing_heatmap_max_columns
         self.monotonicity_order_by = monotonicity_order_by
         self.kwargs = kwargs
 
@@ -612,6 +627,7 @@ class ProfileReport:
             monotonicity_threshold=monotonicity_threshold,
             duplicates_threshold=duplicates_threshold,
             correlations_max_columns=correlations_max_columns,
+            missing_heatmap_max_columns=missing_heatmap_max_columns,
             monotonicity_order_by=monotonicity_order_by,
             max_interaction_pairs=kwargs.get("max_interaction_pairs", 10),
             correlations_sampling_threshold=kwargs.get(

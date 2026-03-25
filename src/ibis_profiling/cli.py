@@ -65,6 +65,13 @@ from ibis_profiling import ProfileReport, __version__
     help="Maximum number of columns to include in correlation matrix (min 2).",
 )
 @click.option(
+    "--missing-heatmap-max-columns",
+    type=click.IntRange(min=2),
+    default=15,
+    show_default=True,
+    help="Maximum number of columns to include in missingness heatmap (min 2).",
+)
+@click.option(
     "--monotonicity-order-by",
     type=str,
     help="Column name to order by for monotonicity checks.",
@@ -93,6 +100,7 @@ def main(
     monotonicity_threshold,
     duplicates_threshold,
     correlations_max_columns,
+    missing_heatmap_max_columns,
     monotonicity_order_by,
     theme,
     output_format,
@@ -123,6 +131,7 @@ def main(
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
                 correlations_max_columns=correlations_max_columns,
+                missing_heatmap_max_columns=missing_heatmap_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
         elif ext == ".parquet":
@@ -138,6 +147,7 @@ def main(
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
                 correlations_max_columns=correlations_max_columns,
+                missing_heatmap_max_columns=missing_heatmap_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
 
@@ -154,6 +164,7 @@ def main(
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
                 correlations_max_columns=correlations_max_columns,
+                missing_heatmap_max_columns=missing_heatmap_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
 
@@ -175,6 +186,7 @@ def main(
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
                 correlations_max_columns=correlations_max_columns,
+                missing_heatmap_max_columns=missing_heatmap_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
             )
 
