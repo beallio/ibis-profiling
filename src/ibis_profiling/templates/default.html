@@ -1394,9 +1394,15 @@ function AppContent() {
     bins: reportData.missing?.bar?.matrix?.columns,
     counts: reportData.missing?.bar?.matrix?.counts,
     limit: reportData.missing?.bar?.matrix?.columns?.length || 20
-  }), reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement(NullityMatrix, {
+  }), reportData.missing?.matrix?.matrix?.matrix && reportData.missing.matrix.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(NullityMatrix, {
     data: reportData.missing.matrix.matrix.matrix
-  }), reportData.missing?.heatmap?.matrix?.matrix && reportData.missing.heatmap.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }), reportData.missing.matrix.matrix._metadata?.truncated && /*#__PURE__*/React.createElement("div", {
+    className: `mt-10 p-4 ${theme.bgCardAlt} rounded-xl border border-amber-500/20 text-center`
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-amber-400 text-xs flex items-center justify-center gap-2"
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 14
+  }), /*#__PURE__*/React.createElement("span", null, "Missingness matrix truncated to top ", reportData.missing.matrix.matrix._metadata.limit, " columns (out of ", reportData.missing.matrix.matrix._metadata.original_count, ") with most missing values.")))), reportData.missing?.heatmap?.matrix?.matrix && reportData.missing.heatmap.matrix.matrix.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: `mt-16 pt-8 border-t ${theme.borderAlt}`
   }, /*#__PURE__*/React.createElement("h3", {
     className: `text-xl font-bold mb-2 flex items-center gap-2 ${theme.textPrimary}`

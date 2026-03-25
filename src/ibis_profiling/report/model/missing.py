@@ -7,7 +7,10 @@ class MissingEngine:
 
     @staticmethod
     def compute(
-        table: ibis.Table, variables: dict, max_heatmap_columns: int = 15
+        table: ibis.Table,
+        variables: dict,
+        max_heatmap_columns: int = 15,
+        max_matrix_columns: int = 50,
     ) -> Dict[str, Any]:
         """Assembles missing value model from variable statistics and nullity correlations."""
         import ibis.expr.types as ir
@@ -42,15 +45,15 @@ class MissingEngine:
 
         # Truncate if necessary to avoid O(n^2) blowups
         original_missing_count = len(cols_with_missing)
-        is_truncated = False
-        limit = max(2, max_heatmap_columns)
+        is_heatmap_truncated = False
+        h_limit = max(2, max_heatmap_columns)
 
-        if original_missing_count > limit:
-            is_truncated = True
+        if original_missing_count > h_limit:
+            is_heatmap_truncated = True
             # Prioritize columns with MOST missing values
             cols_with_missing = sorted(
                 cols_with_missing, key=lambda c: variables[c].get("n_missing", 0), reverse=True
-            )[:limit]
+            )[:h_limit]
 
         if len(cols_with_missing) >= 2:
             # Create nullity masks (1 if null, 0 if not)
@@ -90,10 +93,23 @@ class MissingEngine:
         n_rows = variables[columns[0]].get("n", 1000)
         sample_size = min(250, n_rows)
 
+        # Truncate matrix columns if necessary
+        original_matrix_count = len(columns)
+        is_matrix_truncated = False
+        m_limit = max(2, max_matrix_columns)
+        matrix_cols = columns
+
+        if original_matrix_count > m_limit:
+            is_matrix_truncated = True
+            # Prioritize columns with ANY missing values, then by count
+            matrix_cols = sorted(
+                columns, key=lambda c: variables[c].get("n_missing", 0), reverse=True
+            )[:m_limit]
+
         # Project nullity masks for the sample
         from ...metrics import safe_col
 
-        sample_masks = [safe_col(table[c]).isnull().name(c) for c in columns]
+        sample_masks = [safe_col(table[c]).isnull().name(c) for c in matrix_cols]
         # We use limit() for deterministic matrix or sample() for random
         # to_pyarrow() returns a pyarrow Table, which is backend-agnostic
         sample_table = table.projection(sample_masks).limit(sample_size).to_pyarrow()
@@ -102,7 +118,7 @@ class MissingEngine:
         # Template expects matrix: { columns: [], matrix: [row1, row2, ...] }
         # where row is [True, False, ...]
         # We iterate over rows from pyarrow to get a consistent list of lists
-        matrix_values = [[row[c] for c in columns] for row in sample_table.to_pylist()]
+        matrix_values = [[row[c] for c in matrix_cols] for row in sample_table.to_pylist()]
 
         return {
             "bar": {
@@ -116,10 +132,15 @@ class MissingEngine:
                 "name": "Matrix",
                 "caption": "A visualization of the locations of missing values (first 250 rows).",
                 "matrix": {
-                    "columns": columns,
+                    "columns": matrix_cols,
                     "matrix": matrix_values,
                     "sampled": n_rows > sample_size,
                     "sample_size": sample_size,
+                    "_metadata": {
+                        "truncated": is_matrix_truncated,
+                        "original_count": original_matrix_count,
+                        "limit": m_limit,
+                    },
                 },
             },
             "heatmap": {
@@ -130,9 +151,9 @@ class MissingEngine:
                     "matrix": heatmap_data["matrix"],
                     "sampled": False,
                     "_metadata": {
-                        "truncated": is_truncated,
+                        "truncated": is_heatmap_truncated,
                         "original_count": original_missing_count,
-                        "limit": limit,
+                        "limit": h_limit,
                     },
                 },
             },
