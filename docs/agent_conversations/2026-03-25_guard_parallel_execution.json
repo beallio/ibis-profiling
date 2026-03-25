@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "Guard parallel Ibis execution against unsafe backends",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "tests/test_histogram_backend_agnostic.py",
+    "tests/test_parallel_safety.py"
+  ],
+  "tests_added": [
+    "tests/test_parallel_safety.py"
+  ],
+  "design_decisions": [
+    "Implemented _check_parallel_safety() to identify backends that are not thread-safe for shared connections (e.g., DuckDB, SQLite).",
+    "Modified Profiler.run() to disable parallel execution and emit a warning when an unsafe backend is detected.",
+    "Updated parallel pass guards in _run_advanced_pass and _run_complex_pass to respect the updated self.parallel flag.",
+    "Updated existing mock tests to explicitly set parallel=True where needed to trigger parallel paths."
+  ],
+  "results": "Correctness and stability risks for concurrent queries on shared connections are mitigated. Parallel mode now safely falls back to sequential execution with a warning for DuckDB and SQLite. Full test suite passes."
+}

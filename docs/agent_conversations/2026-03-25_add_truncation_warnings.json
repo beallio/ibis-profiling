@@ -1,0 +1,21 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "fix: Add missing truncation warnings for correlations and missing data",
+  "files_modified": [
+    "src/ibis_profiling/templates/default.src.html",
+    "src/ibis_profiling/templates/ydata-like.src.html",
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.html",
+    "docs/plans/add_truncation_warnings.md"
+  ],
+  "tests_added": [
+    "tests/reproduce_truncation_warning.py"
+  ],
+  "design_decisions": [
+    "Identified missing truncation warnings in Correlations and Missing Data sections for both themes.",
+    "Added conditional UI components to display warnings when the 'truncated' flag is set in the underlying model.",
+    "Ensured consistency between 'default' and 'ydata-like' themes in terms of warning visibility.",
+    "Rebuilt minified templates to include the new UI logic."
+  ],
+  "results": "Reports now clearly indicate when correlation matrices or missing data visualizations have been truncated due to high column counts, improving user transparency."
+}

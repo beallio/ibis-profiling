@@ -675,8 +675,19 @@
         return () => window.removeEventListener('hashchange', handleHashChange);
       }, []);
 
-      const defaultCorrType = reportData.correlations ? Object.keys(reportData.correlations)[0] || '' : '';
+      const defaultCorrType = useMemo(() => {
+        if (!reportData.correlations) return '';
+        const keys = Object.keys(reportData.correlations).filter(k => k !== '_metadata');
+        return keys[0] || '';
+      }, [reportData.correlations]);
       const [corrType, setCorrType] = useState(defaultCorrType);
+
+      // Re-evaluate if default changes (e.g., if reportData loads asynchronously)
+      useEffect(() => {
+        if (defaultCorrType && !Object.keys(reportData.correlations || {}).includes(corrType)) {
+          setCorrType(defaultCorrType);
+        }
+      }, [defaultCorrType, corrType, reportData.correlations]);
 
       const filteredVariables = useMemo(() => {
         if (!reportData || !reportData.variables) return [];

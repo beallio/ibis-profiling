@@ -760,7 +760,21 @@
 
     const CorrelationsSection = ({ data }) => {
       if (!data.correlations || Object.keys(data.correlations).length === 0) return null;
-      const [corrType, setCorrType] = useState(Object.keys(data.correlations)[0]);
+      
+      const defaultCorrType = useMemo(() => {
+        const keys = Object.keys(data.correlations).filter(k => k !== '_metadata');
+        return keys[0] || '';
+      }, [data.correlations]);
+      
+      const [corrType, setCorrType] = useState(defaultCorrType);
+
+      useEffect(() => {
+        if (defaultCorrType && !Object.keys(data.correlations || {}).includes(corrType)) {
+          setCorrType(defaultCorrType);
+        }
+      }, [defaultCorrType, corrType, data.correlations]);
+
+      if (!corrType || !data.correlations[corrType]) return null;
 
       return (
         <div id="correlations" className="space-y-4 animate-fadeIn section">

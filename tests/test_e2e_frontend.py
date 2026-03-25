@@ -146,6 +146,58 @@ def test_ydata_theme_rendering(page, html_reports):
     assert len(errors) == 0, f"React rendering crashed with errors: {errors}"
 
 
+def test_correlation_metadata_filtered(page, html_reports):
+    """Ensure _metadata is not selected as the default correlation type."""
+    page.goto(html_reports["default"], wait_until="networkidle")
+
+    # Wait for root and navigate to correlations
+    page.wait_for_selector("#root", state="visible")
+    correlations_tab = page.locator("button:has-text('Correlations')").first
+    if correlations_tab.is_visible():
+        correlations_tab.click()
+        page.wait_for_selector("text=Correlation Matrix", state="visible")
+
+        # Look for buttons that represent the correlation types
+        # They are usually uppercase in default theme
+        page.locator("button:has-text('PEARSON')").first
+        page.locator("button:has-text('SPEARMAN')").first
+
+        # Verify the _metadata button doesn't exist
+        metadata_btn = page.locator("button:has-text('_METADATA')").first
+        assert not metadata_btn.is_visible(), "_metadata button should not be visible"
+
+        # Check that one of the valid correlations is selected (has a specific active class, e.g., bg-blue-600)
+        # Since it depends on the exact styling, we just check that the correlation matrix rendered
+        # and doesn't show "No data" because it accidentally selected _metadata.
+        no_data_msg = page.locator("text=No data available for this metric.")
+        assert not no_data_msg.is_visible(), (
+            "Correlation matrix should not be blank due to _metadata selection"
+        )
+        page.wait_for_selector("svg rect", state="visible", timeout=10000)
+
+    # Do the same for ydata-like theme
+    page.goto(html_reports["ydata"], wait_until="networkidle")
+    page.wait_for_selector("#root", state="visible")
+
+    correlations_link = page.locator("a[href='#correlations']")
+    if correlations_link.is_visible():
+        correlations_link.click()
+        page.wait_for_selector("button:has-text('pearson')", state="visible")
+
+        # Verify _metadata button is not present
+        metadata_btn = page.locator("button:has-text('_metadata')").first
+        assert not metadata_btn.is_visible(), (
+            "_metadata button should not be visible in ydata theme"
+        )
+
+        # Verify it doesn't show "No data"
+        no_data_msg = page.locator("text=No data available for this metric.")
+        assert not no_data_msg.is_visible(), (
+            "Correlation matrix should not be blank due to _metadata selection"
+        )
+        page.wait_for_selector("svg rect", state="visible", timeout=10000)
+
+
 def test_minimal_theme_rendering(page, html_reports):
     """E2E test for minimal mode report."""
     errors = []

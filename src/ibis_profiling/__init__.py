@@ -77,7 +77,7 @@ class Profiler:
         self.inspector = DatasetInspector(table)
         self.planner = QueryPlanner(table, registry)
         self.engine = ExecutionEngine()
-        self.executor = ThreadPoolExecutor(max_workers=pool_size) if parallel else None
+        self.executor = None
 
         self.col_types: dict[str, Any] = self.inspector.get_column_types()
         self.report_data = {
@@ -100,14 +100,14 @@ class Profiler:
         """
         # Ibis backends that are known to be unsafe for concurrent queries on one connection.
         # DuckDB is explicitly unsafe for this.
-        UNSAFE_BACKENDS = ["duckdb", "sqlite"]
+        UNSAFE_BACKENDS = {"duckdb", "sqlite", "sqlite3"}
 
         try:
             # Get the backend name from the table's associated connection
             # Use ibis.get_backend(self.table) or self.table.get_backend()
             con = self.table.get_backend()
             if con and hasattr(con, "name"):
-                backend_name = con.name
+                backend_name = str(con.name).lower()
                 if backend_name in UNSAFE_BACKENDS:
                     return backend_name
         except Exception:
@@ -120,6 +120,9 @@ class Profiler:
         try:
             # Parallel Safety Guard: Many backends are not thread-safe for concurrent queries.
             unsafe_backend = self._check_parallel_safety() if self.parallel else None
+
+            if self.parallel and not unsafe_backend:
+                self.executor = ThreadPoolExecutor(max_workers=self.pool_size)
 
             # Start at 0
             self._update_progress(0, "Analyzing dataset...")

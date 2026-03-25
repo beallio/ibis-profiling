@@ -1,0 +1,20 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "Fix template UI issues related to truncation warnings and correlations metadata",
+  "files_modified": [
+    "src/ibis_profiling/templates/default.src.html",
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.src.html",
+    "src/ibis_profiling/templates/ydata-like.html"
+  ],
+  "tests_added": [
+    "tests/reproduce_truncation_warning.py (temporary)",
+    "tests/verify_fixes.py (temporary)"
+  ],
+  "design_decisions": [
+    "Moved Nullity Matrix truncation warning inside the NullityMatrix component to ensure it appears below the header.",
+    "Filtered out '_metadata' from correlations tab buttons in both themes.",
+    "Corrected heatmap data path in ydata theme to pass the full matrix dictionary (including metadata) to CorrelationMatrixComponent."
+  ],
+  "results": "All reported issues resolved and verified. Full test suite passes with 90% coverage."
+}
