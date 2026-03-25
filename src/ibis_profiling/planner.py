@@ -53,10 +53,10 @@ class QueryPlanner:
             mapped_type = overrides.get(col_name)
             col_meta = metadata.get(col_name, {})
 
-            # 1. n_unique (singletons) - Scalar Value
+            # 1. n_unique (singletons) - Scalar Value (but uses subquery, so hint Table)
             metric = self.registry.metrics.get("n_unique")
             if metric and metric.supports(dtype):
-                plans.append((col_name, metric.name, metric.build_expr(col), "Value"))
+                plans.append((col_name, metric.name, metric.build_expr(col), "Table"))
 
             # 2. Histograms / Distribution (top values) - Table
             is_discrete = mapped_type == "Categorical" or not isinstance(

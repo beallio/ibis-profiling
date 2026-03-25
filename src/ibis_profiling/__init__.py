@@ -376,9 +376,15 @@ class Profiler:
                             report.add_metric(col_name, metric_name, val)
                         except Exception:
                             continue
+        else:
+            # If no batched metrics, move the 5% to the next section
+            self._update_progress(0, "Skipping batched metrics...")
 
         # 2. Execute Table metrics in parallel if executor is present
-        inc = 10 / len(table_plans) if table_plans else 10
+        # Total complex pass is 15%. If batched was 5, we have 10 left.
+        # If batched was 0, we have 15 left.
+        total_remaining = 10 if value_aggs else 15
+        inc = total_remaining / len(table_plans) if table_plans else total_remaining
 
         def run_table_plan(p):
             col_name, metric_name, expr = p
@@ -397,14 +403,24 @@ class Profiler:
         else:
             results = [run_table_plan(p) for p in table_plans]
 
-        for col_name, metric_name, val, exc in results:
-            self._update_progress(int(inc), f"Processing {metric_name} for {col_name}...")
+        processed_inc = 0
+        for i, (col_name, metric_name, val, exc) in enumerate(results):
+            # Calculate increment to ensure we hit exactly total_remaining
+            current_total = int((i + 1) * inc)
+            this_inc = current_total - processed_inc
+            processed_inc = current_total
+
+            self._update_progress(this_inc, f"Processing {metric_name} for {col_name}...")
             if exc:
                 report.analysis.setdefault("warnings", []).append(
                     f"{metric_name} failed for {col_name}: {exc}"
                 )
             elif val is not None:
                 report.add_metric(col_name, metric_name, val)
+
+        # Ensure any leftover due to rounding is accounted for
+        if processed_inc < total_remaining:
+            self._update_progress(total_remaining - processed_inc)
 
     def _run_correlations(self, report: InternalProfileReport):
         self._update_progress(5, "Correlations pass...")
