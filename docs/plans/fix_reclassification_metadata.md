@@ -28,9 +28,17 @@ When `Profiler._reclassify` runs, it may change a column's type from `Numeric` t
 - **Reproduction Test:** `tests/reproduce_reclassification_metadata.py` confirms that `mean` and other numeric metrics are absent for a reclassified categorical column.
 - **Regression Test:** Run `uv run pytest tests/` to ensure no other features are broken.
 
+## Performance Benchmarking
+- **Dataset:** 100 columns x 1000 rows (all columns reclassified).
+- **Baseline (dev):** 2.6116s (avg of 10 iterations)
+- **Fixed (working branch):** 2.6463s (avg of 10 iterations)
+- **Impact:** +1.3% (0.03s overhead for 100 columns). The overhead is negligible for report assembly.
+
 ## Task List
-- [ ] Task 1: Update `Profiler._reclassify` to remove numeric-only metrics.
-- [ ] Task 2: Update `Profiler._reclassify` to correctly update `report.table["types"]` if it's not already correct.
-- [ ] Task 3: Verify fix with reproduction test.
-- [ ] Task 4: Run full test suite and confirm zero regressions.
-- [ ] Task 5: Document results.
+- [x] Task 1: Update `Profiler._reclassify` to remove numeric-only metrics.
+- [x] Task 2: Update `Profiler._reclassify` to correctly update `report.table["types"]`.
+- [x] Task 3: Verify fix with reproduction test.
+- [x] Task 4: Run full test suite and confirm zero regressions.
+- [x] Task 5: Document results.
+- [x] Task 6: Perform performance benchmarking.
+
