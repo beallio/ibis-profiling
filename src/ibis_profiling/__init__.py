@@ -8,6 +8,7 @@ from .metrics import registry, safe_col
 from .planner import QueryPlanner
 from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
+from .constants import NUMERIC_ONLY_METRICS
 from typing import Callable, cast
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -241,30 +242,11 @@ class Profiler:
                         stats["type"] = "Categorical"
 
                         # Remove numeric-only metrics
-                        for k in [
-                            "mean",
-                            "std",
-                            "variance",
-                            "skewness",
-                            "kurtosis",
-                            "mad",
-                            "sum",
-                            "50%",
-                            "5%",
-                            "25%",
-                            "75%",
-                            "95%",
-                            "cv",
-                            "p_zeros",
-                            "p_infinite",
-                            "p_negative",
-                            "n_zeros",
-                            "n_infinite",
-                            "n_negative",
-                        ]:
+                        for k in NUMERIC_ONLY_METRICS:
                             stats.pop(k, None)
 
                         types_dict = report.table.get("types", {})
+
                         if isinstance(types_dict, dict) and "Numeric" in types_dict:
                             types_dict["Numeric"] -= 1
                             types_dict["Categorical"] = types_dict.get("Categorical", 0) + 1

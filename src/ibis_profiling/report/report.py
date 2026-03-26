@@ -7,6 +7,7 @@ import base64
 from typing import Any, cast
 from .model.summary import SummaryEngine
 from .model.alerts import AlertEngine
+from ..constants import NUMERIC_ONLY_METRICS
 
 
 class ReportEncoder(json.JSONEncoder):
@@ -196,27 +197,7 @@ class ProfileReport:
             elif stats.get("type") == "Categorical":
                 # For categoricals, we don't want continuous numeric metrics
                 # even if they were calculated in pass 1 before reclassification
-                for k in [
-                    "mean",
-                    "std",
-                    "variance",
-                    "skewness",
-                    "kurtosis",
-                    "mad",
-                    "sum",
-                    "50%",
-                    "5%",
-                    "25%",
-                    "75%",
-                    "95%",
-                    "cv",
-                    "p_zeros",
-                    "p_infinite",
-                    "p_negative",
-                    "n_zeros",
-                    "n_infinite",
-                    "n_negative",
-                ]:
+                for k in NUMERIC_ONLY_METRICS:
                     stats.pop(k, None)
 
             # Unique Percentage

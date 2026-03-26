@@ -26,6 +26,8 @@ def test_reclassification_metadata():
         "kurtosis",
         "mad",
         "sum",
+        "range",
+        "iqr",
         "50%",
         "5%",
         "25%",
