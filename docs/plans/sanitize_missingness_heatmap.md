@@ -12,21 +12,21 @@ We will modify `MissingEngine.compute` in `src/ibis_profiling/report/model/missi
 ## Phased Approach
 
 ### Phase 1: Implementation
-- [ ] Modify `src/ibis_profiling/report/model/missing.py`:
+- [x] Modify `src/ibis_profiling/report/model/missing.py`:
     - Import `math`.
     - Update the `final_matrix` population loop to check for finite values.
     - Track pairs that yield non-finite results.
     - Add warnings to the final result if any non-finite values were found.
 
 ### Phase 2: Verification (TDD)
-- [ ] Create `tests/test_missing_heatmap_sanitization.py`:
+- [x] Create `tests/test_missing_heatmap_sanitization.py`:
     - Test with columns that have 0% and 100% missing values (constant masks -> zero variance -> NaN correlation).
     - Assert that the resulting matrix contains only finite numbers (0.0).
     - Assert that a warning is present in the report.
-- [ ] Run full test suite.
+- [x] Run full test suite.
 
 ### Phase 3: Documentation
-- [ ] Update session log.
+- [x] Update session log.
 
 ## Git Strategy
 - Branch: `fix/missing-heatmap-sanitization`
@@ -34,5 +34,5 @@ We will modify `MissingEngine.compute` in `src/ibis_profiling/report/model/missi
     - Sanitize missingness heatmap for NaN/Inf and add warnings.
 
 ## Testing Strategy
-- The primary verification will be `tests/test_missing_heatmap_sanitization.py`.
+- The primary verification was `tests/test_missing_heatmap_sanitization.py`.
 - Ensure no regressions in `tests/test_missing.py`.

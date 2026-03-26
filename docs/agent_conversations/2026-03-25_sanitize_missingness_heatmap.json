@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "Sanitize missingness heatmap for non-finite values",
+  "files_modified": [
+    "src/ibis_profiling/report/model/missing.py",
+    "src/ibis_profiling/__init__.py",
+    "scripts/run_financial_benchmark.py"
+  ],
+  "tests_added": [
+    "tests/test_missing_heatmap_sanitization.py (temporary)"
+  ],
+  "design_decisions": [
+    "Updated `MissingEngine.compute` to use `math.isfinite` for validating nullity correlation values.",
+    "Modified the return structure of `MissingEngine.compute` to include an `alerts` (warnings) list.",
+    "Updated `Profiler._run_final_pass` to extract and report warnings from `MissingEngine`.",
+    "Defaulted non-finite correlation values to 0.0 in the heatmap matrix."
+  ],
+  "results": "Missingness heatmap is now sanitized for NaN/Inf values. Verified with new unit tests ensuring 0% and 100% missing columns are handled gracefully with warnings. Full suite passes."
+}
