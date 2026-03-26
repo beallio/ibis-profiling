@@ -47,6 +47,7 @@ class Profiler:
         monotonicity_order_by: str | None = None,
         parallel: bool = False,
         pool_size: int = 4,
+        use_sketches: bool = False,
     ):
         from typing import Any
 
@@ -72,10 +73,11 @@ class Profiler:
         self.monotonicity_order_by = monotonicity_order_by
         self.parallel = parallel
         self.pool_size = pool_size
+        self.use_sketches = use_sketches
 
         self.start_time = datetime.now()
         self.inspector = DatasetInspector(table)
-        self.planner = QueryPlanner(table, registry)
+        self.planner = QueryPlanner(table, registry, use_sketches=use_sketches)
         self.engine = ExecutionEngine()
         self.executor = None
 
@@ -653,6 +655,7 @@ def profile(
     monotonicity_order_by: str | None = None,
     parallel: bool = False,
     pool_size: int = 4,
+    use_sketches: bool = False,
 ) -> InternalProfileReport:
     """Main entrypoint for profiling an Ibis table."""
     profiler = Profiler(
@@ -675,6 +678,7 @@ def profile(
         monotonicity_order_by=monotonicity_order_by,
         parallel=parallel,
         pool_size=pool_size,
+        use_sketches=use_sketches,
     )
     return profiler.run()
 

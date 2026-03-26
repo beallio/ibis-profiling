@@ -5,14 +5,22 @@ from .metrics import MetricRegistry, MetricCategory
 
 
 class QueryPlanner:
-    def __init__(self, table: ibis.Table, registry: MetricRegistry):
+    def __init__(self, table: ibis.Table, registry: MetricRegistry, use_sketches: bool = False):
         self.table = table
         self.registry = registry
+        self.use_sketches = use_sketches
 
     def build_global_aggregation(self) -> ir.Table:
         """Batches all applicable simple COLUMN metrics into a single aggregation query."""
         schema = self.table.schema()
         aggs = []
+
+        # Check for sketch support (currently DuckDB)
+        is_duckdb = False
+        try:
+            is_duckdb = self.table.get_backend().name == "duckdb"
+        except Exception:
+            pass
 
         for col_name, dtype in schema.items():
             col = self.table[col_name]
@@ -22,9 +30,15 @@ class QueryPlanner:
                     continue
 
                 if metric.category == MetricCategory.COLUMN and metric.supports(dtype):
+                    # Special case: n_distinct can be sketched
+                    if metric.name == "n_distinct" and self.use_sketches and is_duckdb:
+                        expr = col.approx_nunique()
+                    else:
+                        expr = metric.build_expr(col)
+
                     # We namespace the alias to reconstruct the report later
                     expr_alias = f"{col_name}__{metric.name}"
-                    aggs.append(metric.build_expr(col).name(expr_alias))
+                    aggs.append(expr.name(expr_alias))
 
         # Include dataset-wide metrics
         aggs.append(self.table.count().name("_dataset__row_count"))

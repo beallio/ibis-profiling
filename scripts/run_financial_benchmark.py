@@ -54,8 +54,8 @@ def run_benchmark(version_label):
     start_time = time.time()
     start_mem = get_memory_usage()
 
-    # Run full profile (Sequential mode by default)
-    profile(t, minimal=False)
+    # Run full profile with sketches
+    profile(t, minimal=False, use_sketches=True)
 
     end_time = time.time()
     end_mem = get_memory_usage()
