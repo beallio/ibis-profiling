@@ -2,7 +2,7 @@
 
 # Metrics that are only applicable to numeric columns and should be removed
 # if a column is reclassified to Categorical.
-NUMERIC_ONLY_METRICS = [
+NUMERIC_ONLY_METRICS = {
     "mean",
     "std",
     "variance",
@@ -24,4 +24,4 @@ NUMERIC_ONLY_METRICS = [
     "n_zeros",
     "n_infinite",
     "n_negative",
-]
+}

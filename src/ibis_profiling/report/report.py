@@ -70,8 +70,36 @@ class ProfileReport:
         self._build()
         self.analysis["date_end"] = datetime.now().isoformat()
 
+    def reclassify(self, col_name: str, new_type: str):
+        """Changes the type of a variable and cleans up incompatible metadata."""
+        if col_name not in self.variables:
+            return
+
+        stats = self.variables[col_name]
+        old_type = stats.get("type")
+        if old_type == new_type:
+            return
+
+        stats["type"] = new_type
+
+        # Update table type counts
+        if self.table and isinstance(self.table.get("types"), dict):
+            types = cast(dict, self.table["types"])
+            old_type_str = cast(str, old_type)
+            if old_type_str in types:
+                types[old_type_str] -= 1
+            types[new_type] = types.get(new_type, 0) + 1
+
+        # Cleanup metadata
+        if new_type == "Categorical":
+            for k in NUMERIC_ONLY_METRICS:
+                stats.pop(k, None)
+
     def _to_json_serializable(self, val):
         """Converts Polars/Temporal/Ibis types to standard Python types for JSON serialization."""
+        if isinstance(val, (str, int, bool, type(None))):
+            return val
+
         import ibis.expr.types as ir
         from decimal import Decimal
 

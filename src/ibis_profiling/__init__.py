@@ -8,7 +8,6 @@ from .metrics import registry, safe_col
 from .planner import QueryPlanner
 from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
-from .constants import NUMERIC_ONLY_METRICS
 from typing import Callable, cast
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -239,17 +238,7 @@ class Profiler:
                 if isinstance(dtype, dt.Integer):
                     n_distinct = stats.get("n_distinct", 0)
                     if 0 < n_distinct < self.cardinality_threshold:
-                        stats["type"] = "Categorical"
-
-                        # Remove numeric-only metrics
-                        for k in NUMERIC_ONLY_METRICS:
-                            stats.pop(k, None)
-
-                        types_dict = report.table.get("types", {})
-
-                        if isinstance(types_dict, dict) and "Numeric" in types_dict:
-                            types_dict["Numeric"] -= 1
-                            types_dict["Categorical"] = types_dict.get("Categorical", 0) + 1
+                        report.reclassify(col_name, "Categorical")
 
     def _run_advanced_pass(self, report: InternalProfileReport):
         self._update_progress(10 if not self.minimal else 20, "Advanced moments calculation...")

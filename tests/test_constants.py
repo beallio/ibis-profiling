@@ -11,6 +11,6 @@ def test_numeric_only_metrics_content():
     assert len(NUMERIC_ONLY_METRICS) == len(set(NUMERIC_ONLY_METRICS))
 
 
-def test_numeric_only_metrics_is_list():
-    assert isinstance(NUMERIC_ONLY_METRICS, list)
+def test_numeric_only_metrics_is_set():
+    assert isinstance(NUMERIC_ONLY_METRICS, set)
     assert len(NUMERIC_ONLY_METRICS) > 0
