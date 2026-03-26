@@ -101,7 +101,7 @@ class CorrelationEngine:
                         final_pearson[i][j] = val
             pearson = {
                 "columns": numeric_cols,
-                "matrix": final_pearson,
+                "matrix": CorrelationEngine._sanitize_matrix(final_pearson),
                 "sampled": is_sampled,
                 "sample_size": sample_size if is_sampled else None,
             }
@@ -125,7 +125,11 @@ class CorrelationEngine:
                     r1 = rank_table[f"rank_{c1}"]
                     r2 = rank_table[f"rank_{c2}"]
                     # Pearson on Ranks
-                    expr = r1.cov(r2, how="pop") / (r1.std(how="pop") * r2.std(how="pop"))
+                    std1 = r1.std(how="pop")
+                    std2 = r2.std(how="pop")
+                    denominator = (std1 * std2).nullif(0)
+
+                    expr = r1.cov(r2, how="pop") / denominator
                     flat_spearman.append(expr.name(f"s_{i}_{j}"))
 
         if flat_spearman:
@@ -140,7 +144,7 @@ class CorrelationEngine:
                         final_spearman[j][i] = val
             spearman = {
                 "columns": numeric_cols,
-                "matrix": final_spearman,
+                "matrix": CorrelationEngine._sanitize_matrix(final_spearman),
                 "sampled": is_sampled,
                 "sample_size": sample_size if is_sampled else None,
             }
@@ -214,8 +218,29 @@ class CorrelationEngine:
                     # corr(x, y) = cov(x, y) / (std(x) * std(y))
                     s1 = safe_col(table[c1]).cast(dt.Float64)
                     s2 = safe_col(table[c2]).cast(dt.Float64)
-                    expr = s1.cov(s2, how="pop") / (s1.std(how="pop") * s2.std(how="pop"))
+
+                    std1 = s1.std(how="pop")
+                    std2 = s2.std(how="pop")
+                    denominator = (std1 * std2).nullif(0)
+
+                    expr = s1.cov(s2, how="pop") / denominator
                     row.append(expr)
             matrix.append(row)
 
         return {"columns": cols, "matrix": matrix}
+
+    @staticmethod
+    def _sanitize_matrix(matrix: List[List[Any]]) -> List[List[Any]]:
+        """Replaces NaN/Inf values with None for JSON compliance."""
+        import math
+
+        sanitized = []
+        for row in matrix:
+            new_row = []
+            for val in row:
+                if isinstance(val, (float, int)) and (math.isnan(val) or math.isinf(val)):
+                    new_row.append(None)
+                else:
+                    new_row.append(val)
+            sanitized.append(new_row)
+        return sanitized
