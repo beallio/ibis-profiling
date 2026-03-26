@@ -1,0 +1,15 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "Improve MissingEngine robustness: fix potential TypeError in isfinite and ensure consistent return schema",
+  "files_modified": [
+    "src/ibis_profiling/report/model/missing.py"
+  ],
+  "tests_added": [
+    "tests/test_missing_robustness.py"
+  ],
+  "design_decisions": [
+    "Added `warnings` key to early return for empty columns to maintain API consistency.",
+    "Wrapped `math.isfinite` check in a `try/except` block and coerced the value to float to prevent TypeErrors on non-float numeric types like Decimal."
+  ],
+  "results": "MissingEngine is now more robust against diverse numeric types and provides a consistent schema across all return paths. Verified with new unit tests. Full suite passes."
+}

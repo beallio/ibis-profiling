@@ -37,6 +37,7 @@ class MissingEngine:
                     "caption": "Pearson correlation of nullity between variables (-1 to 1).",
                     "matrix": {"columns": [], "matrix": []},
                 },
+                "warnings": [],
             }
 
         counts = [variables[c].get("n_missing", 0) for c in columns]
@@ -89,8 +90,16 @@ class MissingEngine:
                             key = f"mcorr_{i}_{j}"
                             val = res[key][0]
                             # Handle potential NaNs/Infs from zero-variance masks
-                            if val is not None and math.isfinite(val):
-                                final_matrix[i][j] = val
+                            # Coerce to float to avoid TypeError on non-float numeric types (e.g. Decimal)
+                            is_f = False
+                            try:
+                                if val is not None and math.isfinite(float(val)):
+                                    is_f = True
+                            except (TypeError, ValueError):
+                                pass
+
+                            if is_f:
+                                final_matrix[i][j] = float(val)
                             else:
                                 final_matrix[i][j] = 0.0
                                 non_finite_count += 1
