@@ -1,0 +1,16 @@
+{
+  "date": "2026-03-25",
+  "task_objective": "Guard correlation calculations against zero-variance columns",
+  "files_modified": [
+    "src/ibis_profiling/report/model/correlations.py",
+    "tests/test_correlation_zero_variance.py"
+  ],
+  "tests_added": [
+    "tests/test_correlation_zero_variance.py"
+  ],
+  "design_decisions": [
+    "Used Ibis `.nullif(0)` on the product of standard deviations in Pearson and Spearman calculations to prevent division by zero.",
+    "Implemented a `_sanitize_matrix` helper to replace any NaN/Inf values with `None` before returning the final correlation results."
+  ],
+  "results": "Correlation matrices no longer contain NaN/Inf for constant or all-null columns. Verified with new unit tests. Full suite passes with 90% coverage."
+}
