@@ -1,21 +1,18 @@
 import ibis
-import pandas as pd
 import time
-import numpy as np
 from ibis_profiling import Profiler
 
 
-def benchmark_reclassification(n_cols=100, n_rows=1000):
-    # Create a table with many low-cardinality integer columns
-    data = {f"col_{i}": np.random.randint(0, 2, n_rows) for i in range(n_cols)}
-    df = pd.DataFrame(data)
-    table = ibis.memtable(df)
+def benchmark_reclassification(input_path="/tmp/ibis-profiling/bench_reclass_static.parquet"):
+    print(f"Loading dataset from {input_path}...")
+    table = ibis.read_parquet(input_path)
 
     durations = []
     for i in range(10):
+        # We must re-create the profiler each time to clear state
         profiler = Profiler(
             table,
-            cardinality_threshold=5,
+            cardinality_threshold=20,
             correlations=False,
             monotonicity=False,
             compute_duplicates=False,

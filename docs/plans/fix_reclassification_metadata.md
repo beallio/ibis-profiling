@@ -30,9 +30,9 @@ When `Profiler._reclassify` runs, it may change a column's type from `Numeric` t
 
 ## Performance Benchmarking (Apples-to-Apples)
 - **Dataset:** Static 100 columns x 10,000 rows (Parquet, all columns reclassified).
-- **Baseline (dev):** 2.5382s (avg of 10 iterations)
-- **Fixed (working branch):** 2.5061s (avg of 10 iterations)
-- **Impact:** Negligible (within noise). Confirms no regression for report assembly.
+- **Baseline (dev):** 2.4668s (avg of 10 iterations)
+- **Fixed (working branch):** 2.5008s (avg of 10 iterations)
+- **Impact:** +1.3% (+0.034s). Confirms no regression for report assembly after refactoring.
 
 ## Task List
 - [x] Task 1: Update `Profiler._reclassify` to remove numeric-only metrics.
