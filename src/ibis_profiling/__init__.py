@@ -98,43 +98,45 @@ class Profiler:
     def _check_parallel_safety(self) -> str | None:
         """
         Checks if the current backend is safe for parallel execution on a shared connection.
-        Returns the backend name if unsafe, None if safe or undetermined.
+        Returns the backend name if unsafe, None if safe.
         """
-        # Ibis backends that are known to be unsafe for concurrent queries on one connection.
-        # DuckDB is explicitly unsafe for this.
-        UNSAFE_BACKENDS = {"duckdb", "sqlite", "sqlite3"}
+        # Ibis backends that are known to be safe for concurrent queries on one connection.
+        # Most backends are NOT thread-safe on a single shared connection.
+        # For now, we default to sequential for all backends to ensure stability.
+        ALLOWLIST_BACKENDS = set()
 
         try:
-            # Get the backend name from the table's associated connection
-            # Use ibis.get_backend(self.table) or self.table.get_backend()
             con = self.table.get_backend()
             if con and hasattr(con, "name"):
                 backend_name = str(con.name).lower()
-                if backend_name in UNSAFE_BACKENDS:
-                    return backend_name
+                if backend_name in ALLOWLIST_BACKENDS:
+                    return None
+                return backend_name
         except Exception:
-            # If we can't determine, we could be conservative, but let's only block known bads
-            pass
-        return None
+            # If we can't determine, assume it's unsafe (conservative)
+            return "unknown"
+        return "unknown"
 
     def run(self) -> InternalProfileReport:
         """Executes all phases of profiling."""
         try:
-            # Parallel Safety Guard: Many backends are not thread-safe for concurrent queries.
+            # 1. Parallel Safety Guard: Many backends are not thread-safe for concurrent queries.
             unsafe_backend = self._check_parallel_safety() if self.parallel else None
+            if unsafe_backend:
+                self.parallel = False
 
-            if self.parallel and not unsafe_backend:
+            if self.parallel:
                 self.executor = ThreadPoolExecutor(max_workers=self.pool_size)
 
             # Start at 0
             self._update_progress(0, "Analyzing dataset...")
 
-            # 1. Global Aggregates (20%)
+            # 2. Global Aggregates (20%)
             self._update_progress(20 if not self.minimal else 30, "Executing global aggregates...")
             global_plan = self.planner.build_global_aggregation()
             raw_results = self.engine.execute(global_plan)
 
-            # 2. Metadata & Initial Report (10%)
+            # 3. Metadata & Initial Report (10%)
             self._update_progress(10, "Metadata analysis...")
             row_count = raw_results["_dataset__row_count"][0] if not raw_results.is_empty() else 0
             mem_size = self.engine.get_storage_size(self.table)
@@ -154,10 +156,6 @@ class Profiler:
                     f"Parallel mode disabled for {unsafe_backend} backend due to thread-safety "
                     "concerns. Execution will proceed sequentially."
                 )
-                if self.executor:
-                    self.executor.shutdown(wait=False)
-                    self.executor = None
-                self.parallel = False
 
             # 3. Reclassification & Static Analysis (10%)
             self._update_progress(5, "Reclassifying variables...")

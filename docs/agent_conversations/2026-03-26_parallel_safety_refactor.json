@@ -1,0 +1,12 @@
+{
+  "date": "2026-03-26",
+  "task_objective": "Refactor Parallel Mode to be Backend-Safe",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py"
+  ],
+  "tests_added": [
+    "tests/test_parallel_safety_refactor.py"
+  ],
+  "design_decisions": "Replaced the parallel safety blacklist with an empty allowlist, effectively disabling the current unsafe 'shared-connection' parallel mode for all backends. Moved the safety check to the beginning of Profiler.run() to prevent unnecessary ThreadPoolExecutor initialization. All backends now trigger a sequential fallback with a warning.",
+  "results": "Unit tests verify that all backends (Pandas, Postgres, DuckDB, etc.) now correctly trigger a sequential fallback for safety. All 133 tests passed."
+}

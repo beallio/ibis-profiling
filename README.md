@@ -157,7 +157,7 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | Parameter | Default | Description |
 | :--- | :--- | :--- |
 | `minimal` | `False` | Enable faster profiling by skipping expensive metrics (correlations, interactions). |
-| `parallel` | `False` | Execute independent backend queries in parallel using a thread pool. (Experimental) |
+| `parallel` | `False` | Execute independent backend queries in parallel using a thread pool. (Currently disabled for all backends due to thread-safety concerns with shared connections. Fallback to sequential with warning.) |
 | `pool_size` | `4` | Number of concurrent worker threads for parallel execution. |
 | `max_interaction_pairs` | `10` | Limit pairwise scatter plots to the Top N most interactive numeric variables. |
 | `correlations_sampling_threshold` | `1,000,000` | Row count threshold above which Spearman correlation uses sampling. |
