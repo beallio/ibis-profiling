@@ -36,7 +36,7 @@ def test_complex_profile():
     df = pl.DataFrame(data)
     table = ibis.memtable(df)
 
-    report_obj = profile(table)
+    report_obj = profile(table, cardinality_threshold=0)
     report = report_obj.to_dict()
 
     # Dataset stats

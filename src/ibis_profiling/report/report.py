@@ -209,6 +209,13 @@ class ProfileReport:
                     "25%",
                     "75%",
                     "95%",
+                    "cv",
+                    "p_zeros",
+                    "p_infinite",
+                    "p_negative",
+                    "n_zeros",
+                    "n_infinite",
+                    "n_negative",
                 ]:
                     stats.pop(k, None)
 

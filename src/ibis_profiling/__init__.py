@@ -239,6 +239,31 @@ class Profiler:
                     n_distinct = stats.get("n_distinct", 0)
                     if 0 < n_distinct < self.cardinality_threshold:
                         stats["type"] = "Categorical"
+
+                        # Remove numeric-only metrics
+                        for k in [
+                            "mean",
+                            "std",
+                            "variance",
+                            "skewness",
+                            "kurtosis",
+                            "mad",
+                            "sum",
+                            "50%",
+                            "5%",
+                            "25%",
+                            "75%",
+                            "95%",
+                            "cv",
+                            "p_zeros",
+                            "p_infinite",
+                            "p_negative",
+                            "n_zeros",
+                            "n_infinite",
+                            "n_negative",
+                        ]:
+                            stats.pop(k, None)
+
                         types_dict = report.table.get("types", {})
                         if isinstance(types_dict, dict) and "Numeric" in types_dict:
                             types_dict["Numeric"] -= 1
