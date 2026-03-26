@@ -48,6 +48,8 @@ class ReportEncoder(json.JSONEncoder):
 class ProfileReport:
     """Canonical Report Model that assembles data from specialized engines."""
 
+    _asset_cache: dict[str, str] = {}
+
     def __init__(
         self, raw_results: pl.DataFrame, schema: dict, title: str = "Ibis Profiling Report"
     ):
@@ -417,7 +419,7 @@ class ProfileReport:
             # Fallback to default if theme file not found
             template_path = os.path.join(templates_dir, "default.html")
 
-        with open(template_path, "r") as f:
+        with open(template_path, "r", encoding="utf-8") as f:
             html = f.read()
 
         # 3. Asset Injection
@@ -453,21 +455,25 @@ class ProfileReport:
         ]
 
         if offline:
-            # Inline all assets
+            # Inline all assets (using a simple module-level cache to avoid redundant I/O)
             for name, meta in assets.items():
-                asset_path = os.path.join(vendor_dir, meta["file"])
-                try:
-                    with open(asset_path, "r") as f:
-                        content = f.read()
-                    placeholder = f"{{{{{name}_SCRIPT}}}}"
-                    html = html.replace(placeholder, f"<script>{content}</script>")
-                except FileNotFoundError:
-                    # Fallback to CDN if local file missing (should not happen in package)
-                    placeholder = f"{{{{{name}_SCRIPT}}}}"
-                    html = html.replace(
-                        placeholder,
-                        f'<script src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
-                    )
+                placeholder = f"{{{{{name}_SCRIPT}}}}"
+                if meta["file"] not in ProfileReport._asset_cache:
+                    asset_path = os.path.join(vendor_dir, meta["file"])
+                    try:
+                        with open(asset_path, "r", encoding="utf-8") as f:
+                            ProfileReport._asset_cache[meta["file"]] = f.read()
+                    except FileNotFoundError:
+                        # Fallback to CDN if local file missing (should not happen in package)
+                        html = html.replace(
+                            placeholder,
+                            f'<script src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
+                        )
+                        continue
+
+                content = ProfileReport._asset_cache[meta["file"]]
+                html = html.replace(placeholder, f"<script>{content}</script>")
+
             csp_directives.append("connect-src 'none'")
         else:
             # Use CDN links
