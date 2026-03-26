@@ -4,7 +4,7 @@ import psutil
 import ibis
 import polars as pl
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from ibis_profiling import profile
 
 
@@ -16,34 +16,47 @@ def get_memory_usage():
 def generate_financial_data(n=10_000_000):
     print(f"Generating {n} rows of financial data...")
 
-    # Use numpy/polars for fast generation
-    data = {
-        "id": np.arange(n),
-        "transaction_amount": np.random.uniform(1, 5000, n),
-        "currency": np.random.choice(["USD", "EUR", "GBP", "JPY"], n),
-        "transaction_type": np.random.choice(["Buy", "Sell", "Transfer"], n),
-        "account_id": np.random.randint(1000, 9999, n),
-        "timestamp": [
-            datetime(2020, 1, 1) + timedelta(seconds=int(i))
-            for i in np.random.randint(0, 31536000, n)
-        ],
-        "balance_before": np.random.uniform(10000, 100000, n),
-        "balance_after": np.random.uniform(10000, 100000, n),
-        "fee": np.random.uniform(0, 50, n),
-        "is_fraud": np.random.choice([True, False], n, p=[0.01, 0.99]),
-        "merchant_id": [f"M_{i % 1000}" for i in range(n)],
-        "country": np.random.choice(["US", "UK", "DE", "FR", "JP"], n),
-        "card_type": np.random.choice(["Visa", "MasterCard", "Amex"], n),
-        "auth_code": [f"A{i % 5000}" for i in range(n)],
-        "reference": [f"REF-{i % 100000}" for i in range(n)],
-        "risk_score": np.random.uniform(0, 1, n),
-        "customer_age": np.random.randint(18, 90, n),
-        "department": np.random.choice(["Retail", "Corporate", "Investment"], n),
-        "branch_code": [f"B{i % 100}" for i in range(n)],
-        "notes": [None if i % 5 != 0 else "Special transaction" for i in range(n)],
-    }
+    # Create base dataframe with numeric/categorical columns
+    df = pl.DataFrame(
+        {
+            "id": np.arange(n, dtype=np.int64),
+            "transaction_amount": np.random.uniform(1, 5000, n).astype(np.float64),
+            "currency": np.random.choice(["USD", "EUR", "GBP", "JPY"], n),
+            "transaction_type": np.random.choice(["Buy", "Sell", "Transfer"], n),
+            "account_id": np.random.randint(1000, 9999, n).astype(np.int32),
+            "balance_before": np.random.uniform(10000, 100000, n).astype(np.float64),
+            "balance_after": np.random.uniform(10000, 100000, n).astype(np.float64),
+            "fee": np.random.uniform(0, 50, n).astype(np.float64),
+            "is_fraud": np.random.choice([True, False], n, p=[0.01, 0.99]),
+            "risk_score": np.random.uniform(0, 1, n).astype(np.float64),
+            "customer_age": np.random.randint(18, 90, n).astype(np.int16),
+            "department": np.random.choice(["Retail", "Corporate", "Investment"], n),
+            "country": np.random.choice(["US", "UK", "DE", "FR", "JP"], n),
+            "card_type": np.random.choice(["Visa", "MasterCard", "Amex"], n),
+        }
+    )
 
-    df = pl.DataFrame(data)
+    # Vectorized string formatting and temporal logic
+    df = df.with_columns(
+        [
+            # Timestamp generation: base + random offset in seconds
+            (
+                pl.lit(datetime(2020, 1, 1))
+                + pl.duration(seconds=np.random.randint(0, 31536000, n))
+            ).alias("timestamp"),
+            # String IDs
+            ("M_" + (pl.col("id") % 1000).cast(pl.String)).alias("merchant_id"),
+            ("A" + (pl.col("id") % 5000).cast(pl.String)).alias("auth_code"),
+            ("REF-" + (pl.col("id") % 100000).cast(pl.String)).alias("reference"),
+            ("B" + (pl.col("id") % 100).cast(pl.String)).alias("branch_code"),
+            # Conditional notes
+            pl.when(pl.col("id") % 5 == 0)
+            .then(pl.lit("Special transaction"))
+            .otherwise(None)
+            .alias("notes"),
+        ]
+    )
+
     return ibis.memtable(df)
 
 
