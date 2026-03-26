@@ -586,12 +586,21 @@ class Profiler:
             self._update_progress(2, "Missing values matrix...")
             from .report.model.missing import MissingEngine
 
-            report.missing = MissingEngine.compute(
+            missing_res = MissingEngine.compute(
                 self.table,
                 report.variables,
                 max_heatmap_columns=self.missing_heatmap_max_columns,
                 max_matrix_columns=self.missing_matrix_max_columns,
             )
+
+            # Extract and assign the model components
+            report.missing = {k: v for k, v in missing_res.items() if k != "warnings"}
+
+            # Report engine-specific warnings
+            if "warnings" in missing_res:
+                for w in missing_res["warnings"]:
+                    report.analysis.setdefault("warnings", []).append(w)
+
             # Record truncation warning if applicable
             m_meta = report.missing.get("heatmap", {}).get("matrix", {}).get("_metadata", {})
             if m_meta.get("truncated"):

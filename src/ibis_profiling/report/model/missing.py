@@ -1,5 +1,6 @@
 from typing import Dict, Any
 import ibis
+import math
 
 
 class MissingEngine:
@@ -15,6 +16,8 @@ class MissingEngine:
         """Assembles missing value model from variable statistics and nullity correlations."""
         import ibis.expr.types as ir
         import ibis.expr.datatypes as dt
+
+        warnings = []
 
         columns = list(variables.keys())
         if not columns:
@@ -79,13 +82,24 @@ class MissingEngine:
             if flat_exprs:
                 res = mask_table.aggregate(flat_exprs).to_pyarrow().to_pydict()
                 final_matrix = [[1.0 for _ in cols_with_missing] for _ in cols_with_missing]
+                non_finite_count = 0
                 for i in range(len(cols_with_missing)):
                     for j in range(len(cols_with_missing)):
                         if i != j:
                             key = f"mcorr_{i}_{j}"
                             val = res[key][0]
-                            # Handle potential NaNs from zero-variance masks
-                            final_matrix[i][j] = val if val is not None else 0.0
+                            # Handle potential NaNs/Infs from zero-variance masks
+                            if val is not None and math.isfinite(val):
+                                final_matrix[i][j] = val
+                            else:
+                                final_matrix[i][j] = 0.0
+                                non_finite_count += 1
+
+                if non_finite_count > 0:
+                    warnings.append(
+                        f"Missingness heatmap contains {non_finite_count} undefined (NaN/Inf) "
+                        "correlation pairs (likely due to columns with 0% or 100% missing values)."
+                    )
                 heatmap_data = {"columns": cols_with_missing, "matrix": final_matrix}
 
         # 2. Missingness Matrix (Sampled nullity patterns)
@@ -157,4 +171,5 @@ class MissingEngine:
                     },
                 },
             },
+            "warnings": warnings,
         }
