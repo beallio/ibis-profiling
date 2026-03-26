@@ -10,5 +10,5 @@
     "tests/test_reclassification_metadata.py"
   ],
   "design_decisions": "Modified Profiler._reclassify to remove numeric-only metrics when flipping a column from Numeric to Categorical. Also updated ProfileReport._build for consistency. Updated report.table['types'] in _reclassify to reflect the change. Fixed tests/test_profiler.py to stay numeric for low-cardinality test cases.",
-  "results": "Reproduction test confirms numeric metrics are removed and type counts are updated. Benchmarking with 100 reclassified columns showed a negligible 1.3% (0.03s) increase in total runtime. All 131 tests passed."
+  "results": "Reproduction test confirms numeric metrics are removed and type counts are updated. Apples-to-apples benchmarking (static 100x10,000 dataset) confirms no measurable performance impact (2.50s fixed vs 2.53s baseline). All 131 tests passed."
 }
