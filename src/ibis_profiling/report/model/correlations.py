@@ -223,24 +223,41 @@ class CorrelationEngine:
                     std2 = s2.std(how="pop")
                     denominator = (std1 * std2).nullif(0)
 
-                    expr = s1.cov(s2, how="pop") / denominator
+                    # Manual corr calculation with nullif to handle zero variance
+                    corr_expr = s1.cov(s2, how="pop") / denominator
+
+                    # Sanitize for NaN/Inf at the SQL level (if backend supports)
+                    # For DuckDB, we can use a CASE statement to ensure finite values
+                    # Or just rely on the fact that division by null/0 is handled.
+                    # Let's ensure it's coerced to a float.
+                    expr = corr_expr.cast(dt.Float64)
                     row.append(expr)
+
             matrix.append(row)
 
         return {"columns": cols, "matrix": matrix}
 
     @staticmethod
     def _sanitize_matrix(matrix: List[List[Any]]) -> List[List[Any]]:
-        """Replaces NaN/Inf values with None for JSON compliance."""
+        """Replaces NaN/Inf values with None for JSON compliance. Optimized for speed."""
         import math
 
-        sanitized = []
+        has_non_finite = False
         for row in matrix:
-            new_row = []
             for val in row:
-                if isinstance(val, (float, int)) and (math.isnan(val) or math.isinf(val)):
-                    new_row.append(None)
-                else:
-                    new_row.append(val)
-            sanitized.append(new_row)
-        return sanitized
+                if isinstance(val, (float, int)) and not math.isfinite(val):
+                    has_non_finite = True
+                    break
+            if has_non_finite:
+                break
+
+        if not has_non_finite:
+            return matrix
+
+        return [
+            [
+                (None if isinstance(val, (float, int)) and not math.isfinite(val) else val)
+                for val in row
+            ]
+            for row in matrix
+        ]

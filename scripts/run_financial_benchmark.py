@@ -54,7 +54,7 @@ def run_benchmark(version_label):
     start_time = time.time()
     start_mem = get_memory_usage()
 
-    # Run full profile
+    # Run full profile (Sequential mode by default)
     profile(t, minimal=False)
 
     end_time = time.time()
