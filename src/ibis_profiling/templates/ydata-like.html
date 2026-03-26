@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ibis Profiling Report</title>
+  {{CSP_META}}
   
   <script>
     // Silence JIT-related production warnings
@@ -28,13 +29,13 @@
   </script>
   
   <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  {{TAILWIND_SCRIPT}}
 
-  <!-- React & Dependencies (UMD Builds for local file portability) -->
-  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <!-- React & Dependencies -->
+  {{REACT_SCRIPT}}
   <script>window.react = window.React;</script>
-  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js" crossorigin="anonymous"></script>
+  {{REACT_DOM_SCRIPT}}
+  {{LUCIDE_SCRIPT}}
 
   <style>
     html {

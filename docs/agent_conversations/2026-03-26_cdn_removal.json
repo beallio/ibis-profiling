@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-26",
+  "task_objective": "Eliminate remote CDN dependencies in report templates",
+  "files_modified": [
+    "src/ibis_profiling/report/report.py",
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/cli.py",
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.html",
+    "README.md"
+  ],
+  "tests_added": [
+    "tests/test_offline_rendering.py"
+  ],
+  "design_decisions": "Bundled React, React-DOM, Lucide-React, and Tailwind CSS locally in src/ibis_profiling/vendor/js/. Updated report generation logic to inline these assets by default (offline=True) for maximum portability and security. Implemented SRI hashes and a restrictive Content Security Policy (CSP) to mitigate supply-chain and data-exfiltration risks. Added --offline/--online flags to CLI.",
+  "results": "Reports are now fully standalone and offline-capable by default. Security posture improved with SRI and CSP. All 135 tests passed."
+}

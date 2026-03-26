@@ -96,6 +96,12 @@ from ibis_profiling import ProfileReport, __version__
     type=click.Choice(["html", "json"]),
     help="Force output format (overrides extension).",
 )
+@click.option(
+    "--offline/--online",
+    default=True,
+    show_default=True,
+    help="Whether to bundle all JS/CSS assets in the HTML for offline viewing.",
+)
 def main(
     file_path,
     output,
@@ -112,6 +118,7 @@ def main(
     monotonicity_order_by,
     theme,
     output_format,
+    offline,
 ):
     """
     Ultra-high-performance data profiling natively for Ibis.
@@ -209,7 +216,7 @@ def main(
         if output_format == "json":
             content = report.to_json()
         else:
-            content = report.to_html(theme=theme)
+            content = report.to_html(theme=theme, offline=offline)
 
         with open(output, "w") as f:
             f.write(content)

@@ -130,6 +130,7 @@ uv run --with ibis-profiling,ibis-framework[duckdb] ProfileReport --file-path da
 | `--monotonicity-threshold` | | Row count threshold above which monotonicity is skipped (default: 100,000). |
 | `--monotonicity-order-by` | | Column name to order by for deterministic monotonicity checks. Required to enable monotonicity. |
 | `--duplicates` | | Explicitly enable or disable duplicate row checks (`--duplicates` / `--no-duplicates`). |
+| `--offline` / `--online` | | Whether to bundle all JS/CSS assets in the HTML for offline viewing (default: `--offline`). |
 
 ---
 
@@ -221,6 +222,15 @@ The `ProfileReport` supports a `minimal` flag (default `False`) to toggle betwee
 ## 📦 Report Export & Layouts
 
 By default, `ibis-profiling` minifies the generated HTML report to reduce file size (typically by 15-20%) without compromising functionality.
+
+### Export Options
+Both `to_file` and `to_html` support the following parameters:
+
+| Parameter | Default | Description |
+| :--- | :--- | :--- |
+| `theme` | `"default"` | Report theme: `"default"` (React SPA) or `"ydata-like"`. |
+| `minify` | `True` | Whether to minify the output HTML. |
+| `offline` | `True` | If `True`, all JS/CSS assets are bundled directly in the HTML for offline viewing and enhanced security. If `False`, assets are loaded from public CDNs with SRI and CSP. |
 
 ### Custom Themes & Themes
 The `to_file` method supports a `theme` parameter to choose between different report layouts:

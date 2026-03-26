@@ -374,16 +374,18 @@ class ProfileReport:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, cls=ReportEncoder)
 
-    def to_file(self, output_file: str, theme: str = "default", minify: bool = True):
+    def to_file(
+        self, output_file: str, theme: str = "default", minify: bool = True, offline: bool = True
+    ):
         content = (
             self.to_json()
             if output_file.endswith(".json")
-            else self.to_html(theme=theme, minify=minify)
+            else self.to_html(theme=theme, minify=minify, offline=offline)
         )
         with open(output_file, "w") as f:
             f.write(content)
 
-    def to_html(self, theme: str = "default", minify: bool = True) -> str:
+    def to_html(self, theme: str = "default", minify: bool = True, offline: bool = True) -> str:
         ALLOWED_THEMES = {"default", "ydata-like"}
 
         # 1. Allowlist validation
@@ -396,6 +398,7 @@ class ProfileReport:
 
         template_name = f"{theme}.html"
         templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+        vendor_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "vendor", "js"))
         template_path = os.path.join(templates_dir, template_name)
 
         # 2. Path traversal protection (realpath check)
@@ -417,6 +420,71 @@ class ProfileReport:
         with open(template_path, "r") as f:
             html = f.read()
 
+        # 3. Asset Injection
+        assets = {
+            "TAILWIND": {
+                "file": "tailwind.min.js",
+                "url": "https://cdn.tailwindcss.com/3.4.1",
+                "sri": "sha384-igm5BeiBt36UU4gqwWS7imYmelpTsZlQ45FZf+XBn9MuJbn4nQr7yx1yFydocC/K",
+            },
+            "REACT": {
+                "file": "react.production.min.js",
+                "url": "https://unpkg.com/react@18.2.0/umd/react.production.min.js",
+                "sri": "sha384-tMH8h3BGESGckSAVGZ82T9n90ztNXxvdwvdM6UoR56cYcf+0iGXBliJ29D+wZ/x8",
+            },
+            "REACT_DOM": {
+                "file": "react-dom.production.min.js",
+                "url": "https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js",
+                "sri": "sha384-bm7MnzvK++ykSwVJ2tynSE5TRdN+xL418osEVF2DE/L/gfWHj91J2Sphe582B1Bh",
+            },
+            "LUCIDE": {
+                "file": "lucide-react.min.js",
+                "url": "https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js",
+                "sri": "sha384-F0qUHZkh0kdyj05DoGn8B9QgQ7vnQLjO74ZwZNMSrJINJv7um6jfha6Imsr0HK0T",
+            },
+        }
+
+        csp_directives = [
+            "default-src 'self'",
+            "script-src 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'unsafe-inline'",
+            "img-src 'self' data: blob: https://raw.githubusercontent.com",
+            "font-src 'self' data:",
+        ]
+
+        if offline:
+            # Inline all assets
+            for name, meta in assets.items():
+                asset_path = os.path.join(vendor_dir, meta["file"])
+                try:
+                    with open(asset_path, "r") as f:
+                        content = f.read()
+                    placeholder = f"{{{{{name}_SCRIPT}}}}"
+                    html = html.replace(placeholder, f"<script>{content}</script>")
+                except FileNotFoundError:
+                    # Fallback to CDN if local file missing (should not happen in package)
+                    placeholder = f"{{{{{name}_SCRIPT}}}}"
+                    html = html.replace(
+                        placeholder,
+                        f'<script src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
+                    )
+            csp_directives.append("connect-src 'none'")
+        else:
+            # Use CDN links
+            for name, meta in assets.items():
+                placeholder = f"{{{{{name}_SCRIPT}}}}"
+                html = html.replace(
+                    placeholder,
+                    f'<script src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
+                )
+            csp_directives.append("connect-src *")
+
+        csp_meta = (
+            f'<meta http-equiv="Content-Security-Policy" content="{"; ".join(csp_directives)};">'
+        )
+        html = html.replace("{{CSP_META}}", csp_meta)
+
+        # 4. JSON Data Injection
         # Minify JSON for embedding (separators removes extra spaces)
         report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
 
