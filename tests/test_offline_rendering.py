@@ -1,6 +1,7 @@
 import ibis
 import pandas as pd
 from ibis_profiling import ProfileReport
+import base64
 
 
 def test_offline_rendering_assets():
@@ -50,3 +51,27 @@ def test_to_file_offline_parameter(tmp_path):
         content = f.read()
 
     assert "https://unpkg.com/react" not in content
+
+
+def test_json_sanitization_xss():
+    # Test that </script> tags in data are escaped
+    payload = "</script><script>alert('xss')</script>"
+    df = pd.DataFrame({"a": [payload]})
+    table = ibis.memtable(df)
+    report = ProfileReport(table)
+
+    html = report.to_html()
+
+    # The data is base64 encoded in {{REPORT_DATA}}
+    # Extract the base64 string
+    import re
+
+    match = re.search(r'const ENCODED_REPORT_DATA = "([^"]+)";', html)
+    assert match, "Could not find ENCODED_REPORT_DATA in HTML"
+
+    encoded_data = match.group(1)
+    decoded_json = base64.b64decode(encoded_data).decode("utf-8")
+
+    # It should be escaped as <\/script> inside the JSON
+    assert "</script>" not in decoded_json
+    assert "<\\/script>" in decoded_json

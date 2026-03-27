@@ -460,16 +460,8 @@ class ProfileReport:
                 placeholder = f"{{{{{name}_SCRIPT}}}}"
                 if meta["file"] not in ProfileReport._asset_cache:
                     asset_path = os.path.join(vendor_dir, meta["file"])
-                    try:
-                        with open(asset_path, "r", encoding="utf-8") as f:
-                            ProfileReport._asset_cache[meta["file"]] = f.read()
-                    except FileNotFoundError:
-                        # Fallback to CDN if local file missing (should not happen in package)
-                        html = html.replace(
-                            placeholder,
-                            f'<script src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
-                        )
-                        continue
+                    with open(asset_path, "r", encoding="utf-8") as f:
+                        ProfileReport._asset_cache[meta["file"]] = f.read()
 
                 content = ProfileReport._asset_cache[meta["file"]]
                 html = html.replace(placeholder, f"<script>{content}</script>")
@@ -493,6 +485,10 @@ class ProfileReport:
         # 4. JSON Data Injection
         # Minify JSON for embedding (separators removes extra spaces)
         report_json = json.dumps(self.to_dict(), separators=(",", ":"), cls=ReportEncoder)
+
+        # Security: Escape </ to prevent XSS when embedding JSON in <script> tags
+        # even though we primarily use Base64 now, this is a safety fallback.
+        report_json = report_json.replace("</", "<\\/")
 
         # Base64 encode the JSON for secure embedding in a data-attribute
         # This completely avoids XSS from the JSON data
