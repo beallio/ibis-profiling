@@ -58,6 +58,13 @@ from ibis_profiling import ProfileReport, __version__
     help="Row count threshold above which duplicate check is skipped.",
 )
 @click.option(
+    "--n-unique-threshold",
+    type=int,
+    default=1_000_000,
+    show_default=True,
+    help="Row count/cardinality threshold above which n_unique is skipped.",
+)
+@click.option(
     "--correlations-max-columns",
     type=click.IntRange(min=2),
     default=15,
@@ -112,6 +119,7 @@ def main(
     duplicates,
     monotonicity_threshold,
     duplicates_threshold,
+    n_unique_threshold,
     correlations_max_columns,
     missing_heatmap_max_columns,
     missing_matrix_max_columns,
@@ -145,6 +153,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                n_unique_threshold=n_unique_threshold,
                 correlations_max_columns=correlations_max_columns,
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,
@@ -162,6 +171,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                n_unique_threshold=n_unique_threshold,
                 correlations_max_columns=correlations_max_columns,
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,
@@ -180,6 +190,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                n_unique_threshold=n_unique_threshold,
                 correlations_max_columns=correlations_max_columns,
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,
@@ -203,6 +214,7 @@ def main(
                 compute_duplicates=duplicates,
                 monotonicity_threshold=monotonicity_threshold,
                 duplicates_threshold=duplicates_threshold,
+                n_unique_threshold=n_unique_threshold,
                 correlations_max_columns=correlations_max_columns,
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,

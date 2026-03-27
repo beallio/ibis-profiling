@@ -44,6 +44,7 @@ class Profiler:
         missing_matrix_max_columns: int = 50,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
+        n_unique_threshold: int = 1_000_000,
         monotonicity_order_by: str | None = None,
         parallel: bool = False,
         pool_size: int = 4,
@@ -70,6 +71,7 @@ class Profiler:
         self.missing_matrix_max_columns = max(2, missing_matrix_max_columns)
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
+        self.n_unique_threshold = n_unique_threshold
         self.monotonicity_order_by = monotonicity_order_by
         self.parallel = parallel
         self.pool_size = pool_size
@@ -77,7 +79,9 @@ class Profiler:
 
         self.start_time = datetime.now()
         self.inspector = DatasetInspector(table)
-        self.planner = QueryPlanner(table, registry, use_sketches=use_sketches)
+        self.planner = QueryPlanner(
+            table, registry, use_sketches=use_sketches, n_unique_threshold=n_unique_threshold
+        )
         self.engine = ExecutionEngine()
         self.executor = None
 
@@ -410,6 +414,15 @@ class Profiler:
         table_plans = []
 
         for col_name, metric_name, expr, hint in complex_plans:
+            if expr is None:
+                # Metric was skipped (e.g. n_unique threshold)
+                report.add_metric(col_name, metric_name, "Skipped")
+                report.variables[col_name].setdefault("warnings", []).append(
+                    f"Metric '{metric_name}' skipped for large high-cardinality column. "
+                    f"Threshold: {self.n_unique_threshold:,}"
+                )
+                continue
+
             if hint == "Value":
                 if isinstance(expr, ir.Value):
                     value_aggs.append(expr.name(f"{col_name}__{metric_name}"))
@@ -646,6 +659,7 @@ def profile(
     missing_matrix_max_columns: int = 50,
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
+    n_unique_threshold: int = 1_000_000,
     monotonicity_order_by: str | None = None,
     parallel: bool = False,
     pool_size: int = 4,
@@ -669,6 +683,7 @@ def profile(
         missing_matrix_max_columns=missing_matrix_max_columns,
         monotonicity_threshold=monotonicity_threshold,
         duplicates_threshold=duplicates_threshold,
+        n_unique_threshold=n_unique_threshold,
         monotonicity_order_by=monotonicity_order_by,
         parallel=parallel,
         pool_size=pool_size,
@@ -697,6 +712,7 @@ class ProfileReport:
         compute_duplicates: bool | None = None,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
+        n_unique_threshold: int = 1_000_000,
         correlations_max_columns: int = 15,
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,
@@ -711,6 +727,7 @@ class ProfileReport:
         self.compute_duplicates = compute_duplicates
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
+        self.n_unique_threshold = n_unique_threshold
         self.correlations_max_columns = correlations_max_columns
         self.missing_heatmap_max_columns = missing_heatmap_max_columns
         self.missing_matrix_max_columns = missing_matrix_max_columns
@@ -729,6 +746,7 @@ class ProfileReport:
             cardinality_threshold=kwargs.get("cardinality_threshold", 20),
             monotonicity_threshold=monotonicity_threshold,
             duplicates_threshold=duplicates_threshold,
+            n_unique_threshold=n_unique_threshold,
             correlations_max_columns=correlations_max_columns,
             missing_heatmap_max_columns=missing_heatmap_max_columns,
             missing_matrix_max_columns=missing_matrix_max_columns,

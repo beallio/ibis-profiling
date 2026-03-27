@@ -2,79 +2,73 @@ import ibis
 import pandas as pd
 import numpy as np
 import time
-from ibis_profiling import ProfileReport
+import os
+from ibis_profiling import Profiler
 
 
-def generate_benchmark_data(n_rows=100_000, n_cols=500):
-    print(f"Generating {n_rows} rows x {n_cols} columns...")
-    data = {}
-    for i in range(n_cols):
-        # Mix of unique, duplicates, and nulls
-        col_name = f"col_{i}"
-        if i % 3 == 0:
-            # High cardinality (mostly unique)
-            data[col_name] = np.arange(n_rows)
-        elif i % 3 == 1:
-            # Low cardinality (lots of duplicates)
-            data[col_name] = np.random.randint(0, 100, size=n_rows)
-        else:
-            # Mix with nulls
-            vals = np.random.randint(0, 1000, size=n_rows).astype(float)
-            vals[np.random.choice(n_rows, n_rows // 10, replace=False)] = np.nan
-            data[col_name] = vals
+def generate_data(n_rows=20_000_000, output_path="/tmp/ibis-profiling/bench_nunique.parquet"):
+    if os.path.exists(output_path):
+        print(f"File {output_path} already exists. Skipping generation.")
+        return
 
-    return pd.DataFrame(data)
+    print(f"Generating {n_rows} rows of data...")
+    # Create 3 columns:
+    # 1. Low cardinality (10 values)
+    # 2. Medium cardinality (1000 values)
+    # 3. High cardinality (Unique values)
 
-
-def run_benchmark(n_rows=10_000, n_cols=100):
-    df = generate_benchmark_data(n_rows, n_cols)
-    con = ibis.duckdb.connect()
-    t = con.create_table("bench", df)
-
-    # Custom progress to time steps
-    def timed_progress(pct, msg):
-        current_time = time.time()
-        elapsed = current_time - timed_progress.last_time
-        if timed_progress.last_msg:
-            print(f"  Step '{timed_progress.last_msg}' took {elapsed:.2f}s")
-        if msg:
-            print(f"[{pct:>3}%] {msg}...")
-        timed_progress.last_time = current_time
-        timed_progress.last_msg = msg
-
-    timed_progress.last_time = time.time()
-    timed_progress.last_msg = None
-
-    start_time = time.time()
-    profile = ProfileReport(
-        t,
-        on_progress=timed_progress,
-        minimal=False,
-        correlations=False,
-        compute_duplicates=False,
-        monotonicity=False,
+    df = pd.DataFrame(
+        {
+            "low_card": np.random.randint(0, 10, n_rows),
+            "med_card": np.random.randint(0, 1000, n_rows),
+            "high_card": np.arange(n_rows),
+        }
     )
-    report = profile.to_json()
-    end_time = time.time()
 
-    duration = end_time - start_time
-    print(f"Profile completed in {duration:.2f} seconds.")
+    df.to_parquet(output_path)
+    print(f"Data saved to {output_path}")
 
-    # Verify n_unique is present
-    import json
 
-    data = json.loads(report)
-    n_unique_found = sum(1 for v in data["variables"].values() if "n_unique" in v)
-    print(f"n_unique metrics found: {n_unique_found} / {n_cols}")
+def run_benchmark(n_rows=20_000_000):
+    path = f"/tmp/ibis-profiling/bench_nunique_{n_rows}.parquet"
+    generate_data(n_rows, path)
+
+    con = ibis.duckdb.connect()
+    table = con.read_parquet(path)
+
+    print(f"\n--- Benchmarking {n_rows} rows ---")
+
+    # 1. Without threshold (forced always on)
+    print("\nRunning WITHOUT threshold (disabled via 0)...")
+    profiler_off = Profiler(
+        table,
+        n_unique_threshold=0,
+        correlations=False,
+        monotonicity=False,
+        compute_duplicates=False,
+        minimal=False,
+    )
+    start_off = time.time()
+    report_off = profiler_off.run()
+    duration_off = time.time() - start_off
+    print(f"Profiling (No Threshold) took: {duration_off:.2f} seconds")
+    print(f"high_card n_unique: {report_off.variables['high_card'].get('n_unique')}")
+
+    # 2. With threshold (default 1M)
+    print("\nRunning WITH default threshold (1,000,000)...")
+    profiler_on = Profiler(
+        table, correlations=False, monotonicity=False, compute_duplicates=False, minimal=False
+    )
+    start_on = time.time()
+    report_on = profiler_on.run()
+    duration_on = time.time() - start_on
+    print(f"Profiling (With Threshold) took: {duration_on:.2f} seconds")
+    print(f"high_card n_unique: {report_on.variables['high_card'].get('n_unique')}")
+
+    speedup = duration_off - duration_on
+    print(f"\nSpeedup: {speedup:.2f} seconds ({(speedup / duration_off) * 100:.1f}%)")
 
 
 if __name__ == "__main__":
-    import sys
-
-    n_cols = 500
-    n_rows = 100_000
-    if len(sys.argv) > 1:
-        n_cols = int(sys.argv[1])
-    if len(sys.argv) > 2:
-        n_rows = int(sys.argv[2])
-    run_benchmark(n_cols=n_cols, n_rows=n_rows)
+    # Test with 20M rows
+    run_benchmark(20_000_000)

@@ -5,10 +5,17 @@ from .metrics import MetricRegistry, MetricCategory
 
 
 class QueryPlanner:
-    def __init__(self, table: ibis.Table, registry: MetricRegistry, use_sketches: bool = False):
+    def __init__(
+        self,
+        table: ibis.Table,
+        registry: MetricRegistry,
+        use_sketches: bool = False,
+        n_unique_threshold: int = 1_000_000,
+    ):
         self.table = table
         self.registry = registry
         self.use_sketches = use_sketches
+        self.n_unique_threshold = n_unique_threshold
 
     def build_global_aggregation(self) -> ir.Table:
         """Batches all applicable simple COLUMN metrics into a single aggregation query."""
@@ -70,7 +77,19 @@ class QueryPlanner:
             # 1. n_unique (singletons) - Scalar Value (but uses subquery, so hint Table)
             metric = self.registry.metrics.get("n_unique")
             if metric and metric.supports(dtype):
-                plans.append((col_name, metric.name, metric.build_expr(col), "Table"))
+                n_total = col_meta.get("n", 0)
+                n_distinct = col_meta.get("n_distinct", 0)
+
+                # Skip if above threshold (prohibitively expensive value_counts)
+                if (
+                    self.n_unique_threshold > 0
+                    and n_total > self.n_unique_threshold
+                    and n_distinct > self.n_unique_threshold
+                ):
+                    # We return None for the expression to indicate it was skipped
+                    plans.append((col_name, metric.name, None, "Table"))
+                else:
+                    plans.append((col_name, metric.name, metric.build_expr(col), "Table"))
 
             # 2. Histograms / Distribution (top values) - Table
             is_discrete = mapped_type == "Categorical" or not isinstance(

@@ -1,0 +1,16 @@
+{
+  "date": "2026-03-26",
+  "task_objective": "Add size guard for n_unique and other value_counts metrics",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/planner.py",
+    "src/ibis_profiling/cli.py",
+    "docs/plans/n_unique_threshold.md",
+    "scripts/benchmark_n_unique.py"
+  ],
+  "tests_added": [
+    "tests/test_n_unique_threshold.py"
+  ],
+  "design_decisions": "Introduced n_unique_threshold (default 1,000,000) to skip the expensive n_unique (singleton count) calculation on large, high-cardinality datasets. The QueryPlanner now checks both total row count and column distinct count before including n_unique in the complex metrics pass. If skipped, the report stores 'Skipped' and a warning is added to the column metadata.",
+  "results": "Benchmark on 20M rows with 1 high-cardinality column showed a 5.7% speedup. All 137 tests passed."
+}
