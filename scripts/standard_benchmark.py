@@ -1,66 +1,35 @@
 import ibis
-import pandas as pd
-import numpy as np
 import time
-import tracemalloc
-import os
-import json
-from ibis_profiling import ProfileReport
+from ibis_profiling import Profiler
 
 
-def run_benchmark():
-    n = 1_000_000
-    print("Standard Benchmark: 1M rows, 10 columns")
-
-    # Generate deterministic data for comparison
-    np.random.seed(42)
-    data = {
-        "id": np.arange(n),
-        "val1": np.random.randn(n),
-        "val2": np.random.randn(n),
-        "cat1": np.random.choice(["A", "B", "C", "D"], n),
-        "cat2": np.random.choice(["X", "Y"], n),
-        "ints": np.random.randint(0, 100, n),
-        "nulls": np.random.choice([np.nan, 1.0], n),
-        "skewed": np.random.pareto(2, n),
-        "const": np.ones(n),
-        "unique_str": [f"S_{i}" for i in range(n)],
-    }
-
-    df = pd.DataFrame(data)
+def run_benchmark(path="/tmp/ibis-profiling/bench_varied_20M.parquet"):
+    print(f"Loading data from {path}...")
     con = ibis.duckdb.connect()
-    table = con.create_table("bench", df)
+    table = con.read_parquet(path)
 
-    results = {}
+    # Standard settings for this bottleneck test
+    profiler = Profiler(
+        table, correlations=False, monotonicity=False, compute_duplicates=False, minimal=False
+    )
 
-    for mode in ["minimal", "full"]:
-        print(f"  Running {mode} mode...")
-        gc_collect()
-        tracemalloc.start()
-        start_time = time.perf_counter()
+    print("Starting profiling...")
+    start_time = time.time()
+    report = profiler.run()
+    end_time = time.time()
 
-        report = ProfileReport(table, minimal=(mode == "minimal"))
-        _ = report.to_json()
+    duration = end_time - start_time
+    print(f"Profiling took: {duration:.2f} seconds")
 
-        duration = time.perf_counter() - start_time
-        _, peak = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
+    # Check a few keys to verify logic
+    # id is unique (literal optimization)
+    # cat_high is skip candidate
+    for col in ["id", "cat_high"]:
+        n_unique = report.variables[col].get("n_unique")
+        print(f"  {col} n_unique: {n_unique}")
 
-        results[mode] = {"duration": duration, "peak_mb": peak / (1024 * 1024)}
-        print(f"    {duration:.2f}s, {results[mode]['peak_mb']:.2f}MB")
-
-    return results
-
-
-def gc_collect():
-    import gc
-
-    gc.collect()
+    return duration
 
 
 if __name__ == "__main__":
-    res = run_benchmark()
-    output_dir = "/tmp/ibis-profiling"
-    os.makedirs(output_dir, exist_ok=True)
-    with open(f"{output_dir}/standard_bench_results.json", "w") as f:
-        json.dump(res, f, indent=2)
+    run_benchmark()

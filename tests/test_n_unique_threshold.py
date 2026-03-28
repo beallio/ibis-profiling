@@ -5,13 +5,13 @@ from ibis_profiling import Profiler
 
 
 def test_n_unique_threshold_skip():
-    # 100 rows, all unique
-    n = 100
-    df = pd.DataFrame({"high_card": [str(i) for i in range(n)], "low_card": ["1"] * n})
+    # 200 rows, 100 distinct (cardinality 0.5)
+    # n=200, n_distinct=100. Both > 50.
+    n = 200
+    df = pd.DataFrame({"high_card": [str(i % 100) for i in range(n)], "low_card": ["1"] * n})
     table = ibis.memtable(df)
 
-    # Set threshold to 50. Both n and n_distinct are 100 (> 50) for high_card.
-    # low_card has n=100 (> 50) but n_distinct=1 (< 50), so it should NOT be skipped.
+    # Set threshold to 50.
     profiler = Profiler(
         table,
         n_unique_threshold=50,
@@ -24,7 +24,7 @@ def test_n_unique_threshold_skip():
     # Check high_card
     stats_high = report.variables["high_card"]
     assert stats_high["n_unique"] == "Skipped"
-    assert "histogram" not in stats_high
+    assert stats_high["top_values"] == "Skipped"
     assert any("Unique values skipped" in w for w in stats_high.get("warnings", []))
     assert any("Frequency table skipped" in w for w in stats_high.get("warnings", []))
 

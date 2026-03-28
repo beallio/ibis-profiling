@@ -1,26 +1,26 @@
 import ibis
-import pandas as pd
-from ibis_profiling import ProfileReport
-
-# Setup logging to see what's happening if possible,
-# but Ibis doesn't log SQL by default unless configured.
-# We can use a custom backend or mock.
+import time
+from ibis_profiling import Profiler
 
 
-def test_query_count():
-    df = pd.DataFrame({f"col{i}": [1, 2, 3, 4, 5, 1, 2, i] for i in range(10)})
+def run_benchmark(path="/tmp/ibis-profiling/bench_varied_20M.parquet"):
+    print(f"Loading data from {path}...")
     con = ibis.duckdb.connect()
-    t = con.create_table("test", df)
+    table = con.read_parquet(path)
 
-    # We want to intercept queries. DuckDB doesn't make it easy to count queries directly
-    # without looking at logs, but we can try to use a tracer if ibis supports it.
+    profiler = Profiler(
+        table, correlations=False, monotonicity=False, compute_duplicates=False, minimal=False
+    )
 
-    print("Generating report...")
-    profile = ProfileReport(t)
-    # The complex pass is where n_unique is calculated
-    profile.to_json()
-    print("Done")
+    print("Starting profiling...")
+    start_time = time.time()
+    profiler.run()
+    end_time = time.time()
+
+    duration = end_time - start_time
+    print(f"Profiling took: {duration:.2f} seconds")
+    return duration
 
 
 if __name__ == "__main__":
-    test_query_count()
+    run_benchmark()

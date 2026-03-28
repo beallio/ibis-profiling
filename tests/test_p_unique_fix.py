@@ -41,6 +41,6 @@ def test_top_values_threshold():
     report = profiler.run()
 
     stats = report.variables["high_card"]
-    # Check that top_values was skipped (it adds to 'histogram' key in our report model)
-    assert "histogram" not in stats
+    # Check that top_values was skipped
+    assert stats["top_values"] == "Skipped"
     assert any("Frequency table skipped" in w for w in stats.get("warnings", []))

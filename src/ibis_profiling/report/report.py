@@ -180,6 +180,13 @@ class ProfileReport:
             return
 
         n = cast(int, self.table["n"])
+
+        # Reset table counters for idempotency
+        self.table["n_cells_missing"] = 0
+        self.table["n_vars_with_missing"] = 0
+        self.table["n_vars_all_missing"] = 0
+        self.table["n_vars_constant"] = 0
+
         n_cells_missing = 0
 
         # Post-process variables (normalization & derived metrics)
@@ -189,30 +196,32 @@ class ProfileReport:
                 m_count = 0
 
             stats["p_missing"] = m_count / n if n > 0 else 0
-            stats["p_distinct"] = (
-                stats.get("n_distinct", 0) / n
-                if n > 0 and isinstance(stats.get("n_distinct"), (int, float))
-                else 0
-            )
+
+            n_distinct = stats.get("n_distinct")
+            if isinstance(n_distinct, (int, float)):
+                stats["p_distinct"] = n_distinct / n if n > 0 else 0
+
+                # Constant detection
+                if n_distinct == 1:
+                    self.table["n_vars_constant"] = cast(int, self.table["n_vars_constant"]) + 1
+            else:
+                stats["p_distinct"] = n_distinct  # Likely "Skipped"
 
             stats["count"] = n - m_count
-            stats["is_unique"] = n > 0 and stats.get("n_distinct", 0) == n
 
-            # Constant detection
-            if stats.get("n_distinct", 0) == 1:
-                current_c = self.table.get("n_vars_constant", 0)
-                if isinstance(current_c, int):
-                    self.table["n_vars_constant"] = current_c + 1
+            if isinstance(n_distinct, (int, float)):
+                stats["is_unique"] = n > 0 and n_distinct == n
+            else:
+                stats["is_unique"] = False
 
+            # Explicitly accumulate into local variable
             n_cells_missing += m_count
+
             if m_count > 0:
-                current_wm = self.table.get("n_vars_with_missing", 0)
-                if isinstance(current_wm, int):
-                    self.table["n_vars_with_missing"] = current_wm + 1
+                self.table["n_vars_with_missing"] = cast(int, self.table["n_vars_with_missing"]) + 1
+
             if m_count == n and n > 0:
-                current_am = self.table.get("n_vars_all_missing", 0)
-                if isinstance(current_am, int):
-                    self.table["n_vars_all_missing"] = current_am + 1
+                self.table["n_vars_all_missing"] = cast(int, self.table["n_vars_all_missing"]) + 1
 
             # Derived Numeric Stats
             if stats.get("type") == "Numeric":
@@ -375,6 +384,7 @@ class ProfileReport:
                 if matrix and isinstance(matrix[0], list):
                     formatted_matrix = [dict(zip(cols, row)) for row in matrix]
                     # Create result with matrix and any other metadata (like 'sampled')
+                    # We keep 'columns' because some components (like MissingMatrix) need the order
                     res = {"matrix": formatted_matrix, "columns": cols}
                     for k, v in obj.items():
                         if k not in ["columns", "matrix"]:

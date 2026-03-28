@@ -1,79 +1,33 @@
 import ibis
-import pandas as pd
-from ibis_profiling import profile
 import os
+from ibis_profiling import Profiler
 
 
-def generate_varied_data():
-    """Generates a dataset with edge cases and potentially problematic values."""
-    data = {
-        # XSS Payloads
-        "xss_col": [
-            "</script><script>alert('xss')</script>",
-            "normal value",
-            "<div>test</div>",
-            "another one",
-        ]
-        * 10,
-        # Varied Nulls (Tests MissingEngine and Correlations)
-        "nulls_1": [None if i % 5 == 0 else i for i in range(40)],
-        "nulls_2": [None if i % 3 == 0 else i for i in range(40)],
-        # Singletons (Tests n_unique robustness)
-        "singletons": [f"unique{i}" for i in range(40)],
-        # Numeric with extreme values and NaN (Tests histograms and metrics)
-        "numeric_edge": [float(i) for i in range(40)],
-        # Large decimals or potential overflow candidates
-        "large_ints": [i * 10**15 for i in range(40)],
-        # Normal columns for baseline
-        "normal_num": [float(i * 1.5) for i in range(40)],
-        "normal_cat": [chr(65 + (i % 26)) for i in range(40)],
-    }
-    # numeric_edge has 40 distinct values -> > 20 -> stays Numeric
-    # large_ints has 40 distinct -> stays Numeric
-    # normal_num has 40 distinct -> stays Numeric
+def generate_reports(path="/tmp/ibis-profiling/verify_varied_5M.parquet"):
+    print(f"Loading 5M data from {path}...")
+    con = ibis.duckdb.connect()
+    table = con.read_parquet(path)
 
-    return ibis.memtable(pd.DataFrame(data))
+    # Use standard threshold (1M) - cat_high and num_high_card should skip
+    profiler = Profiler(
+        table,
+        title="Varied Data 5M Report",
+        correlations=False,
+        monotonicity=False,
+        compute_duplicates=False,
+    )
 
+    print("Generating HTML report...")
+    report = profiler.run()
 
-def main():
-    output_dir = "/tmp/ibis-profiling/repro_reports"
+    output_dir = "/tmp/ibis-profiling/varied_test"
     os.makedirs(output_dir, exist_ok=True)
 
-    print("Generating varied dataset...")
-    table = generate_varied_data()
+    report.to_file(f"{output_dir}/varied_matrices.html")
+    report.to_file(f"{output_dir}/varied_matrices.json")
 
-    # 1. Full Profile (Minimal=False)
-    print("Generating FULL profile...")
-    full_report = profile(table, minimal=False, title="Varied Data - Full Report")
-    full_report.to_file(os.path.join(output_dir, "varied_full.html"))
-    full_report.to_file(os.path.join(output_dir, "varied_full.json"))
-
-    # 2. Minimal Profile (Minimal=True)
-    print("Generating MINIMAL profile...")
-    min_report = profile(table, minimal=True, title="Varied Data - Minimal Report")
-    min_report.to_file(os.path.join(output_dir, "varied_minimal.html"))
-    min_report.to_file(os.path.join(output_dir, "varied_minimal.json"))
-
-    # 3. Empty Table Case (Tests Finding 5)
-    print("Generating EMPTY table profile...")
-    empty_df = pd.DataFrame(columns=["a", "b"])
-    empty_table = ibis.memtable(empty_df)
-    empty_report = profile(empty_table, title="Empty Table Report")
-    empty_report.to_file(os.path.join(output_dir, "empty_table.html"))
-    empty_report.to_file(os.path.join(output_dir, "empty_table.json"))
-
-    print(f"\nReports generated in: {output_dir}")
-
-    # Quick verification of XSS escaping in one of the HTML files
-    with open(os.path.join(output_dir, "varied_full.html"), "r") as f:
-        html = f.read()
-        if "</script><script>" in html:
-            print("❌ XSS VULNERABILITY DETECTED IN OUTPUT!")
-        elif "\\u003c/script\\u003e\\u003cscript\\u003e" in html:
-            print("✅ XSS Protection Verified: HTML contains escaped sequences.")
-        else:
-            print("⚠️ Could not find XSS payload in HTML (check script logic).")
+    print(f"Reports generated in {output_dir}")
 
 
 if __name__ == "__main__":
-    main()
+    generate_reports()

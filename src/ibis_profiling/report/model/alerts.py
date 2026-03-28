@@ -14,7 +14,13 @@ class AlertEngine:
         for col, stats in variables.items():
             col_n = stats.get("n") or n
             n_distinct = stats.get("n_distinct") or 0
+            n_missing = stats.get("n_missing") or 0
             p_missing = stats.get("p_missing") or 0.0
+
+            # Recalculate p_missing if missing
+            if col_n > 0 and not p_missing and n_missing > 0:
+                p_missing = n_missing / col_n
+
             n_zeros = stats.get("n_zeros") or 0
             v_type = stats.get("type")
 
@@ -22,10 +28,9 @@ class AlertEngine:
             if n_distinct == 1:
                 key = ("CONSTANT", "warning")
                 grouped_alerts.setdefault(key, []).append(col)
-                continue
 
             # 2. Unique (Avoid noise on high-precision continuous floats)
-            if col_n > 0 and n_distinct == col_n:
+            elif col_n > 0 and n_distinct == col_n:
                 if v_type in ["Categorical", "Numeric"]:
                     if v_type == "Categorical" or (v_type == "Numeric" and n_distinct < 1000000):
                         key = ("UNIQUE", "warning")
