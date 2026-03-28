@@ -223,6 +223,9 @@ class Profiler:
             # 9. Samples & Missing Matrix (5%)
             self._run_final_pass(report)
 
+            # 10. Finalize (recalculate derived metrics and alerts)
+            report.finalize()
+
             end_time = datetime.now()
             report.analysis["date_end"] = end_time.isoformat()
             report.analysis["duration"] = (end_time - self.start_time).total_seconds() * 1000
@@ -415,10 +418,12 @@ class Profiler:
 
         for col_name, metric_name, expr, hint in complex_plans:
             if expr is None:
-                # Metric was skipped (e.g. n_unique threshold)
+                # Metric was skipped (e.g. n_unique/top_values threshold)
                 report.add_metric(col_name, metric_name, "Skipped")
+
+                label = "Unique values" if metric_name == "n_unique" else "Frequency table"
                 report.variables[col_name].setdefault("warnings", []).append(
-                    f"Metric '{metric_name}' skipped for large high-cardinality column. "
+                    f"{label} skipped for large high-cardinality column. "
                     f"Threshold: {self.n_unique_threshold:,}"
                 )
                 continue

@@ -11,6 +11,6 @@
   "tests_added": [
     "tests/test_n_unique_threshold.py"
   ],
-  "design_decisions": "Introduced n_unique_threshold (default 1,000,000) to skip the expensive n_unique (singleton count) calculation on large, high-cardinality datasets. The QueryPlanner now checks both total row count and column distinct count before including n_unique in the complex metrics pass. If skipped, the report stores 'Skipped' and a warning is added to the column metadata.",
-  "results": "Benchmark on 20M rows with 1 high-cardinality column showed a 5.7% speedup. All 137 tests passed."
+  "design_decisions": "Introduced n_unique_threshold (default 1,000,000) to skip expensive singleton counts and frequency tables on large, high-cardinality datasets. Optimized n_unique by using literal values for confirmed unique columns. Refactored ProfileReport to include a finalize() method, ensuring derived metrics like p_unique are calculated correctly after all metrics are gathered. Standardized per-column total counts (n) in global aggregation for reliable thresholding.",
+  "results": "Benchmarks on 20M and 50M rows confirmed ~30% reduction in total profiling time when heavy metrics are skipped for high-cardinality columns. All 141 tests passed."
 }

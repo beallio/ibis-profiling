@@ -163,17 +163,36 @@ class ProfileReport:
                 t = v["type"]
                 self.table["types"][t] = self.table["types"].get(t, 0) + 1
 
-        # 3. Post-process variables (normalization & derived metrics)
-        n_cells_missing = 0
+        # 3. Post-process variables (basic metadata needed for next passes)
         for col, stats in self.variables.items():
             stats["n"] = n
-            m_count = stats.get("n_missing")
-            if m_count is None:
-                m_count = 0
+            m_count = stats.get("n_missing", 0)
             stats["n_missing"] = self._to_json_serializable(m_count)
-            stats["p_missing"] = self._to_json_serializable(m_count / n if n > 0 else 0)
-            stats["p_distinct"] = self._to_json_serializable(
-                stats.get("n_distinct", 0) / n if n > 0 else 0
+            stats["count"] = n - (m_count if isinstance(m_count, (int, float)) else 0)
+
+            # Ensure stats are serializable for initial state
+            for k, v in list(stats.items()):
+                stats[k] = self._to_json_serializable(v)
+
+    def finalize(self):
+        """Finalizes the report by calculating derived metrics and generating alerts."""
+        if not self.table or not isinstance(self.table.get("n"), (int, float)):
+            return
+
+        n = cast(int, self.table["n"])
+        n_cells_missing = 0
+
+        # Post-process variables (normalization & derived metrics)
+        for col, stats in self.variables.items():
+            m_count = stats.get("n_missing", 0)
+            if not isinstance(m_count, (int, float)):
+                m_count = 0
+
+            stats["p_missing"] = m_count / n if n > 0 else 0
+            stats["p_distinct"] = (
+                stats.get("n_distinct", 0) / n
+                if n > 0 and isinstance(stats.get("n_distinct"), (int, float))
+                else 0
             )
 
             stats["count"] = n - m_count
@@ -225,28 +244,29 @@ class ProfileReport:
                 if stats.get("n_negative") is not None:
                     stats["p_negative"] = stats["n_negative"] / n if n > 0 else 0
             elif stats.get("type") == "Categorical":
-                # For categoricals, we don't want continuous numeric metrics
-                # even if they were calculated in pass 1 before reclassification
                 for k in NUMERIC_ONLY_METRICS:
                     stats.pop(k, None)
 
-            # Unique Percentage
-            if stats.get("n_unique") is not None:
-                stats["p_unique"] = stats["n_unique"] / n if n > 0 else 0
+            # Unique Percentage (Updated after add_metric calls)
+            n_unique = stats.get("n_unique")
+            if n_unique is not None:
+                if isinstance(n_unique, (int, float)):
+                    stats["p_unique"] = n_unique / n if n > 0 else 0
+                else:
+                    stats["p_unique"] = n_unique  # Likely "Skipped"
 
             # Ensure other stats are serializable
             for k, v in list(stats.items()):
                 stats[k] = self._to_json_serializable(v)
 
-        if self.table:
-            self.table["n_cells_missing"] = n_cells_missing
-            n_var = self.table.get("n_var", 0)
-            if isinstance(n_var, int) and n > 0 and n_var > 0:
-                self.table["p_cells_missing"] = n_cells_missing / (n * n_var)
-            else:
-                self.table["p_cells_missing"] = 0
+        self.table["n_cells_missing"] = n_cells_missing
+        n_var = self.table.get("n_var", 0)
+        if isinstance(n_var, int) and n > 0 and n_var > 0:
+            self.table["p_cells_missing"] = n_cells_missing / (n * n_var)
+        else:
+            self.table["p_cells_missing"] = 0
 
-        # 4. Generate Alerts
+        # Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
 
     def add_metric(self, col_name: str, metric_name: str, value: Any):
@@ -254,6 +274,11 @@ class ProfileReport:
         if metric_name in ["head", "tail"]:
             self.samples[metric_name] = value
         elif col_name in self.variables:
+            # Handle skipped metrics
+            if value == "Skipped":
+                self.variables[col_name][metric_name] = "Skipped"
+                return
+
             # Handle complex mapping like histograms
             if metric_name == "top_values":
                 # Ibis value_counts() returns [col_name, count_col]
@@ -318,6 +343,7 @@ class ProfileReport:
                 self.variables[col_name][metric_name] = self._to_json_serializable(value)
 
     def to_dict(self) -> dict:
+        self.finalize()
         from .. import __version__
 
         pkg_version = __version__

@@ -40,11 +40,11 @@ class MissingEngine:
                 "warnings": [],
             }
 
-        counts = [variables[c].get("n_missing", 0) for c in columns]
+        counts = [variables[c].get("n_missing") or 0 for c in columns]
 
         # 1. Missingness Heatmap (Correlation of nullity)
         # We only include columns that have at least some missing values to avoid constant correlation errors
-        cols_with_missing = [c for c in columns if variables[c].get("n_missing", 0) > 0]
+        cols_with_missing = [c for c in columns if (variables[c].get("n_missing") or 0) > 0]
         heatmap_data = {"columns": [], "matrix": []}
 
         # Truncate if necessary to avoid O(n^2) blowups

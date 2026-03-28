@@ -31,6 +31,10 @@ class QueryPlanner:
 
         for col_name, dtype in schema.items():
             col = self.table[col_name]
+
+            # Always include total count for thresholding
+            aggs.append(col.count().name(f"{col_name}__n"))
+
             for metric in self.registry.metrics.values():
                 # We skip n_unique (singletons) for now as it's complex (requires value_counts)
                 if metric.name == "n_unique":
@@ -77,8 +81,10 @@ class QueryPlanner:
             # 1. n_unique (singletons) - Scalar Value (but uses subquery, so hint Table)
             metric = self.registry.metrics.get("n_unique")
             if metric and metric.supports(dtype):
-                n_total = col_meta.get("n", 0)
-                n_distinct = col_meta.get("n_distinct", 0)
+                n_total = col_meta.get("n") or 0
+                n_distinct = col_meta.get("n_distinct") or 0
+                n_missing = col_meta.get("n_missing") or 0
+                n_rows = n_total - n_missing
 
                 # Skip if above threshold (prohibitively expensive value_counts)
                 if (
@@ -88,6 +94,10 @@ class QueryPlanner:
                 ):
                     # We return None for the expression to indicate it was skipped
                     plans.append((col_name, metric.name, None, "Table"))
+                # Optimization: if all values are distinct, n_unique is exactly n_distinct
+                elif n_rows > 0 and n_distinct == n_rows:
+                    # We return a literal scalar expression
+                    plans.append((col_name, metric.name, ibis.literal(n_distinct), "Value"))
                 else:
                     plans.append((col_name, metric.name, metric.build_expr(col), "Table"))
 
@@ -98,10 +108,21 @@ class QueryPlanner:
             is_hashable = not isinstance(dtype, (dt.Array, dt.Map, dt.Struct))
 
             if is_discrete and is_hashable:
-                vc = col.value_counts()
-                count_col = vc.columns[1]
-                hist_expr = vc.order_by(ibis.desc(count_col)).limit(20)
-                plans.append((col_name, "top_values", hist_expr, "Table"))
+                n_total = col_meta.get("n") or 0
+                n_distinct = col_meta.get("n_distinct") or 0
+
+                # Guard top_values with threshold as well
+                if (
+                    self.n_unique_threshold > 0
+                    and n_total > self.n_unique_threshold
+                    and n_distinct > self.n_unique_threshold
+                ):
+                    plans.append((col_name, "top_values", None, "Table"))
+                else:
+                    vc = col.value_counts()
+                    count_col = vc.columns[1]
+                    hist_expr = vc.order_by(ibis.desc(count_col)).limit(20)
+                    plans.append((col_name, "top_values", hist_expr, "Table"))
 
             # 3. Extreme Values (Smallest/Largest) - Table
             if not isinstance(dtype, (dt.Array, dt.Map, dt.Struct)):

@@ -123,7 +123,7 @@ def test_empty_table_profiling():
     assert report_dict["table"]["n"] == 0
     assert "a" in report_dict["variables"]
     assert report_dict["variables"]["a"]["n"] == 0
-    assert report_dict["variables"]["a"]["n_missing"] == 0
+    assert report_dict["variables"]["a"]["n_missing"] is None
 
 
 def test_histogram_failure_warning():

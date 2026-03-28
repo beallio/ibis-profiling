@@ -12,6 +12,7 @@ class AlertEngine:
         n = table_stats.get("n", 0)
 
         for col, stats in variables.items():
+            col_n = stats.get("n") or n
             n_distinct = stats.get("n_distinct") or 0
             p_missing = stats.get("p_missing") or 0.0
             n_zeros = stats.get("n_zeros") or 0
@@ -24,14 +25,14 @@ class AlertEngine:
                 continue
 
             # 2. Unique (Avoid noise on high-precision continuous floats)
-            if n > 0 and n_distinct == n:
+            if col_n > 0 and n_distinct == col_n:
                 if v_type in ["Categorical", "Numeric"]:
                     if v_type == "Categorical" or (v_type == "Numeric" and n_distinct < 1000000):
                         key = ("UNIQUE", "warning")
                         grouped_alerts.setdefault(key, []).append(col)
 
             # 3. High Cardinality (only if not unique)
-            elif n > 0 and (n_distinct / n) > 0.5 and v_type == "Categorical":
+            elif col_n > 0 and (n_distinct / col_n) > 0.5 and v_type == "Categorical":
                 key = ("HIGH_CARDINALITY", "warning")
                 grouped_alerts.setdefault(key, []).append(col)
 
@@ -41,7 +42,7 @@ class AlertEngine:
                 grouped_alerts.setdefault(key, []).append(col)
 
             # 5. Zeros
-            if n > 0 and (n_zeros / n) > 0.1:
+            if col_n > 0 and (n_zeros / col_n) > 0.1:
                 key = ("ZEROS", "info")
                 grouped_alerts.setdefault(key, []).append(col)
 
