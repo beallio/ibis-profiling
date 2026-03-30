@@ -328,13 +328,29 @@ class Profiler:
 
                 col = safe_c
 
-            if v_min is not None and v_max is not None and v_max > v_min:
-                range_size = v_max - v_min
-                bin_expr = (
-                    (((col - v_min) / range_size) * nbins).floor().clip(lower=0, upper=nbins - 1)
-                )
-                hist_plan = bin_expr.value_counts()
-                histogram_plans.append((col_name, hist_plan, v_min, v_max, nbins))
+            if v_min is not None and v_max is not None:
+                if v_max > v_min:
+                    range_size = v_max - v_min
+                    bin_expr = (
+                        (((col - v_min) / range_size) * nbins)
+                        .floor()
+                        .clip(lower=0, upper=nbins - 1)
+                    )
+                    hist_plan = bin_expr.value_counts()
+                    histogram_plans.append((col_name, hist_plan, v_min, v_max, nbins))
+                else:
+                    # Constant value histogram (single bin)
+                    # We pass a simple dict to add_metric later
+                    report.add_metric(
+                        col_name,
+                        "numeric_histogram",
+                        {
+                            "counts": {0: stats.get("count", 0)},
+                            "min": v_min,
+                            "max": v_max,
+                            "nbins": 1,
+                        },
+                    )
 
         if second_pass_aggs:
             results = self.table.aggregate(second_pass_aggs).to_pyarrow().to_pydict()
@@ -717,7 +733,7 @@ class ProfileReport:
         compute_duplicates: bool | None = None,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
-        n_unique_threshold: int = 1_000_000,
+        n_unique_threshold: int = 50_000_000,
         correlations_max_columns: int = 15,
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,

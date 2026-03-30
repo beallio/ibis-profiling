@@ -167,12 +167,9 @@ class ProfileReport:
         for col, stats in self.variables.items():
             stats["n"] = n
             m_count = stats.get("n_missing", 0)
-            stats["n_missing"] = self._to_json_serializable(m_count)
+            # Store raw numeric for calculation, serialize later in finalize()
+            stats["n_missing"] = m_count
             stats["count"] = n - (m_count if isinstance(m_count, (int, float)) else 0)
-
-            # Ensure stats are serializable for initial state
-            for k, v in list(stats.items()):
-                stats[k] = self._to_json_serializable(v)
 
     def finalize(self):
         """Finalizes the report by calculating derived metrics and generating alerts."""
