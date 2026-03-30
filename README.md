@@ -129,6 +129,7 @@ uv run --with ibis-profiling,ibis-framework[duckdb] ProfileReport --file-path da
 | `--monotonicity` | | Explicitly enable or disable monotonicity checks (`--monotonicity` / `--no-monotonicity`). |
 | `--monotonicity-threshold` | | Row count threshold above which monotonicity is skipped (default: 100,000). |
 | `--monotonicity-order-by` | | Column name to order by for deterministic monotonicity checks. Required to enable monotonicity. |
+| `--n-unique-threshold` | | Row count threshold above which `n_unique` (singletons) calculation is skipped (default: 50,000,000). |
 | `--duplicates` | | Explicitly enable or disable duplicate row checks (`--duplicates` / `--no-duplicates`). |
 | `--offline` / `--online` | | Whether to bundle all JS/CSS assets in the HTML for offline viewing (default: `--offline`). |
 
@@ -166,7 +167,9 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | `correlations` | `True` | Explicitly enable/disable all correlation matrices. |
 | `monotonicity` | `True` | Explicitly enable/disable monotonicity checks. |
 | `monotonicity_threshold` | `100,000` | Row count threshold above which monotonicity is skipped by default. |
+| `duplicates_threshold` | `50,000,000` | Row count threshold above which duplicate check is skipped by default. |
 | `monotonicity_order_by` | `None` | Required column name to order by for deterministic monotonicity checks. If `None`, checks are skipped. |
+| `n_unique_threshold` | `50,000,000` | Row count threshold above which `n_unique` calculation is skipped. |
 | `compute_duplicates` | `True` | Explicitly enable/disable duplicate row detection. |
 
 #### 🔍 Interaction Pruning & "Interactivity"

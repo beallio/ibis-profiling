@@ -10,7 +10,7 @@ class QueryPlanner:
         table: ibis.Table,
         registry: MetricRegistry,
         use_sketches: bool = False,
-        n_unique_threshold: int = 1_000_000,
+        n_unique_threshold: int = 50_000_000,
     ):
         self.table = table
         self.registry = registry

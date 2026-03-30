@@ -60,7 +60,7 @@ from ibis_profiling import ProfileReport, __version__
 @click.option(
     "--n-unique-threshold",
     type=int,
-    default=1_000_000,
+    default=50_000_000,
     show_default=True,
     help="Row count/cardinality threshold above which n_unique is skipped.",
 )
