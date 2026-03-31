@@ -42,8 +42,16 @@ class QueryPlanner:
 
                 if metric.category == MetricCategory.COLUMN and metric.supports(dtype):
                     # Special case: n_distinct can be sketched
-                    if metric.name == "n_distinct" and self.use_sketches and is_duckdb:
-                        expr = col.approx_nunique()
+                    if metric.name == "n_distinct":
+                        # Skip n_distinct for complex/unhashable types as they often fail nunique()
+                        is_unhashable = isinstance(dtype, (dt.Array, dt.Map, dt.Struct, dt.JSON))
+                        if is_unhashable:
+                            continue
+
+                        if self.use_sketches and is_duckdb:
+                            expr = col.approx_nunique()
+                        else:
+                            expr = metric.build_expr(col)
                     else:
                         expr = metric.build_expr(col)
 
