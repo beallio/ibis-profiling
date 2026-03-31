@@ -1,5 +1,7 @@
 import ibis
 import math
+import polars as pl
+import logging
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from datetime import datetime
@@ -49,6 +51,7 @@ class Profiler:
         parallel: bool = False,
         pool_size: int = 4,
         use_sketches: bool = False,
+        global_batch_size: int = 500,
     ):
         from typing import Any
 
@@ -76,11 +79,16 @@ class Profiler:
         self.parallel = parallel
         self.pool_size = pool_size
         self.use_sketches = use_sketches
+        self.global_batch_size = global_batch_size
 
         self.start_time = datetime.now()
         self.inspector = DatasetInspector(table)
         self.planner = QueryPlanner(
-            table, registry, use_sketches=use_sketches, n_unique_threshold=n_unique_threshold
+            table,
+            registry,
+            use_sketches=use_sketches,
+            n_unique_threshold=n_unique_threshold,
+            global_batch_size=global_batch_size,
         )
         self.engine = ExecutionEngine()
         self.executor = None
@@ -137,8 +145,29 @@ class Profiler:
 
             # 2. Global Aggregates (20%)
             self._update_progress(20 if not self.minimal else 30, "Executing global aggregates...")
-            global_plan = self.planner.build_global_aggregation()
-            raw_results = self.engine.execute(global_plan)
+            global_plans = self.planner.build_global_aggregation()
+
+            if len(global_plans) > 1:
+                logging.warning(
+                    f"Table is too wide. Splitting global aggregates into {len(global_plans)} batches "
+                    f"to improve reliability."
+                )
+
+            batch_results = []
+            for plan in global_plans:
+                batch_results.append(self.engine.execute(plan))
+
+            if not batch_results:
+                # Handle empty case (no columns or metrics)
+                raw_results = pl.DataFrame()
+            else:
+                raw_results = batch_results[0]
+                for next_res in batch_results[1:]:
+                    # Drop columns that are already in raw_results (e.g. _dataset__row_count)
+                    duplicates = [c for c in next_res.columns if c in raw_results.columns]
+                    if duplicates:
+                        next_res = next_res.drop(duplicates)
+                    raw_results = pl.concat([raw_results, next_res], how="horizontal")
 
             # 3. Metadata & Initial Report (10%)
             self._update_progress(10, "Metadata analysis...")
@@ -685,6 +714,7 @@ def profile(
     parallel: bool = False,
     pool_size: int = 4,
     use_sketches: bool = False,
+    global_batch_size: int = 500,
 ) -> InternalProfileReport:
     """Main entrypoint for profiling an Ibis table."""
     profiler = Profiler(
@@ -709,6 +739,7 @@ def profile(
         parallel=parallel,
         pool_size=pool_size,
         use_sketches=use_sketches,
+        global_batch_size=global_batch_size,
     )
     return profiler.run()
 
@@ -738,6 +769,7 @@ class ProfileReport:
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,
         monotonicity_order_by: str | None = None,
+        global_batch_size: int = 500,
         **kwargs,
     ):
         self.table = table
@@ -753,6 +785,7 @@ class ProfileReport:
         self.missing_heatmap_max_columns = missing_heatmap_max_columns
         self.missing_matrix_max_columns = missing_matrix_max_columns
         self.monotonicity_order_by = monotonicity_order_by
+        self.global_batch_size = global_batch_size
         self.kwargs = kwargs
 
         title = kwargs.get("title", "Ibis Profiling Report")
@@ -779,6 +812,8 @@ class ProfileReport:
             correlations_sample_size=kwargs.get("correlations_sample_size", 1_000_000),
             parallel=kwargs.get("parallel", False),
             pool_size=kwargs.get("pool_size", 4),
+            use_sketches=kwargs.get("use_sketches", False),
+            global_batch_size=global_batch_size,
         )
 
     @classmethod

@@ -11,14 +11,16 @@ class QueryPlanner:
         registry: MetricRegistry,
         use_sketches: bool = False,
         n_unique_threshold: int = 50_000_000,
+        global_batch_size: int = 500,
     ):
         self.table = table
         self.registry = registry
         self.use_sketches = use_sketches
         self.n_unique_threshold = n_unique_threshold
+        self.global_batch_size = global_batch_size
 
-    def build_global_aggregation(self) -> ir.Table:
-        """Batches all applicable simple COLUMN metrics into a single aggregation query."""
+    def build_global_aggregation(self) -> list[ir.Table]:
+        """Batches all applicable simple COLUMN metrics into multiple aggregation queries."""
         schema = self.table.schema()
         aggs = []
 
@@ -62,10 +64,16 @@ class QueryPlanner:
         # Include dataset-wide metrics
         aggs.append(self.table.count().name("_dataset__row_count"))
 
-        # We'll omit distinct count from this global batch to avoid IntegrityErrors
-        # and handle it in __init__.py as a separate pass.
+        if not aggs:
+            return []
 
-        return self.table.aggregate(aggs)
+        # Split into batches
+        plans = []
+        for i in range(0, len(aggs), self.global_batch_size):
+            chunk = aggs[i : i + self.global_batch_size]
+            plans.append(self.table.aggregate(chunk))
+
+        return plans
 
     def build_complex_metrics(
         self,

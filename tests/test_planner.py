@@ -9,10 +9,13 @@ def test_planner_aggregation_building():
     table = ibis.table(schema, name="test")
 
     planner = QueryPlanner(table, registry)
-    plan = planner.build_global_aggregation()
+    plans = planner.build_global_aggregation()
 
-    # Check the aggregated columns
-    # We expect columns like "a__mean", "a__min", etc. and "_dataset__row_count"
+    assert isinstance(plans, list)
+    assert len(plans) > 0
+
+    # Check the aggregated columns from the first plan (since it's a small table)
+    plan = plans[0]
     plan_schema = plan.schema()
 
     assert "a__mean" in plan_schema

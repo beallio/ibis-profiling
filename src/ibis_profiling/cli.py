@@ -91,6 +91,13 @@ from ibis_profiling import ProfileReport, __version__
     help="Column name to order by for monotonicity checks.",
 )
 @click.option(
+    "--global-batch-size",
+    type=int,
+    default=500,
+    show_default=True,
+    help="Maximum number of metrics to compute in a single global aggregate query.",
+)
+@click.option(
     "--theme",
     type=click.Choice(["default", "ydata-like"]),
     default="default",
@@ -124,6 +131,7 @@ def main(
     missing_heatmap_max_columns,
     missing_matrix_max_columns,
     monotonicity_order_by,
+    global_batch_size,
     theme,
     output_format,
     offline,
@@ -158,6 +166,7 @@ def main(
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
+                global_batch_size=global_batch_size,
             )
         elif ext == ".parquet":
             click.echo(f"Loading Parquet file: {file_path}...")
@@ -176,6 +185,7 @@ def main(
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
+                global_batch_size=global_batch_size,
             )
 
         elif ext == ".csv":
@@ -195,6 +205,7 @@ def main(
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
+                global_batch_size=global_batch_size,
             )
 
         else:
@@ -219,6 +230,7 @@ def main(
                 missing_heatmap_max_columns=missing_heatmap_max_columns,
                 missing_matrix_max_columns=missing_matrix_max_columns,
                 monotonicity_order_by=monotonicity_order_by,
+                global_batch_size=global_batch_size,
             )
 
         if not output_format:

@@ -132,6 +132,7 @@ uv run --with ibis-profiling,ibis-framework[duckdb] ProfileReport --file-path da
 | `--n-unique-threshold` | | Row count threshold above which `n_unique` (singletons) calculation is skipped (default: 50,000,000). |
 | `--duplicates` | | Explicitly enable or disable duplicate row checks (`--duplicates` / `--no-duplicates`). |
 | `--offline` / `--online` | | Whether to bundle all JS/CSS assets in the HTML for offline viewing (default: `--offline`). |
+| `--global-batch-size` | | Maximum number of metrics to compute in a single global aggregate query (default: 500). |
 
 ---
 
@@ -170,6 +171,7 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | `duplicates_threshold` | `50,000,000` | Row count threshold above which duplicate check is skipped by default. |
 | `monotonicity_order_by` | `None` | Required column name to order by for deterministic monotonicity checks. If `None`, checks are skipped. |
 | `n_unique_threshold` | `50,000,000` | Row count threshold above which `n_unique` calculation is skipped. |
+| `global_batch_size` | `500` | Maximum number of aggregate expressions per backend query. |
 | `compute_duplicates` | `True` | Explicitly enable/disable duplicate row detection. |
 
 #### 🔍 Interaction Pruning & "Interactivity"
