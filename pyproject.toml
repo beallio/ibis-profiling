@@ -30,6 +30,7 @@ dependencies = [
     "pyarrow>=23.0.1",
     "pyarrow-hotfix>=0.7",
     "pydantic>=2.12.5",
+    "pygments>=2.20.0",
 ]
 
 [project.scripts]
