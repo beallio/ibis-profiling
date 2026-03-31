@@ -76,7 +76,7 @@ class CorrelationEngine:
 
         is_sampled = False
         calc_table = table
-        if row_count > sampling_threshold:
+        if row_count and row_count > sampling_threshold and sampling_threshold > 0:
             sample_fraction = sample_size / row_count
             if sample_fraction < 1.0:
                 is_sampled = True

@@ -94,14 +94,22 @@ class Profiler:
         self.executor = None
 
         self.col_types: dict[str, Any] = self.inspector.get_column_types()
-        self.report_data = {
-            "analysis": {
-                "title": title,
-                "date_start": self.start_time.isoformat(),
-            },
-            "variables": {},
-            "table": {},
-        }
+        self.validation_warnings = []
+
+        # 2. Parameter Validation
+        if self.correlations_sampling_threshold <= 0:
+            self.correlations_sampling_threshold = 1_000_000
+            self.validation_warnings.append(
+                "Invalid correlations_sampling_threshold provided (must be > 0). "
+                "Resetting to default (1,000,000)."
+            )
+
+        if self.correlations_sample_size <= 0:
+            self.correlations_sample_size = 1_000_000
+            self.validation_warnings.append(
+                "Invalid correlations_sample_size provided (must be > 0). "
+                "Resetting to default (1,000,000)."
+            )
 
     def _update_progress(self, inc: int, label: str | None = None):
         if self.on_progress:
@@ -183,6 +191,10 @@ class Profiler:
 
             report = InternalProfileReport(raw_results, self.col_types, title=self.title)
             report.analysis["date_start"] = self.start_time.isoformat()
+
+            # Add validation warnings
+            if self.validation_warnings:
+                report.analysis.setdefault("warnings", []).extend(self.validation_warnings)
 
             if unsafe_backend:
                 report.analysis.setdefault("warnings", []).append(
