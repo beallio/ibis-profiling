@@ -86,7 +86,7 @@ class MissingEngine:
                 non_finite_count = 0
                 for i in range(len(cols_with_missing)):
                     for j in range(len(cols_with_missing)):
-                        if i != j:
+                        if i < j:
                             key = f"mcorr_{i}_{j}"
                             val = res[key][0]
                             # Handle potential NaNs/Infs from zero-variance masks
@@ -100,8 +100,10 @@ class MissingEngine:
 
                             if is_f:
                                 final_matrix[i][j] = float(val)
+                                final_matrix[j][i] = float(val)
                             else:
                                 final_matrix[i][j] = 0.0
+                                final_matrix[j][i] = 0.0
                                 non_finite_count += 1
 
                 if non_finite_count > 0:

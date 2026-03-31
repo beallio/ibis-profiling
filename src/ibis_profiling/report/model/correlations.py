@@ -90,7 +90,7 @@ class CorrelationEngine:
         flat_pearson = []
         for i, row in enumerate(pearson_meta["matrix"]):
             for j, item in enumerate(row):
-                if isinstance(item, ir.Scalar):
+                if i < j and isinstance(item, ir.Scalar):
                     flat_pearson.append(item.name(f"p_{i}_{j}"))
 
         if flat_pearson:
@@ -98,10 +98,11 @@ class CorrelationEngine:
             final_pearson = [[1.0 for _ in numeric_cols] for _ in numeric_cols]
             for i in range(len(numeric_cols)):
                 for j in range(len(numeric_cols)):
-                    if i != j:
+                    if i < j:
                         key = f"p_{i}_{j}"
                         val = res[key][0]
                         final_pearson[i][j] = val
+                        final_pearson[j][i] = val
             pearson = {
                 "columns": numeric_cols,
                 "matrix": CorrelationEngine._sanitize_matrix(final_pearson),
@@ -216,7 +217,7 @@ class CorrelationEngine:
             for j, c2 in enumerate(cols):
                 if i == j:
                     row.append(1.0)
-                else:
+                elif i < j:
                     # Pearson Correlation Expression (Manual to handle NaNs)
                     # corr(x, y) = cov(x, y) / (std(x) * std(y))
                     s1 = safe_col(table[c1]).cast(dt.Float64)
@@ -235,6 +236,9 @@ class CorrelationEngine:
                     # Let's ensure it's coerced to a float.
                     expr = corr_expr.cast(dt.Float64)
                     row.append(expr)
+                else:
+                    # Mirror or skip (caller handles this)
+                    row.append(None)
 
             matrix.append(row)
 
