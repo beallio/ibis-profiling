@@ -479,6 +479,7 @@ class ProfileReport:
             },
         }
 
+        # 4. Content Security Policy (CSP)
         csp_directives = [
             "default-src 'self'",
             "script-src 'unsafe-inline' 'unsafe-eval'",
@@ -508,7 +509,12 @@ class ProfileReport:
                     placeholder,
                     f'<script src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
                 )
+            # Allow CDNs in online mode CSP
+            csp_directives[1] += " 'self' https://cdn.tailwindcss.com https://unpkg.com"
             csp_directives.append("connect-src *")
+
+        csp_str = "; ".join(csp_directives) + ";"
+        html = html.replace("{{CSP_DIRECTIVES}}", csp_str)
 
         csp_meta = (
             f'<meta http-equiv="Content-Security-Policy" content="{"; ".join(csp_directives)};">'
