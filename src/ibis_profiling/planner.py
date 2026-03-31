@@ -82,16 +82,22 @@ class QueryPlanner:
             metric = self.registry.metrics.get("n_unique")
             if metric and metric.supports(dtype):
                 n_total = col_meta.get("n") or 0
-                n_distinct = col_meta.get("n_distinct") or 0
+                n_distinct = col_meta.get("n_distinct")
                 n_missing = col_meta.get("n_missing") or 0
                 n_rows = n_total - n_missing
 
                 # Skip if above threshold (prohibitively expensive value_counts)
-                if (
-                    self.n_unique_threshold > 0
-                    and n_total > self.n_unique_threshold
-                    and n_distinct > self.n_unique_threshold
-                ):
+                # Treat unknown n_distinct (None or 0 with large n) as needing skip
+                skip = False
+                if self.n_unique_threshold > 0 and n_total > self.n_unique_threshold:
+                    if (
+                        n_distinct is None
+                        or not isinstance(n_distinct, (int, float))
+                        or n_distinct > self.n_unique_threshold
+                    ):
+                        skip = True
+
+                if skip:
                     # We return None for the expression to indicate it was skipped
                     plans.append((col_name, metric.name, None, "Table"))
                 # Optimization: if all values are distinct, n_unique is exactly n_distinct
@@ -105,18 +111,23 @@ class QueryPlanner:
             is_discrete = mapped_type == "Categorical" or not isinstance(
                 dtype, (dt.Integer, dt.Floating, dt.Decimal)
             )
-            is_hashable = not isinstance(dtype, (dt.Array, dt.Map, dt.Struct))
+            is_hashable = not isinstance(dtype, (dt.Array, dt.Map, dt.Struct, dt.JSON))
 
             if is_discrete and is_hashable:
                 n_total = col_meta.get("n") or 0
-                n_distinct = col_meta.get("n_distinct") or 0
+                n_distinct = col_meta.get("n_distinct")
 
                 # Guard top_values with threshold as well
-                if (
-                    self.n_unique_threshold > 0
-                    and n_total > self.n_unique_threshold
-                    and n_distinct > self.n_unique_threshold
-                ):
+                skip = False
+                if self.n_unique_threshold > 0 and n_total > self.n_unique_threshold:
+                    if (
+                        n_distinct is None
+                        or not isinstance(n_distinct, (int, float))
+                        or n_distinct > self.n_unique_threshold
+                    ):
+                        skip = True
+
+                if skip:
                     plans.append((col_name, "top_values", None, "Table"))
                 else:
                     vc = col.value_counts()
