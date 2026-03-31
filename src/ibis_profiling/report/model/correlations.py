@@ -74,13 +74,16 @@ class CorrelationEngine:
         if row_count is None:
             row_count = table.count().to_pyarrow().as_py()
 
-        is_sampled = row_count > sampling_threshold
+        is_sampled = False
         calc_table = table
-        if is_sampled:
-            try:
-                calc_table = table.sample(sample_size / row_count)
-            except Exception:
-                calc_table = table.limit(sample_size)
+        if row_count > sampling_threshold:
+            sample_fraction = sample_size / row_count
+            if sample_fraction < 1.0:
+                is_sampled = True
+                try:
+                    calc_table = table.sample(sample_fraction)
+                except Exception:
+                    calc_table = table.limit(sample_size)
 
         # 1. Pearson Pass
         pearson_meta = CorrelationEngine._compute_pearson(calc_table, numeric_cols)
