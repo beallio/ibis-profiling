@@ -49,6 +49,7 @@ class Profiler:
         parallel: bool = False,
         pool_size: int = 4,
         use_sketches: bool = False,
+        global_batch_size: int = 500,
     ):
         from typing import Any
 
@@ -76,11 +77,16 @@ class Profiler:
         self.parallel = parallel
         self.pool_size = pool_size
         self.use_sketches = use_sketches
+        self.global_batch_size = global_batch_size
 
         self.start_time = datetime.now()
         self.inspector = DatasetInspector(table)
         self.planner = QueryPlanner(
-            table, registry, use_sketches=use_sketches, n_unique_threshold=n_unique_threshold
+            table,
+            registry,
+            use_sketches=use_sketches,
+            n_unique_threshold=n_unique_threshold,
+            global_batch_size=global_batch_size,
         )
         self.engine = ExecutionEngine()
         self.executor = None
@@ -685,6 +691,7 @@ def profile(
     parallel: bool = False,
     pool_size: int = 4,
     use_sketches: bool = False,
+    global_batch_size: int = 500,
 ) -> InternalProfileReport:
     """Main entrypoint for profiling an Ibis table."""
     profiler = Profiler(
@@ -709,6 +716,7 @@ def profile(
         parallel=parallel,
         pool_size=pool_size,
         use_sketches=use_sketches,
+        global_batch_size=global_batch_size,
     )
     return profiler.run()
 
@@ -738,6 +746,7 @@ class ProfileReport:
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,
         monotonicity_order_by: str | None = None,
+        global_batch_size: int = 500,
         **kwargs,
     ):
         self.table = table
@@ -753,6 +762,7 @@ class ProfileReport:
         self.missing_heatmap_max_columns = missing_heatmap_max_columns
         self.missing_matrix_max_columns = missing_matrix_max_columns
         self.monotonicity_order_by = monotonicity_order_by
+        self.global_batch_size = global_batch_size
         self.kwargs = kwargs
 
         title = kwargs.get("title", "Ibis Profiling Report")
@@ -779,6 +789,8 @@ class ProfileReport:
             correlations_sample_size=kwargs.get("correlations_sample_size", 1_000_000),
             parallel=kwargs.get("parallel", False),
             pool_size=kwargs.get("pool_size", 4),
+            use_sketches=kwargs.get("use_sketches", False),
+            global_batch_size=global_batch_size,
         )
 
     @classmethod

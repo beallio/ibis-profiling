@@ -11,11 +11,13 @@ class QueryPlanner:
         registry: MetricRegistry,
         use_sketches: bool = False,
         n_unique_threshold: int = 50_000_000,
+        global_batch_size: int = 500,
     ):
         self.table = table
         self.registry = registry
         self.use_sketches = use_sketches
         self.n_unique_threshold = n_unique_threshold
+        self.global_batch_size = global_batch_size
 
     def build_global_aggregation(self) -> ir.Table:
         """Batches all applicable simple COLUMN metrics into a single aggregation query."""
