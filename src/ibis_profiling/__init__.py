@@ -1,5 +1,7 @@
 import ibis
 import math
+import polars as pl
+import logging
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from datetime import datetime
@@ -143,8 +145,29 @@ class Profiler:
 
             # 2. Global Aggregates (20%)
             self._update_progress(20 if not self.minimal else 30, "Executing global aggregates...")
-            global_plan = self.planner.build_global_aggregation()
-            raw_results = self.engine.execute(global_plan)
+            global_plans = self.planner.build_global_aggregation()
+
+            if len(global_plans) > 1:
+                logging.warning(
+                    f"Table is too wide. Splitting global aggregates into {len(global_plans)} batches "
+                    f"to improve reliability."
+                )
+
+            batch_results = []
+            for plan in global_plans:
+                batch_results.append(self.engine.execute(plan))
+
+            if not batch_results:
+                # Handle empty case (no columns or metrics)
+                raw_results = pl.DataFrame()
+            else:
+                raw_results = batch_results[0]
+                for next_res in batch_results[1:]:
+                    # Drop columns that are already in raw_results (e.g. _dataset__row_count)
+                    duplicates = [c for c in next_res.columns if c in raw_results.columns]
+                    if duplicates:
+                        next_res = next_res.drop(duplicates)
+                    raw_results = pl.concat([raw_results, next_res], how="horizontal")
 
             # 3. Metadata & Initial Report (10%)
             self._update_progress(10, "Metadata analysis...")
