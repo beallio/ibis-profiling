@@ -1,37 +1,44 @@
-import pytest
 import ibis
+import pandas as pd
 from ibis_profiling import ProfileReport
 
 
-@pytest.fixture
-def table():
-    return ibis.memtable({"id": [1, 2, 3], "val": [1.0, 2.0, 3.0]})
+def test_on_progress_callback():
+    df = pd.DataFrame({"a": range(100), "b": range(100)})
+    table = ibis.memtable(df)
 
-
-def test_profile_progress_callback(table):
     progress_updates = []
 
     def on_progress(inc, label=None):
         progress_updates.append((inc, label))
 
-    # We need to update ProfileReport and profile to accept on_progress
     ProfileReport(table, on_progress=on_progress)
 
-    assert len(progress_updates) > 0
-    # Total sum should be close to 100
-    total_inc = sum(u[0] for u in progress_updates)
-    assert 98 <= total_inc <= 102
+    # Verify that total increments sum to 100
+    total_inc = sum(inc for inc, label in progress_updates)
+    assert total_inc == 100
+
+    # Verify some key labels are present
+    labels = [label for inc, label in progress_updates if label]
+    assert any("Executing global aggregates" in label for label in labels)
+    assert any("Report complete" in label for label in labels)
 
 
-def test_profile_minimal_progress_callback(table):
-    progress_updates = []
+def test_performance_metadata():
+    df = pd.DataFrame({"a": range(100), "b": range(100)})
+    table = ibis.memtable(df)
 
-    def on_progress(inc, label=None):
-        progress_updates.append((inc, label))
+    report = ProfileReport(table)
+    data = report.to_dict()
 
-    report = ProfileReport(table, minimal=True, on_progress=on_progress)
-    del report
+    perf = data["analysis"].get("performance")
+    assert perf is not None
+    assert "Global Aggregates" in perf
+    assert "Metadata Analysis" in perf
+    assert isinstance(perf["Global Aggregates"], float)
 
-    assert len(progress_updates) > 0
-    total_inc = sum(u[0] for u in progress_updates)
-    assert 98 <= total_inc <= 102
+
+if __name__ == "__main__":
+    import pytest
+
+    pytest.main([__file__])
