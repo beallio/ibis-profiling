@@ -501,6 +501,8 @@ class ProfileReport:
                         ProfileReport._asset_cache[meta["file"]] = f.read()
 
                 content = ProfileReport._asset_cache[meta["file"]]
+                # Security: Escape </script> to avoid script breakouts
+                content = content.replace("</script", "<\\/script")
                 html = html.replace(
                     placeholder, f'<script nonce="{{{{NONCE}}}}">{content}</script>'
                 )
