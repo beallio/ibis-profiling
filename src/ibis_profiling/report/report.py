@@ -5,44 +5,64 @@ import os
 import math
 import base64
 from typing import Any, cast
+from decimal import Decimal
+import ibis.expr.types as ir
 from .model.summary import SummaryEngine
 from .model.alerts import AlertEngine
 from ..constants import NUMERIC_ONLY_METRICS
 
 
+def serialize_report_value(val: Any) -> Any:
+    """
+    Unified utility to convert various types (Ibis, Polars, Temporal)
+    to JSON-serializable Python primitives.
+    """
+    if val is None:
+        return None
+
+    # 1. Handle Ibis Scalars first (they might resolve to other complex types)
+    if isinstance(val, ir.Scalar):
+        try:
+            val = val.to_pyarrow().as_py()
+            # Recursive call to handle the result (e.g. if it's a datetime or Decimal)
+            return serialize_report_value(val)
+        except Exception:
+            return str(val)
+
+    # 2. Handle Temporal types
+    if isinstance(val, (datetime, date)):
+        return val.isoformat()
+
+    # 3. Handle Decimal
+    if isinstance(val, Decimal):
+        val = float(val)
+        # Proceed to float check for NaN/Inf
+
+    # 4. Handle Objects with .item() (e.g. numpy/pandas scalars)
+    if hasattr(val, "item") and callable(getattr(val, "item", None)):
+        val = cast(Any, val).item()
+
+    # 5. Handle Floats (including those from Decimal/item)
+    if isinstance(val, float):
+        if math.isnan(val) or math.isinf(val):
+            return None
+        return val
+
+    # 6. Return primitives as-is
+    if isinstance(val, (str, int, bool, list, dict)):
+        return val
+
+    return val
+
+
 class ReportEncoder(json.JSONEncoder):
     def default(self, o: Any) -> Any:
-        import ibis.expr.types as ir
-        from decimal import Decimal
-
-        if isinstance(o, (datetime, date)):
-            return o.isoformat()
-        if isinstance(o, Decimal):
-            return float(o)
-        if isinstance(o, ir.Scalar):
-            try:
-                val = o.to_pyarrow().as_py()
-            except Exception:
-                val = str(o)
-        else:
-            val = o
-
-        if hasattr(val, "item") and callable(getattr(val, "item", None)):
-            val = cast(Any, val).item()
-
-        if isinstance(val, float):
-            if math.isnan(val) or math.isinf(val):
-                return None
-            return val
-
-        if isinstance(val, Decimal):
-            return float(val)
-
-        # Final check if val is same as o and it's not a primitive, we might still fail
-        if val is o and not isinstance(val, (str, int, float, bool, list, dict, type(None))):
+        res = serialize_report_value(o)
+        # If serialize_report_value returned the same object and it's not a primitive,
+        # fallback to the default encoder behavior.
+        if res is o and not isinstance(res, (str, int, float, bool, list, dict, type(None))):
             return super().default(o)
-
-        return val
+        return res
 
 
 class ProfileReport:
@@ -99,36 +119,9 @@ class ProfileReport:
 
     def _to_json_serializable(self, val):
         """Converts Polars/Temporal/Ibis types to standard Python types for JSON serialization."""
-        if isinstance(val, (str, int, bool, type(None))):
-            return val
-
-        import ibis.expr.types as ir
-        from decimal import Decimal
-
-        if isinstance(val, (datetime, date)):
-            return val.isoformat()
-        if isinstance(val, Decimal):
-            return float(val)
-        if isinstance(val, ir.Scalar):
-            try:
-                # Use to_pyarrow() for robust conversion, then to_py()
-                val = val.to_pyarrow().as_py()
-            except Exception:
-                # If conversion fails, don't just return str(val) if it might be used numerically
-                # but for general report data, string is the safest fallback if we can't get the value
-                # Log a warning or similar if we had a logger
-                return str(val)
-
-        if hasattr(val, "item") and callable(getattr(val, "item", None)):
-            val = val.item()
-
-        # Handle NaN/Inf which break strict JSON
-        if isinstance(val, float):
-            if math.isnan(val) or math.isinf(val):
-                return None
-
-        if isinstance(val, (str, int, float, bool, list, dict, type(None))):
-            return val
+        res = serialize_report_value(val)
+        if isinstance(res, (str, int, float, bool, list, dict, type(None))):
+            return res
 
         # Final fallback: string representation with a marker
         return f"__unsupported_type__:{type(val).__name__}:{str(val)}"
@@ -395,16 +388,13 @@ class ProfileReport:
         return obj
 
     def _clean_dict(self, obj: Any) -> Any:
-        """Recursively replaces NaN/Inf with None for JSON compatibility."""
+        """Recursively replaces non-serializable types with JSON primitives."""
         if isinstance(obj, dict):
-            return {k: self._clean_dict(v) for k, v in obj.items()}
+            return {str(k): self._clean_dict(v) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [self._clean_dict(v) for v in obj]
-        elif isinstance(obj, float):
-            if math.isnan(obj) or math.isinf(obj):
-                return None
-            return obj
-        return obj
+        else:
+            return serialize_report_value(obj)
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, cls=ReportEncoder)
