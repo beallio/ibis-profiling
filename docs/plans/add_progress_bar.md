@@ -1,66 +1,38 @@
-# Plan: Add Progress Bar to CLI
-
-Add a progress bar to the CLI to provide visual feedback during the profiling process.
+# Plan: Add CLI Progress Bar and Performance Tracking
 
 ## Problem Definition
-The current CLI tool `ProfileReport` does not provide visual feedback while it's processing large datasets. This makes it difficult for users to know if the process is stuck or how much time is remaining.
+When running the `ProfileReport` CLI on large datasets, there is no visual feedback on the progress of the profiling stages. Additionally, there is no built-in way to track how much time each stage (Global Aggregates, Correlations, etc.) takes, making it difficult to debug performance bottlenecks.
 
 ## Architecture Overview
-The progress tracking will be implemented as a callback mechanism.
-- `profile()` function in `src/ibis_profiling/__init__.py` will accept an `on_progress` callback.
-- `ProfileReport` class will expose this callback in its constructor.
-- `cli.py` will use `click.progressbar` to create a callback that updates the terminal UI.
+1.  **Performance Tracking**: The `Profiler.run()` method will be updated to record the duration of each internal phase. These timings will be stored in the `InternalProfileReport` metadata.
+2.  **Progress Bar**: The CLI (`ibis_profiling.cli:main`) will use `click.progressbar` to provide a visual indicator. It will pass a callback to the `Profiler` to update the bar as phases complete.
+3.  **Debug Output**: A new `--debug` flag in the CLI will print a summary table of the time spent in each profiling phase.
 
 ## Core Data Structures
-- `on_progress`: A callable with signature `(increment: int, label: str | None = None) -> None`.
+- `report.analysis["performance"]`: A dictionary mapping phase names to durations (in milliseconds).
 
 ## Public Interfaces
-- `ProfileReport.__init__(..., on_progress=None)`
-- `profile(..., on_progress=None)`
+- CLI: Added `--debug` flag.
+- `Profiler`: Refined usage of `on_progress` callback.
 
-## Dependency Requirements
-- `click` (already a dependency)
+## Phased Approach
 
-## Implementation Plan
+### Phase 1: Core Logic (Performance Tracking)
+- [ ] Update `Profiler.run` to track start/end times for each major block.
+- [ ] Store results in `report.analysis["performance"]`.
+- [ ] Ensure `_update_progress` is called with accurate incremental values that sum to 100.
 
-### 1. Update `src/ibis_profiling/__init__.py`
-Update `profile()` to include progress tracking.
+### Phase 2: CLI Integration (Progress Bar & Debug)
+- [ ] Add `--debug` option to `main` in `src/ibis_profiling/cli.py`.
+- [ ] Implement a progress handler in `cli.py` using `click.progressbar`.
+- [ ] Pass the progress handler to `ProfileReport` / `profile()`.
+- [ ] Print performance summary at the end if `--debug` is enabled.
 
-#### Weights for Progress (Total 100)
+### Phase 3: Verification
+- [ ] Create `tests/test_progress.py` to verify `on_progress` callback behavior.
+- [ ] Verify `performance` metadata is present in `to_dict()`.
+- [ ] Manual verification of CLI output.
 
-**If NOT minimal:**
-- Initial & Global Agg: 15
-- Metadata & Reclassification: 5
-- Static Metadata: 5
-- Duplicates: 5
-- Second Pass: 5
-- Histograms: 15 (distributed)
-- Complex Metrics: 15 (distributed)
-- Correlations: 10
-- Monotonicity: 5
-- Samples: 5
-- Missing Values: 5
-- Interactions: 10
-
-**If minimal:**
-- Initial & Global Agg: 25
-- Metadata & Reclassification: 10
-- Static Metadata: 10
-- Second Pass: 10
-- Histograms: 20 (distributed)
-- Complex Metrics: 15 (distributed)
-- Samples: 10
-
-### 2. Update `src/ibis_profiling/cli.py`
-Use `click.progressbar` in the `main` function.
-
-### 3. Testing Strategy
-- **Unit Test:** `tests/test_progress.py` will verify that the callback is called with increments that sum to 100.
-- **Manual Verification:** Run the CLI on a dataset and observe the progress bar.
-- **Regression Testing:** Run `uv run pytest` to ensure all existing tests pass.
-
-## Verification
-- `ruff check . --fix`
-- `ruff format .`
-- `uv run ty check src/`
-- `uv run pytest`
+## Git Strategy
+- Branch: `feat/cli-progress-and-debug`
+- Incremental commits for each phase.
