@@ -39,7 +39,7 @@ def test_histogram_dict_processing_logic():
     mock_dict = {"bin_idx": [0, 1, 2], "count": [10, 20, 30]}
 
     # We patch as_completed to return our mock result
-    with mock.patch("ibis_profiling.as_completed") as mock_as_completed:
+    with mock.patch("ibis_profiling.profiler.as_completed") as mock_as_completed:
         mock_future = mock.MagicMock()
         mock_future.result.return_value = ("a", mock_dict, 1.0, 3.0, 20, None)
         mock_as_completed.return_value = [mock_future]
