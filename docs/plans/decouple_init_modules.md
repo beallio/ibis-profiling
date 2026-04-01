@@ -19,27 +19,27 @@ No changes to data structures. This is a structural refactor.
 ## Phased Approach
 
 ### Phase 1: Infrastructure (Module Creation)
-- [ ] Create `src/ibis_profiling/profiler.py` with necessary imports.
-- [ ] Create `src/ibis_profiling/wrapper.py` with necessary imports.
-- [ ] Initialize `feat/decouple-init-modules` branch.
+- [x] Create `src/ibis_profiling/profiler.py` with necessary imports.
+- [x] Create `src/ibis_profiling/wrapper.py` with necessary imports.
+- [x] Initialize `feat/decouple-init-modules` branch.
 
 ### Phase 2: Logic Migration (Profiler)
-- [ ] Move `Profiler` class from `__init__.py` to `profiler.py`.
-- [ ] Move `profile()` and `profile_excel()` functions to `profiler.py`.
-- [ ] Update imports in `profiler.py` to match moved dependencies.
+- [x] Move `Profiler` class from `__init__.py` to `profiler.py`.
+- [x] Move `profile()` and `profile_excel()` functions to `profiler.py`.
+- [x] Update imports in `profiler.py` to match moved dependencies.
 
 ### Phase 3: Wrapper Migration (ProfileReport)
-- [ ] Move `ProfileReport` compatibility class to `wrapper.py`.
-- [ ] Update `wrapper.py` to import `profile` and `ProfileReport` (internal).
+- [x] Move `ProfileReport` compatibility class to `wrapper.py`.
+- [x] Update `wrapper.py` to import `profile` and `ProfileReport` (internal).
 
 ### Phase 4: Integration & Cleanup
-- [ ] Refactor `src/ibis_profiling/__init__.py` to import and re-export the public API.
-- [ ] Verify `__all__` is correct.
+- [x] Refactor `src/ibis_profiling/__init__.py` to import and re-export the public API.
+- [x] Verify `__all__` is correct.
 
 ### Phase 5: Verification
-- [ ] Run `tests/test_profiler.py` and `tests/test_cli.py`.
-- [ ] Run full test suite to ensure no regressions.
-- [ ] Verify `from ibis_profiling import ProfileReport` works in a separate script.
+- [x] Run `tests/test_profiler.py` and `tests/test_cli.py`.
+- [x] Run full test suite to ensure no regressions.
+- [x] Verify `from ibis_profiling import ProfileReport` works in a separate script.
 
 ## Git Strategy
 - Branch: `feat/decouple-init-modules`

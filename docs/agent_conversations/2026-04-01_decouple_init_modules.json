@@ -1,0 +1,22 @@
+{
+  "date": "2026-04-01",
+  "task_objective": "Decouple Profiler and ProfileReport from __init__.py",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/profiler.py",
+    "src/ibis_profiling/wrapper.py",
+    "tests/test_wrapper.py",
+    "tests/test_histogram_backend_agnostic.py",
+    "docs/plans/decouple_init_modules.md"
+  ],
+  "tests_added": [
+    "tests/test_wrapper.py"
+  ],
+  "design_decisions": [
+    "Created profiler.py for core orchestration logic and functional entry points.",
+    "Created wrapper.py for the ProfileReport compatibility class to keep the entry point lean.",
+    "Updated __init__.py to re-export the public API, maintaining backward compatibility.",
+    "Exported Profiler and InternalProfileReport from __init__.py to support existing deep-import tests."
+  ],
+  "results": "Successfully refactored the package structure. Verified with 161 tests and passed Principal Engineer review. PR #25 opened."
+}
