@@ -88,6 +88,7 @@ class ProfileReport:
             "title": title,
             "date_start": datetime.now().isoformat(),
         }
+        self._finalized = False
 
         self._build()
         self.analysis["date_end"] = datetime.now().isoformat()
@@ -166,6 +167,9 @@ class ProfileReport:
 
     def finalize(self):
         """Finalizes the report by calculating derived metrics and generating alerts."""
+        if self._finalized:
+            return
+
         if not self.table or not isinstance(self.table.get("n"), (int, float)):
             return
 
@@ -267,6 +271,7 @@ class ProfileReport:
 
         # Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
+        self._finalized = True
 
     def add_metric(self, col_name: str, metric_name: str, value: Any):
         """Adds extra data like samples or histograms to the model."""
