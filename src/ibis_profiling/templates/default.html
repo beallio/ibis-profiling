@@ -6,7 +6,7 @@
   <title>Ibis Profiling Report</title>
   {{CSP_META}}
   
-  <script>
+  <script nonce="{{NONCE}}">
     // Silence JIT-related production warnings
     (function() {
       const originalWarn = console.warn;
@@ -33,7 +33,7 @@
 
   <!-- React & Dependencies -->
   {{REACT_SCRIPT}}
-  <script>window.react = window.React;</script>
+  <script nonce="{{NONCE}}">window.react = window.React;</script>
   {{REACT_DOM_SCRIPT}}
   {{LUCIDE_SCRIPT}}
 
@@ -62,7 +62,7 @@
   <div id="root"></div>
 
   <!-- React Application -->
-  <script type="text/javascript">const {
+  <script nonce="{{NONCE}}" type="text/javascript">const {
   useState,
   useMemo,
   useEffect,
