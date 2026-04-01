@@ -34,9 +34,6 @@ class QueryPlanner:
         for col_name, dtype in schema.items():
             col = self.table[col_name]
 
-            # Always include total count for thresholding
-            aggs.append(col.count().name(f"{col_name}__n"))
-
             for metric in self.registry.metrics.values():
                 # We skip n_unique (singletons) for now as it's complex (requires value_counts)
                 if metric.name == "n_unique":
