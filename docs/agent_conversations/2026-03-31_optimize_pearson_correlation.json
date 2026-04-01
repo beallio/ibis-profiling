@@ -1,0 +1,20 @@
+{
+  "date": "2026-03-31",
+  "task_objective": "Optimize Pearson correlations to compute once per pair (Issue #11)",
+  "files_modified": [
+    "src/ibis_profiling/report/model/correlations.py",
+    "src/ibis_profiling/report/model/missing.py",
+    "docs/plans/optimize_pearson_correlation.md"
+  ],
+  "tests_added": [
+    "tests/test_correlation_optimization.py",
+    "scripts/benchmark_correlations.py"
+  ],
+  "design_decisions": [
+    "Modified _compute_pearson to generate aggregate expressions only for i < j.",
+    "Mirrored upper triangle results into the lower triangle in both CorrelationEngine and MissingEngine.",
+    "Ensured diagonal is always 1.0 without backend computation.",
+    "Maintained output format parity for backward compatibility."
+  ],
+  "results": "Successfully implemented optimization with a 33% performance improvement. All 155 tests passed. PR #16 opened."
+}

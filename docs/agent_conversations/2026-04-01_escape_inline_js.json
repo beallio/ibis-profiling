@@ -1,0 +1,17 @@
+{
+  "date": "2026-04-01",
+  "task_objective": "Escape </script> sequences in inlined JS assets (Issue #14)",
+  "files_modified": [
+    "src/ibis_profiling/report/report.py",
+    "docs/plans/escape_inline_js.md"
+  ],
+  "tests_added": [
+    "tests/test_script_escape.py"
+  ],
+  "design_decisions": [
+    "Used .replace('</script', '<\\\\/script') to escape script closing tags in inlined JS content.",
+    "Applied escaping within the vendor asset inlining loop in to_html().",
+    "Ensured the escaping is safe for JS execution while preventing HTML parser breakouts."
+  ],
+  "results": "Successfully implemented escaping. Verified with regression tests and full test suite. PR #19 opened."
+}

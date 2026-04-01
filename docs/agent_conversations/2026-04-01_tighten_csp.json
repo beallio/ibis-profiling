@@ -1,0 +1,21 @@
+{
+  "date": "2026-04-01",
+  "task_objective": "Tighten CSP for HTML reports (Issue #13)",
+  "files_modified": [
+    "src/ibis_profiling/report/report.py",
+    "src/ibis_profiling/templates/default.html",
+    "src/ibis_profiling/templates/ydata-like.html",
+    "docs/plans/tighten_csp.md"
+  ],
+  "tests_added": [
+    "tests/test_csp_tightening.py"
+  ],
+  "design_decisions": [
+    "Implemented secure hex nonces for all script tags to remove 'unsafe-inline'.",
+    "Updated templates to use {{NONCE}} placeholder for literal script tags.",
+    "Removed 'unsafe-eval' from offline CSP as it was unnecessary for pre-compiled assets.",
+    "Restricted connect-src to 'none' in offline mode.",
+    "Used token_hex instead of token_urlsafe to ensure compatibility with all CSP parsers."
+  ],
+  "results": "Successfully tightened CSP. Verified with 157 tests including E2E frontend tests. PR #18 opened."
+}

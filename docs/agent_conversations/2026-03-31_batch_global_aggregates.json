@@ -1,0 +1,22 @@
+{
+  "date": "2026-03-31",
+  "task_objective": "Implement internal batching for global aggregate queries (Issue #10)",
+  "files_modified": [
+    "src/ibis_profiling/planner.py",
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/cli.py",
+    "tests/test_planner.py",
+    "README.md"
+  ],
+  "tests_added": [
+    "tests/test_batch_aggregates.py",
+    "scripts/benchmark_wide_table.py"
+  ],
+  "design_decisions": [
+    "Split aggregate expressions into chunks of 'global_batch_size' (default 500).",
+    "Merged results horizontally using Polars DataFrames in Profiler.run.",
+    "Exposed parameter to CLI and ProfileReport API.",
+    "Used logging.warning to inform users when batching is active."
+  ],
+  "results": "Successfully implemented batching with a 15% performance improvement on wide tables. All 153 tests passed. PR #15 opened."
+}

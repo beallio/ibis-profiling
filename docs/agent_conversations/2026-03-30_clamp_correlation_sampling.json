@@ -1,0 +1,17 @@
+{
+  "date": "2026-03-30",
+  "task_objective": "Fix crash when correlation sample_size exceeds row_count (Issue #3)",
+  "files_modified": [
+    "src/ibis_profiling/report/model/correlations.py",
+    "docs/plans/clamp_correlation_sampling.md"
+  ],
+  "tests_added": [
+    "tests/test_correlation_sampling_clamp.py"
+  ],
+  "design_decisions": [
+    "Clamped sampling fraction to 1.0 to prevent Ibis backend errors.",
+    "Only set is_sampled to True if a reduction in data actually occurred (fraction < 1.0).",
+    "Maintained fallback to limit() for additional robustness."
+  ],
+  "results": "Successfully implemented clamping, added regression tests, passed PE review, and opened PR #6."
+}

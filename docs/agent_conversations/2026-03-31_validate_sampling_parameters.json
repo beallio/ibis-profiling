@@ -1,0 +1,19 @@
+{
+  "date": "2026-03-31",
+  "task_objective": "Validate and harden correlation sampling parameters (Issue #12)",
+  "files_modified": [
+    "src/ibis_profiling/__init__.py",
+    "src/ibis_profiling/report/model/correlations.py",
+    "docs/plans/validate_sampling_parameters.md"
+  ],
+  "tests_added": [
+    "tests/test_sampling_validation.py"
+  ],
+  "design_decisions": [
+    "Implemented early validation in Profiler constructor to catch invalid user inputs.",
+    "Reset invalid values to sensible defaults (1,000,000) instead of throwing exceptions.",
+    "Stored validation warnings in a list and appended them to the report analysis metadata in run().",
+    "Added a null-check guard for row_count in CorrelationEngine to avoid ZeroDivisionError."
+  ],
+  "results": "Successfully implemented validation and hardening. All 157 tests passed. PR #17 opened."
+}
