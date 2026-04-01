@@ -421,6 +421,8 @@ class ProfileReport:
             f.write(content)
 
     def to_html(self, theme: str = "default", minify: bool = True, offline: bool = True) -> str:
+        import secrets
+
         ALLOWED_THEMES = {"default", "ydata-like"}
 
         # 1. Allowlist validation
@@ -479,10 +481,11 @@ class ProfileReport:
             },
         }
 
-        # 4. Content Security Policy (CSP)
+        # 4. Content Security Policy (CSP) & Nonce
+        nonce = secrets.token_hex(16)
         csp_directives = [
             "default-src 'self'",
-            "script-src 'unsafe-inline' 'unsafe-eval'",
+            f"script-src 'nonce-{nonce}'",
             "style-src 'unsafe-inline'",
             "img-src 'self' data: blob: https://raw.githubusercontent.com",
             "font-src 'self' data:",
@@ -498,7 +501,9 @@ class ProfileReport:
                         ProfileReport._asset_cache[meta["file"]] = f.read()
 
                 content = ProfileReport._asset_cache[meta["file"]]
-                html = html.replace(placeholder, f"<script>{content}</script>")
+                html = html.replace(
+                    placeholder, f'<script nonce="{{{{NONCE}}}}">{content}</script>'
+                )
 
             csp_directives.append("connect-src 'none'")
         else:
@@ -507,18 +512,22 @@ class ProfileReport:
                 placeholder = f"{{{{{name}_SCRIPT}}}}"
                 html = html.replace(
                     placeholder,
-                    f'<script src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
+                    f'<script nonce="{{{{NONCE}}}}" src="{meta["url"]}" integrity="{meta["sri"]}" crossorigin="anonymous"></script>',
                 )
-            # Allow CDNs in online mode CSP
-            csp_directives[1] += " 'self' https://cdn.tailwindcss.com https://unpkg.com"
+            # Allow CDNs and unsafe-eval in online mode CSP
+            # 'unsafe-eval' is required by Tailwind CDN and Babel standalone (if used)
+            csp_directives[1] += (
+                " 'unsafe-eval' 'self' https://cdn.tailwindcss.com https://unpkg.com"
+            )
             csp_directives.append("connect-src *")
+
+        # Replace all nonce placeholders with the actual nonce
+        html = html.replace("{{NONCE}}", nonce)
 
         csp_str = "; ".join(csp_directives) + ";"
         html = html.replace("{{CSP_DIRECTIVES}}", csp_str)
 
-        csp_meta = (
-            f'<meta http-equiv="Content-Security-Policy" content="{"; ".join(csp_directives)};">'
-        )
+        csp_meta = f'<meta http-equiv="Content-Security-Policy" content="{csp_str}">'
         html = html.replace("{{CSP_META}}", csp_meta)
 
         # 4. JSON Data Injection
