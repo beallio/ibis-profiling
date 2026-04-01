@@ -152,6 +152,24 @@ def main(
 
     try:
         report = None
+        table = None
+
+        if ext in [".xlsx", ".xls"]:
+            click.echo(f"Loading Excel file: {file_path}...")
+        elif ext == ".parquet":
+            click.echo(f"Loading Parquet file: {file_path}...")
+            table = ibis.read_parquet(file_path)
+        elif ext == ".csv":
+            click.echo(f"Loading CSV file: {file_path}...")
+            table = ibis.read_csv(file_path)
+        else:
+            try:
+                click.echo(f"Attempting to load {file_path} as Parquet...")
+                table = ibis.read_parquet(file_path)
+            except Exception:
+                click.echo(f"Attempting to load {file_path} as CSV...")
+                table = ibis.read_csv(file_path)
+
         with click.progressbar(length=100, label="Profiling data") as bar:
 
             def on_progress(inc, label=None):
@@ -159,75 +177,27 @@ def main(
                     bar.label = f"Profiling: {label}"
                 bar.update(inc)
 
+            profile_kwargs = dict(
+                title=title,
+                minimal=minimal,
+                on_progress=on_progress,
+                correlations=correlations,
+                monotonicity=monotonicity,
+                compute_duplicates=duplicates,
+                monotonicity_threshold=monotonicity_threshold,
+                duplicates_threshold=duplicates_threshold,
+                n_unique_threshold=n_unique_threshold,
+                correlations_max_columns=correlations_max_columns,
+                missing_heatmap_max_columns=missing_heatmap_max_columns,
+                missing_matrix_max_columns=missing_matrix_max_columns,
+                monotonicity_order_by=monotonicity_order_by,
+                global_batch_size=global_batch_size,
+            )
+
             if ext in [".xlsx", ".xls"]:
-                click.echo(f"Loading Excel file: {file_path}...")
-                report = ProfileReport.from_excel(
-                    file_path,
-                    title=title,
-                    minimal=minimal,
-                    on_progress=on_progress,
-                    correlations=correlations,
-                    monotonicity=monotonicity,
-                    compute_duplicates=duplicates,
-                    monotonicity_threshold=monotonicity_threshold,
-                    duplicates_threshold=duplicates_threshold,
-                    n_unique_threshold=n_unique_threshold,
-                    correlations_max_columns=correlations_max_columns,
-                    missing_heatmap_max_columns=missing_heatmap_max_columns,
-                    missing_matrix_max_columns=missing_matrix_max_columns,
-                    monotonicity_order_by=monotonicity_order_by,
-                    global_batch_size=global_batch_size,
-                )
-            elif ext == ".parquet":
-                click.echo(f"Loading Parquet file: {file_path}...")
-                table = ibis.read_parquet(file_path)
-                report = ProfileReport(
-                    table,
-                    title=title,
-                    minimal=minimal,
-                    on_progress=on_progress,
-                    correlations=correlations,
-                    monotonicity=monotonicity,
-                    compute_duplicates=duplicates,
-                    monotonicity_threshold=monotonicity_threshold,
-                    duplicates_threshold=duplicates_threshold,
-                    n_unique_threshold=n_unique_threshold,
-                    correlations_max_columns=correlations_max_columns,
-                    missing_heatmap_max_columns=missing_heatmap_max_columns,
-                    missing_matrix_max_columns=missing_matrix_max_columns,
-                    monotonicity_order_by=monotonicity_order_by,
-                    global_batch_size=global_batch_size,
-                )
-
-            elif ext == ".csv":
-                click.echo(f"Loading CSV file: {file_path}...")
-                table = ibis.read_csv(file_path)
-                report = ProfileReport(
-                    table,
-                    title=title,
-                    minimal=minimal,
-                    on_progress=on_progress,
-                    correlations=correlations,
-                    monotonicity=monotonicity,
-                    compute_duplicates=duplicates,
-                    monotonicity_threshold=monotonicity_threshold,
-                    duplicates_threshold=duplicates_threshold,
-                    n_unique_threshold=n_unique_threshold,
-                    correlations_max_columns=correlations_max_columns,
-                    missing_heatmap_max_columns=missing_heatmap_max_columns,
-                    missing_matrix_max_columns=missing_matrix_max_columns,
-                    monotonicity_order_by=monotonicity_order_by,
-                    global_batch_size=global_batch_size,
-                )
-
+                report = ProfileReport.from_excel(file_path, **profile_kwargs)
             else:
-                # Fallback/Attempt to load as Parquet or CSV
-                try:
-                    click.echo(f"Attempting to load {file_path} as Parquet...")
-                    table = ibis.read_parquet(file_path)
-                except Exception:
-                    click.echo(f"Attempting to load {file_path} as CSV...")
-                    table = ibis.read_csv(file_path)
+                assert table is not None
                 report = ProfileReport(
                     table,
                     title=title,
