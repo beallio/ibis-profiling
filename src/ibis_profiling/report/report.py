@@ -247,6 +247,10 @@ class ProfileReport:
                 if stats.get("n_negative") is not None:
                     stats["p_negative"] = stats["n_negative"] / n if n > 0 else 0
             elif stats.get("type") == "Categorical":
+                # Empty Percentage
+                if stats.get("n_empty") is not None:
+                    stats["p_empty"] = stats["n_empty"] / n if n > 0 else 0
+
                 for k in NUMERIC_ONLY_METRICS:
                     stats.pop(k, None)
 
@@ -297,6 +301,8 @@ class ProfileReport:
                     for x in value.get(label_key, []):
                         if isinstance(x, (datetime, date)):
                             labels.append(x.isoformat())
+                        elif x == "":
+                            labels.append("(Empty)")
                         else:
                             labels.append(str(x))
                     self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}

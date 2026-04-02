@@ -177,3 +177,6 @@ registry.register(
 registry.register(
     Metric("max_length", MetricCategory.COLUMN, [dt.String], lambda col: col.length().max())
 )
+registry.register(
+    Metric("n_empty", MetricCategory.COLUMN, [dt.String], lambda col: (col == "").sum())
+)

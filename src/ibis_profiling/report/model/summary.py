@@ -73,6 +73,8 @@ class SummaryEngine:
                         variables[col_name]["50%"] = val
                     elif metric_name == "n_negative":
                         variables[col_name]["n_negative"] = val
+                    elif metric_name == "n_empty":
+                        variables[col_name]["n_empty"] = val
                     else:
                         variables[col_name][metric_name] = val
 
