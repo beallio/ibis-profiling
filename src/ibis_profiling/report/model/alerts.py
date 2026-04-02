@@ -46,6 +46,12 @@ class AlertEngine:
                 key = ("MISSING", "info")
                 grouped_alerts.setdefault(key, []).append(col)
 
+            # 4b. Empty Strings
+            p_empty = stats.get("p_empty") or 0.0
+            if p_empty > 0.05 and v_type == "Categorical":
+                key = ("EMPTY", "info")
+                grouped_alerts.setdefault(key, []).append(col)
+
             # 5. Zeros
             if col_n > 0 and (n_zeros / col_n) > 0.1:
                 key = ("ZEROS", "info")
