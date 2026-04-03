@@ -23,7 +23,7 @@ class ProfileReport:
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,
         monotonicity_order_by: str | None = None,
-        global_batch_size: int = 500,
+        global_batch_size: int | None = None,
         **kwargs,
     ):
         self.table = table
@@ -93,3 +93,7 @@ class ProfileReport:
 
     def to_html(self, theme: str = "default", minify: bool = True, offline: bool = True) -> str:
         return self._report.to_html(theme=theme, minify=minify, offline=offline)
+
+    @property
+    def analysis(self) -> dict:
+        return self._report.analysis

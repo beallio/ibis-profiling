@@ -10,6 +10,7 @@ from .metrics import registry, safe_col
 from .planner import QueryPlanner
 from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
+from .memory import MemoryManager
 from typing import Callable, cast, Generator, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
@@ -41,7 +42,7 @@ class Profiler:
         parallel: bool = False,
         pool_size: int = 4,
         use_sketches: bool = False,
-        global_batch_size: int = 500,
+        global_batch_size: int | None = None,
     ):
         self.table = table
         self.minimal = minimal
@@ -67,16 +68,34 @@ class Profiler:
         self.parallel = parallel
         self.pool_size = pool_size
         self.use_sketches = use_sketches
-        self.global_batch_size = global_batch_size
 
         self.start_time = datetime.now()
+        self.analysis = {}
         self.inspector = DatasetInspector(table)
+
+        # 1. Memory and Batching Heuristics
+        # Note: We execute count() early to inform heuristics.
+        # For remote backends, this is fast.
+        n_rows = MemoryManager.to_int(self.table.count().execute())
+        n_cols = len(self.table.columns)
+
+        if global_batch_size is None:
+            self.global_batch_size = MemoryManager.calculate_batch_size(n_rows, n_cols)
+        else:
+            self.global_batch_size = global_batch_size
+
+        try:
+            con = self.table.get_backend()
+            MemoryManager.apply_duckdb_limits(con)
+        except Exception:
+            pass
+
         self.planner = QueryPlanner(
             table,
             registry,
             use_sketches=use_sketches,
             n_unique_threshold=n_unique_threshold,
-            global_batch_size=global_batch_size,
+            global_batch_size=self.global_batch_size,
         )
         self.engine = ExecutionEngine()
         self.executor = None
@@ -192,7 +211,9 @@ class Profiler:
                     "record_size": mem_size / row_count if row_count > 0 else 0,
                 }
 
-                report = InternalProfileReport(raw_results, self.col_types, title=self.title)
+                report = InternalProfileReport(
+                    raw_results, self.col_types, title=self.title, analysis_metadata=self.analysis
+                )
                 report.analysis["date_start"] = self.start_time.isoformat()
                 report.analysis["performance"] = self.performance
 
@@ -409,10 +430,14 @@ class Profiler:
                     )
 
         if second_pass_aggs:
-            results = self.table.aggregate(second_pass_aggs).to_pyarrow().to_pydict()
-            for k, v in results.items():
-                parts = k.rsplit("__", 1)
-                report.add_metric(parts[0], parts[1], v[0])
+            # Batch these aggregations to avoid OOM on wide tables
+            batch_size = self.global_batch_size
+            for i in range(0, len(second_pass_aggs), batch_size):
+                batch_chunk = second_pass_aggs[i : i + batch_size]
+                results = self.table.aggregate(batch_chunk).to_pyarrow().to_pydict()
+                for k, v in results.items():
+                    parts = k.rsplit("__", 1)
+                    report.add_metric(parts[0], parts[1], v[0])
 
         hist_inc = (
             (10 if not self.minimal else 10) / len(histogram_plans) if histogram_plans else 10
@@ -741,7 +766,7 @@ def profile(
     parallel: bool = False,
     pool_size: int = 4,
     use_sketches: bool = False,
-    global_batch_size: int = 500,
+    global_batch_size: int | None = None,
 ) -> InternalProfileReport:
     """Main entrypoint for profiling an Ibis table."""
     profiler = Profiler(

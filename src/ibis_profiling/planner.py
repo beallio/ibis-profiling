@@ -11,7 +11,7 @@ class QueryPlanner:
         registry: MetricRegistry,
         use_sketches: bool = False,
         n_unique_threshold: int = 50_000_000,
-        global_batch_size: int = 500,
+        global_batch_size: int = 50,
     ):
         self.table = table
         self.registry = registry

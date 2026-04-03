@@ -1,0 +1,194 @@
+[
+  {
+    "duration": 2.811756134033203,
+    "peak_rss_mb": 801.65234375,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.001,
+      "global_aggregates": 1257.451,
+      "advanced_pass": 179.10999999999999,
+      "complex_pass": 685.457,
+      "correlations": 447.675
+    },
+    "rows": 1000000,
+    "cols": 10,
+    "batch_size": 5,
+    "total_cells": 10000000
+  },
+  {
+    "duration": 2.605600118637085,
+    "peak_rss_mb": 798.58203125,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.001,
+      "global_aggregates": 1105.2150000000001,
+      "advanced_pass": 163.54,
+      "complex_pass": 668.14,
+      "correlations": 426.24600000000004
+    },
+    "rows": 1000000,
+    "cols": 10,
+    "batch_size": 50,
+    "total_cells": 10000000
+  },
+  {
+    "duration": 2.8421032428741455,
+    "peak_rss_mb": 848.5078125,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.001,
+      "global_aggregates": 1209.484,
+      "advanced_pass": 173.574,
+      "complex_pass": 725.56,
+      "correlations": 477.525
+    },
+    "rows": 1000000,
+    "cols": 10,
+    "batch_size": 500,
+    "total_cells": 10000000
+  },
+  {
+    "duration": 11.857274532318115,
+    "peak_rss_mb": 2401.53515625,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.002,
+      "global_aggregates": 5422.601000000001,
+      "advanced_pass": 932.879,
+      "complex_pass": 3598.967,
+      "correlations": 1286.5990000000002
+    },
+    "rows": 1000000,
+    "cols": 50,
+    "batch_size": 5,
+    "total_cells": 50000000
+  },
+  {
+    "duration": 11.424431085586548,
+    "peak_rss_mb": 2484.93359375,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.002,
+      "global_aggregates": 4924.143,
+      "advanced_pass": 862.7080000000001,
+      "complex_pass": 3665.54,
+      "correlations": 1333.686
+    },
+    "rows": 1000000,
+    "cols": 50,
+    "batch_size": 50,
+    "total_cells": 50000000
+  },
+  {
+    "duration": 11.623905420303345,
+    "peak_rss_mb": 2439.6640625,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.001,
+      "global_aggregates": 4930.886,
+      "advanced_pass": 874.885,
+      "complex_pass": 3778.452,
+      "correlations": 1371.06
+    },
+    "rows": 1000000,
+    "cols": 50,
+    "batch_size": 500,
+    "total_cells": 50000000
+  },
+  {
+    "duration": 18.592132091522217,
+    "peak_rss_mb": 1443.84375,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.002,
+      "global_aggregates": 9223.184,
+      "advanced_pass": 825.3770000000001,
+      "complex_pass": 5129.925,
+      "correlations": 1975.246
+    },
+    "rows": 10000000,
+    "cols": 10,
+    "batch_size": 5,
+    "total_cells": 100000000
+  },
+  {
+    "duration": 18.572176694869995,
+    "peak_rss_mb": 1401.1875,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.002,
+      "global_aggregates": 9227.458,
+      "advanced_pass": 801.965,
+      "complex_pass": 5280.941000000001,
+      "correlations": 1867.777
+    },
+    "rows": 10000000,
+    "cols": 10,
+    "batch_size": 50,
+    "total_cells": 100000000
+  },
+  {
+    "duration": 19.182690620422363,
+    "peak_rss_mb": 1347.390625,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.002,
+      "global_aggregates": 9938.839,
+      "advanced_pass": 802.924,
+      "complex_pass": 5179.8,
+      "correlations": 1866.771
+    },
+    "rows": 10000000,
+    "cols": 10,
+    "batch_size": 500,
+    "total_cells": 100000000
+  },
+  {
+    "duration": 88.00612688064575,
+    "peak_rss_mb": 2640.56640625,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.002,
+      "global_aggregates": 44850.444,
+      "advanced_pass": 5134.979,
+      "complex_pass": 29719.143,
+      "correlations": 4240.997
+    },
+    "rows": 10000000,
+    "cols": 50,
+    "batch_size": 5,
+    "total_cells": 500000000
+  },
+  {
+    "duration": 84.50310277938843,
+    "peak_rss_mb": 2877.6640625,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.002,
+      "global_aggregates": 43791.589,
+      "advanced_pass": 4727.363,
+      "complex_pass": 27815.42,
+      "correlations": 4187.556
+    },
+    "rows": 10000000,
+    "cols": 50,
+    "batch_size": 50,
+    "total_cells": 500000000
+  },
+  {
+    "duration": 89.4115891456604,
+    "peak_rss_mb": 3610.29296875,
+    "status": "success",
+    "metrics": {
+      "infrastructure": 0.001,
+      "global_aggregates": 48409.765999999996,
+      "advanced_pass": 4748.798,
+      "complex_pass": 28138.113,
+      "correlations": 4106.45
+    },
+    "rows": 10000000,
+    "cols": 50,
+    "batch_size": 500,
+    "total_cells": 500000000
+  }
+]

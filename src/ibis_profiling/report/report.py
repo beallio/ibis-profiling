@@ -71,7 +71,11 @@ class ProfileReport:
     _asset_cache: dict[str, str] = {}
 
     def __init__(
-        self, raw_results: pl.DataFrame, schema: dict, title: str = "Ibis Profiling Report"
+        self,
+        raw_results: pl.DataFrame,
+        schema: dict,
+        title: str = "Ibis Profiling Report",
+        analysis_metadata: dict[str, Any] | None = None,
     ):
         self.raw_results = raw_results
         self.schema = schema
@@ -88,6 +92,10 @@ class ProfileReport:
             "title": title,
             "date_start": datetime.now().isoformat(),
         }
+
+        if analysis_metadata:
+            self.analysis.update(analysis_metadata)
+
         self._finalized = False
 
         self._build()
