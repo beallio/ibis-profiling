@@ -31,7 +31,7 @@
   <!-- Tailwind CSS -->
   {{TAILWIND_SCRIPT}}
 
-  <!-- React & Dependencies -->
+  <!-- React & Dependencies (UMD Builds for local file portability) -->
   {{REACT_SCRIPT}}
   <script nonce="{{NONCE}}">window.react = window.React;</script>
   {{REACT_DOM_SCRIPT}}
@@ -508,8 +508,20 @@ const OverviewSection = ({
     value: formatPct(table.p_cells_missing),
     compact: true
   }), /*#__PURE__*/React.createElement(StatRow, {
+    label: "Empty cells",
+    value: formatNum(table.n_cells_empty),
+    compact: true
+  }), /*#__PURE__*/React.createElement(StatRow, {
+    label: "Empty cells (%)",
+    value: formatPct(table.p_cells_empty),
+    compact: true
+  }), /*#__PURE__*/React.createElement(StatRow, {
     label: "Variables with missing values",
     value: formatNum(table.n_vars_with_missing),
+    compact: true
+  }), /*#__PURE__*/React.createElement(StatRow, {
+    label: "Variables with empty values",
+    value: formatNum(table.n_vars_with_empty),
     compact: true
   }), /*#__PURE__*/React.createElement(StatRow, {
     label: "Variables with all missing values",
@@ -721,7 +733,15 @@ const VariableCard = ({
     className: variable.n_missing > 0 ? 'text-red-600' : ''
   }, formatNum(variable.n_missing)), /*#__PURE__*/React.createElement("span", {
     className: "text-gray-400 text-xs font-normal ml-1"
-  }, "(", formatPct(variable.p_missing), ")")), isNumeric && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "(", formatPct(variable.p_missing), ")")), variable.type === 'Categorical' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-gray-600 py-1 border-b border-gray-50"
+  }, "Empty"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-medium text-right py-1 border-b border-gray-50"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: variable.n_empty > 0 ? 'text-amber-600' : ''
+  }, formatNum(variable.n_empty)), /*#__PURE__*/React.createElement("span", {
+    className: "text-gray-400 text-xs font-normal ml-1"
+  }, "(", formatPct(variable.p_empty), ")"))), isNumeric && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "text-sm text-gray-600 py-1 border-b border-gray-50"
   }, "Infinite"), /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-medium text-right py-1 border-b border-gray-50"

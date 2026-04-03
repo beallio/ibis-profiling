@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ibis Profiling Report</title>
+  {{CSP_META}}
   
-  <script>
+  <script nonce="{{NONCE}}">
     // Silence JIT-related production warnings
     (function() {
       const originalWarn = console.warn;
@@ -28,16 +29,16 @@
   </script>
   
   <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  {{TAILWIND_SCRIPT}}
   
   <!-- Babel for in-browser JSX compilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- React & Dependencies (UMD Builds for local file portability) -->
-  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
-  <script>window.react = window.React;</script>
-  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js" crossorigin="anonymous"></script>
+  {{REACT_SCRIPT}}
+  <script nonce="{{NONCE}}">window.react = window.React;</script>
+  {{REACT_DOM_SCRIPT}}
+  {{LUCIDE_SCRIPT}}
 
   <style>
     body {
@@ -880,34 +881,40 @@
               {/* OVERVIEW TAB */}
               {activeTab === 'overview' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard 
-                      title="Total Rows" 
-                      value={reportData.table.n.toLocaleString()} 
-                      icon={Database} 
-                      sub={reportData.table.p_duplicates !== undefined ? 
-                        `${(reportData.table.p_duplicates * 100).toFixed(1)}% duplicated rows` : 
-                        "Duplication check skipped"} 
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-20">
+                    <StatCard
+                      title="Total Rows"
+                      value={reportData.table.n.toLocaleString()}
+                      icon={Database}
+                      sub={reportData.table.p_duplicates !== undefined ?
+                        `${(reportData.table.p_duplicates * 100).toFixed(1)}% duplicated rows` :
+                        "Duplication check skipped"}
                     />
-                    <StatCard 
-                      title="Variables" 
-                      value={reportData.table.n_var} 
-                      icon={Table} 
+                    <StatCard
+                      title="Variables"
+                      value={reportData.table.n_var}
+                      icon={Table}
                       sub={Object.entries(reportData.table.types || {})
+                        .filter(([_, count]) => count > 0)
                         .map(([type, count]) => `${count} ${TYPE_LABELS[type] || type.substring(0, 3)}`)
                         .join(', ')} 
                       color="purple" 
-                    />
-                    <StatCard 
-                      title="Missing Cells" 
-                      value={`${reportData.table.p_cells_missing === 0 ? '0' : (reportData.table.p_cells_missing * 100).toFixed(2)}%`} 
-                      icon={FileWarning} 
-                      sub={`Across ${reportData.table.n_vars_with_missing} variables`} 
-                      color="red" 
+                    />                    <StatCard
+                      title="Missing Cells"
+                      value={`${reportData.table.p_cells_missing === 0 ? '0' : (reportData.table.p_cells_missing * 100).toFixed(2)}%`}
+                      icon={FileWarning}
+                      sub={`Across ${reportData.table.n_vars_with_missing} variables`}
+                      color="red"
                     />
                     <StatCard
-                      title="Memory Size"
-                      value={`${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MiB`}
+                      title="Empty Cells"
+                      value={`${reportData.table.p_cells_empty === 0 ? '0' : (reportData.table.p_cells_empty * 100).toFixed(2)}%`}
+                      icon={Database}
+                      sub={`Across ${reportData.table.n_vars_with_empty || 0} variables`}
+                      color="slate"
+                    />
+                    <StatCard
+                      title="Memory Size"                      value={`${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MiB`}
                       icon={CheckCircle2}
                       sub={`${reportData.table.record_size} bytes per record`}
                       color="green"
@@ -1000,11 +1007,17 @@
                                 })}
                                 {varAlerts.length > 3 && <span className={`text-[10px] ${theme.textSub} self-center`}>+{varAlerts.length-3}</span>}
                               </div>
-                              <span className={`text-[10px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`}>
-                                {((meta.p_missing || 0) * 100).toFixed(1)}% null
-                              </span>
-                            </div>
-                          </div>
+                              <div className="flex flex-col items-end">
+                                <span className={`text-[9px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`}>
+                                  {((meta.p_missing || 0) * 100).toFixed(1)}% null
+                                </span>
+                                {meta.type === 'Categorical' && meta.n_empty > 0 && (
+                                  <span className="text-[9px] font-bold font-mono text-amber-400">
+                                    {((meta.p_empty || 0) * 100).toFixed(1)}% empty
+                                  </span>
+                                )}
+                              </div>
+                            </div>                          </div>
                         );
                       })}
                     </div>
@@ -1109,13 +1122,22 @@
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className={`text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`}>Missingness</div>
-                            <div className={`text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : theme.textSecondary}`}>
-                              {((meta.p_missing || 0) * 100).toFixed(2)}% ({meta.n_missing?.toLocaleString() || 0})
+                          <div className="flex gap-6">
+                            <div className="text-right">
+                              <div className={`text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`}>Missingness</div>
+                              <div className={`text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : theme.textSecondary}`}>
+                                {((meta.p_missing || 0) * 100).toFixed(2)}% ({meta.n_missing?.toLocaleString() || 0})
+                              </div>
                             </div>
-                          </div>
-                        </div>
+                            {meta.type === 'Categorical' && meta.n_empty > 0 && (
+                              <div className="text-right">
+                                <div className={`text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`}>Empty</div>
+                                <div className="text-sm font-bold font-mono text-amber-400">
+                                  {((meta.p_empty || 0) * 100).toFixed(2)}% ({meta.n_empty?.toLocaleString() || 0})
+                                </div>
+                              </div>
+                            )}
+                          </div>                        </div>
                         
                         <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
                           <div className={hasExtremeValues ? "lg:col-span-2" : "lg:col-span-3"}>

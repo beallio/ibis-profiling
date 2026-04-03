@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ibis Profiling Report</title>
+  {{CSP_META}}
   
-  <script>
+  <script nonce="{{NONCE}}">
     // Silence JIT-related production warnings
     (function() {
       const originalWarn = console.warn;
@@ -28,16 +29,16 @@
   </script>
   
   <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  {{TAILWIND_SCRIPT}}
   
   <!-- Babel for in-browser JSX compilation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- React & Dependencies (UMD Builds for local file portability) -->
-  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
-  <script>window.react = window.React;</script>
-  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js" crossorigin="anonymous"></script>
+  {{REACT_SCRIPT}}
+  <script nonce="{{NONCE}}">window.react = window.React;</script>
+  {{REACT_DOM_SCRIPT}}
+  {{LUCIDE_SCRIPT}}
 
   <style>
     html {
@@ -438,7 +439,10 @@
                 <StatRow label="Number of observations" value={formatNum(table.n)} compact={true} />
                 <StatRow label="Missing cells" value={formatNum(table.n_cells_missing)} compact={true} />
                 <StatRow label="Missing cells (%)" value={formatPct(table.p_cells_missing)} compact={true} />
+                <StatRow label="Empty cells" value={formatNum(table.n_cells_empty)} compact={true} />
+                <StatRow label="Empty cells (%)" value={formatPct(table.p_cells_empty)} compact={true} />
                 <StatRow label="Variables with missing values" value={formatNum(table.n_vars_with_missing)} compact={true} />
+                <StatRow label="Variables with empty values" value={formatNum(table.n_vars_with_empty)} compact={true} />
                 <StatRow label="Variables with all missing values" value={formatNum(table.n_vars_all_missing)} compact={true} />
                 {table.n_vars_constant !== undefined && (
                   <StatRow label="Constant variables" value={formatNum(table.n_vars_constant)} compact={true} />
@@ -617,7 +621,16 @@
                     <span className={variable.n_missing > 0 ? 'text-red-600' : ''}>{formatNum(variable.n_missing)}</span>
                     <span className="text-gray-400 text-xs font-normal ml-1">({formatPct(variable.p_missing)})</span>
                   </div>
-                  
+
+                  {variable.type === 'Categorical' && (
+                    <>
+                      <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Empty</div>
+                      <div className="text-sm font-medium text-right py-1 border-b border-gray-50">
+                        <span className={variable.n_empty > 0 ? 'text-amber-600' : ''}>{formatNum(variable.n_empty)}</span>
+                        <span className="text-gray-400 text-xs font-normal ml-1">({formatPct(variable.p_empty)})</span>
+                      </div>
+                    </>
+                  )}                  
                   {isNumeric && (
                     <>
                       <div className="text-sm text-gray-600 py-1 border-b border-gray-50">Infinite</div>

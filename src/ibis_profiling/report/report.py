@@ -185,11 +185,14 @@ class ProfileReport:
 
         # Reset table counters for idempotency
         self.table["n_cells_missing"] = 0
+        self.table["n_cells_empty"] = 0
         self.table["n_vars_with_missing"] = 0
+        self.table["n_vars_with_empty"] = 0
         self.table["n_vars_all_missing"] = 0
         self.table["n_vars_constant"] = 0
 
         n_cells_missing = 0
+        n_cells_empty = 0
 
         # Post-process variables (normalization & derived metrics)
         for col, stats in self.variables.items():
@@ -224,6 +227,12 @@ class ProfileReport:
 
             if m_count == n and n > 0:
                 self.table["n_vars_all_missing"] = cast(int, self.table["n_vars_all_missing"]) + 1
+
+            # Empty Strings (Categorical specific but accumulated here)
+            e_count = stats.get("n_empty", 0)
+            if isinstance(e_count, (int, float)) and e_count > 0:
+                n_cells_empty += e_count
+                self.table["n_vars_with_empty"] = cast(int, self.table["n_vars_with_empty"]) + 1
 
             # Derived Numeric Stats
             if stats.get("type") == "Numeric":
@@ -275,9 +284,11 @@ class ProfileReport:
                 stats[k] = self._to_json_serializable(v)
 
         self.table["n_cells_missing"] = n_cells_missing
+        self.table["n_cells_empty"] = n_cells_empty
         n_var = self.table.get("n_var", 0)
         if isinstance(n_var, int) and n > 0 and n_var > 0:
             self.table["p_cells_missing"] = n_cells_missing / (n * n_var)
+            self.table["p_cells_empty"] = n_cells_empty / (n * n_var)
         else:
             self.table["p_cells_missing"] = 0
 

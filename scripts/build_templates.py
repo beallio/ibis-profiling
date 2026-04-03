@@ -92,7 +92,7 @@ def build_template(template_path: Path):
     if babel_start != -1 and babel_end != -1:
         prod_html = (
             prod_html[:babel_start]
-            + f'<script type="text/javascript">{compiled_js}</script>'
+            + f'<script nonce="{{{{NONCE}}}}" type="text/javascript">{compiled_js}</script>'
             + prod_html[babel_end:]
         )
 

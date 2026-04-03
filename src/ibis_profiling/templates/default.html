@@ -31,7 +31,7 @@
   <!-- Tailwind CSS -->
   {{TAILWIND_SCRIPT}}
 
-  <!-- React & Dependencies -->
+  <!-- React & Dependencies (UMD Builds for local file portability) -->
   {{REACT_SCRIPT}}
   <script nonce="{{NONCE}}">window.react = window.React;</script>
   {{REACT_DOM_SCRIPT}}
@@ -992,7 +992,7 @@ function AppContent() {
   }, activeTab === 'overview' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-8 animate-in fade-in duration-500"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+    className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-20"
   }, /*#__PURE__*/React.createElement(StatCard, {
     title: "Total Rows",
     value: reportData.table.n.toLocaleString(),
@@ -1002,14 +1002,20 @@ function AppContent() {
     title: "Variables",
     value: reportData.table.n_var,
     icon: Table,
-    sub: Object.entries(reportData.table.types || {}).map(([type, count]) => `${count} ${TYPE_LABELS[type] || type.substring(0, 3)}`).join(', '),
+    sub: Object.entries(reportData.table.types || {}).filter(([_, count]) => count > 0).map(([type, count]) => `${count} ${TYPE_LABELS[type] || type.substring(0, 3)}`).join(', '),
     color: "purple"
-  }), /*#__PURE__*/React.createElement(StatCard, {
+  }), "                    ", /*#__PURE__*/React.createElement(StatCard, {
     title: "Missing Cells",
     value: `${reportData.table.p_cells_missing === 0 ? '0' : (reportData.table.p_cells_missing * 100).toFixed(2)}%`,
     icon: FileWarning,
     sub: `Across ${reportData.table.n_vars_with_missing} variables`,
     color: "red"
+  }), /*#__PURE__*/React.createElement(StatCard, {
+    title: "Empty Cells",
+    value: `${reportData.table.p_cells_empty === 0 ? '0' : (reportData.table.p_cells_empty * 100).toFixed(2)}%`,
+    icon: Database,
+    sub: `Across ${reportData.table.n_vars_with_empty || 0} variables`,
+    color: "slate"
   }), /*#__PURE__*/React.createElement(StatCard, {
     title: "Memory Size",
     value: `${(reportData.table.memory_size / 1024 / 1024).toFixed(2)} MiB`,
@@ -1113,9 +1119,13 @@ function AppContent() {
       }));
     }), varAlerts.length > 3 && /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] ${theme.textSub} self-center`
-    }, "+", varAlerts.length - 3)), /*#__PURE__*/React.createElement("span", {
-      className: `text-[10px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`
-    }, ((meta.p_missing || 0) * 100).toFixed(1), "% null")));
+    }, "+", varAlerts.length - 3)), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col items-end"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: `text-[9px] font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : 'text-green-500'}`
+    }, ((meta.p_missing || 0) * 100).toFixed(1), "% null"), meta.type === 'Categorical' && meta.n_empty > 0 && /*#__PURE__*/React.createElement("span", {
+      className: "text-[9px] font-bold font-mono text-amber-400"
+    }, ((meta.p_empty || 0) * 100).toFixed(1), "% empty"))), "                          ");
   })))), activeTab === 'variables' && /*#__PURE__*/React.createElement("div", {
     className: "space-y-6 animate-in slide-in-from-bottom-4 duration-500"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1265,12 +1275,20 @@ function AppContent() {
     }, meta.type), meta.n_distinct !== undefined && /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] ${theme.textSub} font-mono`
     }, meta.n_distinct.toLocaleString(), " distinct")))), /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-6"
+    }, /*#__PURE__*/React.createElement("div", {
       className: "text-right"
     }, /*#__PURE__*/React.createElement("div", {
       className: `text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`
     }, "Missingness"), /*#__PURE__*/React.createElement("div", {
       className: `text-sm font-bold font-mono ${meta.n_missing > 0 ? 'text-red-400' : theme.textSecondary}`
-    }, ((meta.p_missing || 0) * 100).toFixed(2), "% (", meta.n_missing?.toLocaleString() || 0, ")"))), /*#__PURE__*/React.createElement("div", {
+    }, ((meta.p_missing || 0) * 100).toFixed(2), "% (", meta.n_missing?.toLocaleString() || 0, ")")), meta.type === 'Categorical' && meta.n_empty > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "text-right"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `text-[10px] ${theme.textSub} uppercase font-bold tracking-widest`
+    }, "Empty"), /*#__PURE__*/React.createElement("div", {
+      className: "text-sm font-bold font-mono text-amber-400"
+    }, ((meta.p_empty || 0) * 100).toFixed(2), "% (", meta.n_empty?.toLocaleString() || 0, ")"))), "                        "), /*#__PURE__*/React.createElement("div", {
       className: "p-6 grid grid-cols-1 lg:grid-cols-3 gap-8"
     }, /*#__PURE__*/React.createElement("div", {
       className: hasExtremeValues ? "lg:col-span-2" : "lg:col-span-3"
