@@ -31,6 +31,7 @@ dependencies = [
     "pyarrow-hotfix>=0.7",
     "pydantic>=2.12.5",
     "pygments>=2.20.0",
+    "psutil>=7.0.0",
 ]
 
 [project.scripts]

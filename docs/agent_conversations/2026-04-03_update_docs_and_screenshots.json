@@ -1,0 +1,25 @@
+{
+  "date": "2026-04-03",
+  "task_objective": "Review codebase, update documentation, screenshots, and use cases",
+  "files_modified": [
+    "README.md",
+    "pyproject.toml",
+    "run.sh",
+    "examples/html/full_report.html",
+    "examples/html/minimal_report.html",
+    "examples/json/full_report.json",
+    "examples/json/minimal_report.json"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Added 'Use Cases' section to README.md to showcase real-world applicability.",
+    "Updated screenshots using a realistic 100k-row synthetic dataset.",
+    "Added cacheBuster to image URLs in README.md to bypass GitHub's image cache.",
+    "Added 'psutil' to dependencies in pyproject.toml as it is required by the memory module.",
+    "Updated run.sh to correctly include the virtual environment in the PATH.",
+    "Documented new parameters like 'use_sketches', 'n_unique_threshold', and 'duplicates_threshold'.",
+    "Updated existing examples in examples/ directory to reflect current v0.1.23+ features.",
+    "Added 'Project Structure & Examples' section to README.md with live report links via raw.githack.com."
+  ],
+  "results": "README.md is now up-to-date with the latest features (v0.1.7+), including use cases and improved parameter documentation. Screenshots are fresh and reflect the current UI state."
+}

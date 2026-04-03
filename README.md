@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-logo.png" width="400" alt="Ibis Profiling Logo">
+  <img src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-logo.png?cacheBuster=1" width="400" alt="Ibis Profiling Logo">
 </p>
 
 # Ibis Profiling
 
-[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=14)](https://badge.fury.io/py/ibis-profiling)
+[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=15)](https://badge.fury.io/py/ibis-profiling)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An ultra-high-performance data profiling system built natively for **Ibis**.
@@ -20,14 +20,23 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 ## 🖼️ Preview
 
 ### Overview Dashboard
-![Overview Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_overview.png)
+![Overview Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_overview.png?cacheBuster=1)
 
 ### Variable Detail View
-![Variables Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_variables.png)
+![Variables Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_variables.png?cacheBuster=1)
 
 ### Missing Values Analysis
-![Missing Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_missing.png)
+![Missing Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_missing.png?cacheBuster=1)
 
+
+---
+
+## 🎯 Use Cases
+
+- **Financial Data Integrity Audit:** Quickly identify missing values, outliers, and distribution skew in multi-million row transaction logs without moving data to your local machine.
+- **High-Volume ML Preprocessing:** Profile billion-row datasets directly in BigQuery or Snowflake to identify feature leakage (via correlations) and category imbalances before starting expensive training jobs.
+- **Automated Data Quality Gates:** Integrate `to_dict()` output into CI/CD pipelines to automatically fail builds if data quality alerts (e.g., CONSTANT or HIGH_CARDINALITY) are triggered on new production batches.
+- **Data Migration Validation:** Compare profile summaries of source and destination databases to ensure statistical parity after a large-scale migration.
 
 ---
 
@@ -36,6 +45,7 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 - **Backend Pushdown:** 100% of the heavy lifting is done by the database engine.
 - **Multi-Pass Execution:** Intelligently splits computation into optimized passes to handle complex moments (Skewness, MAD) without backend "nested aggregation" errors.
 - **JSON Schema Parity:** Achieves full structural and statistical parity with `ydata-profiling`, allowing drop-in replacement for downstream automated pipelines.
+- **Alert Engine:** Heuristic-based warnings for **Unique**, **Constant**, **Skewed**, **Zeros**, **Missing**, and **Empty** (empty string) values.
 - **Modern SPA Report:** Generates a lightweight Single Page Application (SPA) with a modern React-based UI.
 - **Adjustable Themes:** Includes built-in support for **Dark**, **Light**, and **High Contrast** modes with persistent user settings.
 - **Auto-Categorical Detection:** Intelligent heuristics automatically reclassify low-cardinality integers (e.g., status codes, term months) as categorical for better visualization.
@@ -160,8 +170,9 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | Parameter | Default | Description |
 | :--- | :--- | :--- |
 | `minimal` | `False` | Enable faster profiling by skipping expensive metrics (correlations, interactions). |
-| `parallel` | `False` | Execute independent backend queries in parallel using a thread pool. (Currently disabled for all backends due to thread-safety concerns with shared connections. Fallback to sequential with warning.) |
+| `parallel` | `False` | Execute independent backend queries in parallel using a thread pool. (Fallback to sequential if backend is not thread-safe). |
 | `pool_size` | `4` | Number of concurrent worker threads for parallel execution. |
+| `use_sketches` | `False` | Use hyperloglog/sketches for `approx_nunique` when supported by the backend (e.g., DuckDB). Greatly speeds up large cardinality checks. |
 | `max_interaction_pairs` | `10` | Limit pairwise scatter plots to the Top N most interactive numeric variables. |
 | `correlations_sampling_threshold` | `1,000,000` | Row count threshold above which Spearman correlation uses sampling. |
 | `correlations_sample_size` | `1,000,000` | Number of rows used when correlation sampling is active. |
@@ -169,8 +180,7 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | `monotonicity` | `True` | Explicitly enable/disable monotonicity checks. |
 | `monotonicity_threshold` | `100,000` | Row count threshold above which monotonicity is skipped by default. |
 | `duplicates_threshold` | `50,000,000` | Row count threshold above which duplicate check is skipped by default. |
-| `monotonicity_order_by` | `None` | Required column name to order by for deterministic monotonicity checks. If `None`, checks are skipped. |
-| `n_unique_threshold` | `50,000,000` | Row count threshold above which `n_unique` calculation is skipped. |
+| `n_unique_threshold` | `50,000,000` | Row count threshold above which exact `n_unique` (singleton) calculation is skipped. |
 | `global_batch_size` | `500` | Maximum number of aggregate expressions per backend query. |
 | `compute_duplicates` | `True` | Explicitly enable/disable duplicate row detection. |
 
@@ -376,6 +386,24 @@ The report generates heuristic warnings (Alerts) to flag potential data quality 
 | **MISSING** | `p_missing > 0.05` | info |
 | **ZEROS** | `p_zeros > 0.10` | info |
 | **SKEWED** | `abs(skewness) > 10` | info |
+
+---
+
+## 📂 Project Structure & Examples
+
+To see **Ibis Profiling** in action, you can explore the pre-generated reports in the `examples/` directory:
+
+- **[Full Example Report](https://raw.githack.com/beallio/ibis-profiling/main/examples/html/full_report.html):** A comprehensive profile including all advanced metrics, correlations, and interactions.
+- **[Minimal Example Report](https://raw.githack.com/beallio/ibis-profiling/main/examples/html/minimal_report.html):** A lightweight version optimized for speed and large-scale datasets.
+- **[Raw JSON Output](https://github.com/beallio/ibis-profiling/tree/main/examples/json):** View the structured data used to drive the React-based frontend reports.
+
+```text
+ibis-profiling/
+├── examples/             # Sample profiling reports (HTML/JSON)
+├── scripts/              # Performance benchmarks and data generation
+├── src/ibis_profiling/   # Core engine, metrics, and report templates
+└── tests/                # Comprehensive test suite (TDD-driven)
+```
 
 ---
 
