@@ -1,0 +1,24 @@
+{
+  "date": "2026-04-01",
+  "task_objective": "Determine OOM drivers for large datasets and implement performance/memory heuristics",
+  "files_modified": [
+    "src/ibis_profiling/memory.py",
+    "src/ibis_profiling/profiler.py",
+    "src/ibis_profiling/planner.py",
+    "src/ibis_profiling/report/report.py",
+    "src/ibis_profiling/wrapper.py",
+    "scripts/generate_bench_data_varied.py",
+    "scripts/benchmark_runner.py",
+    "scripts/benchmark_worker.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Separated data generation from profiling in benchmarks to isolate memory overhead.",
+    "Implemented a new `MemoryManager` class to handle dynamic batch sizing and DuckDB memory limits.",
+    "Batched the 'Advanced Pass' (Skewness/MAD) in the Profiler, which was previously a major OOM driver.",
+    "Reduced the default `global_batch_size` from 500 to a dynamic heuristic (typically 20-100 for large datasets).",
+    "Set DuckDB `memory_limit` to 70% of available system RAM automatically.",
+    "Added an `analysis` property to the compatibility wrapper to support performance tracking."
+  ],
+  "results": "Successfully profiled 20M x 20cols in ~77 seconds with peak RAM stabilized at ~2.6GB (compared to previous OOMs). Benchmarks confirmed that smaller batches have minimal performance impact (~5%) but provide significant memory safety on large datasets."
+}
