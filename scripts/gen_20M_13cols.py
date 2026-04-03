@@ -7,50 +7,82 @@
 #   "psutil",
 # ]
 # ///
-import os
+from pathlib import Path
 import polars as pl
-import numpy as np
+import random
+import os
+import shutil
 import psutil
 import gc
 
 
 def get_mem_mb():
-    process = psutil.Process(os.getpid())
-    return process.memory_info().rss / (1024 * 1024)
+    return psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024)
 
 
-def generate_data_20M_13cols(n_rows, output_path):
-    rng = np.random.default_rng(42)
-    print(f"[{get_mem_mb():.2f} MB] Starting 13-column generation...")
+def generate_single_file_20M(total_rows: int, output_file: str, chunk_size: int = 2_000_000):
+    # 1. Setup a temporary directory for our chunks
+    temp_dir = Path(output_file).parent / ".temp_parquet_chunks"
+    os.makedirs(temp_dir, exist_ok=True)
 
-    data = {
-        "id": np.arange(n_rows, dtype=np.int64),
-        "int_col": rng.integers(0, 1000, size=n_rows, dtype=np.int32),
-        "float_col": rng.uniform(0, 1, size=n_rows).astype(np.float32),
-        "bool_col": rng.choice([True, False], size=n_rows),
-        "cat_low": rng.choice(["A", "B", "C"], size=n_rows),
-        "cat_high": rng.integers(0, 10000, size=n_rows, dtype=np.int32).astype(str),
-        "date_col": np.arange(1600000000, 1600000000 + n_rows, dtype=np.int64),
-        "const_int": np.full(n_rows, 42, dtype=np.int32),
-        "random_str": rng.choice(["foo", "bar", "baz", "qux"], size=n_rows),
-        "empty_strings": np.full(n_rows, "", dtype=str),
-        "extra_1": rng.uniform(0, 100, size=n_rows).astype(np.float32),
-        "extra_2": rng.uniform(0, 100, size=n_rows).astype(np.float32),
-        "extra_3": rng.uniform(0, 100, size=n_rows).astype(np.float32),
-    }
+    print(f"[{get_mem_mb():.2f} MB] Starting chunked generation...")
 
-    print(f"[{get_mem_mb():.2f} MB] Creating Polars DataFrame...")
-    df = pl.DataFrame(data)
-    del data
-    gc.collect()
+    # 2. Generate and write chunks to the temp folder
+    for start_idx in range(0, total_rows, chunk_size):
+        current_chunk_size = min(chunk_size, total_rows - start_idx)
+        file_path = f"{temp_dir}/part_{start_idx}.parquet"
 
-    print(f"[{get_mem_mb():.2f} MB] Writing to {output_path}...")
-    df.write_parquet(output_path)
-    print(f"[{get_mem_mb():.2f} MB] Done.")
+        pl.select(
+            id=pl.int_range(start_idx, start_idx + current_chunk_size, dtype=pl.Int64),
+            date_col=pl.int_range(
+                1600000000 + start_idx, 1600000000 + start_idx + current_chunk_size, dtype=pl.Int64
+            ),
+            const_int=pl.repeat(42, n=current_chunk_size, dtype=pl.Int32),
+            empty_strings=pl.repeat("", n=current_chunk_size, dtype=pl.String),
+            int_col=pl.int_range(0, 1000, dtype=pl.Int32).sample(
+                current_chunk_size, with_replacement=True
+            ),
+            cat_high=pl.int_range(0, 10000, dtype=pl.Int32)
+            .sample(current_chunk_size, with_replacement=True)
+            .cast(pl.String),
+            bool_col=pl.Series([True, False]).sample(current_chunk_size, with_replacement=True),
+            cat_low=pl.Series(["A", "B", "C"]).sample(current_chunk_size, with_replacement=True),
+            random_str=pl.Series(["foo", "bar", "baz", "qux"]).sample(
+                current_chunk_size, with_replacement=True
+            ),
+            float_col=pl.Series(
+                [random.random() for _ in range(current_chunk_size)], dtype=pl.Float32
+            ),
+            extra_1=pl.Series(
+                [random.uniform(0, 100) for _ in range(current_chunk_size)], dtype=pl.Float32
+            ),
+            extra_2=pl.Series(
+                [random.uniform(0, 100) for _ in range(current_chunk_size)], dtype=pl.Float32
+            ),
+            extra_3=pl.Series(
+                [random.uniform(0, 100) for _ in range(current_chunk_size)], dtype=pl.Float32
+            ),
+        ).write_parquet(file_path)
+        gc.collect()  # Force garbage collection to free memory after each chunk
+
+        print(
+            f"[{get_mem_mb():.2f} MB] Wrote temp chunk {start_idx} to {start_idx + current_chunk_size}"
+        )
+
+    # 3. Stream all the temporary chunks into one final file
+    print(f"\n[{get_mem_mb():.2f} MB] Streaming chunks into single file '{output_file}'...")
+    # sink_parquet is a lazy operation that streams data to disk with low memory
+    pl.scan_parquet(f"{temp_dir}/*.parquet").sink_parquet(output_file)
+
+    # 4. Clean up the temporary folder
+    print(f"[{get_mem_mb():.2f} MB] Cleaning up temporary files...")
+    shutil.rmtree(temp_dir)
+
+    print(f"[{get_mem_mb():.2f} MB] Done. Your single file is ready.")
 
 
 if __name__ == "__main__":
-    n_rows = 20_000_000
-    path = "/tmp/ibis-profiling/data_20M_13cols.parquet"
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    generate_data_20M_13cols(n_rows, path)
+    total_rows = 20_000_000
+    output_filepath = "/tmp/ibis-profiling/data_20M_13cols.parquet"
+    os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+    generate_single_file_20M(total_rows=total_rows, output_file=output_filepath)
