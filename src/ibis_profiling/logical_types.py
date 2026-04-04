@@ -201,6 +201,30 @@ class Integer(LogicalType):
         return bool(results.get("int_has_non_null", False) and results.get("int_all_match", False))
 
 
+class Decimal(LogicalType):
+    # Regex for decimal numbers (including scientific notation)
+    DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if isinstance(col.type(), (dt.Decimal, dt.Floating)):
+            return {"dec_is_native": ibis.literal(True)}
+
+        if isinstance(col.type(), dt.String):
+            return {
+                "dec_has_non_null": col.notnull().any(),
+                "dec_all_match": (col.re_search(cls.DECIMAL_REGEX) | col.isnull()).all(),
+            }
+
+        return {"dec_is_native": ibis.literal(False)}
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        if results.get("dec_is_native", False):
+            return True
+        return bool(results.get("dec_has_non_null", False) and results.get("dec_all_match", False))
+
+
 class UUID(LogicalType):
     UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
@@ -253,6 +277,7 @@ class IbisLogicalTypeSystem:
             Boolean,
             UUID,
             Integer,
+            Decimal,
             Categorical,
             String,
         ]

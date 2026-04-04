@@ -10,6 +10,7 @@ from ibis_profiling.logical_types import (
     Boolean,
     DateTime,
     Integer,
+    Decimal,
 )
 
 
@@ -136,3 +137,14 @@ def test_integer_detection():
     ts = IbisLogicalTypeSystem()
     assert ts.infer_type(df_int, "a") == Integer
     assert ts.infer_type(df_mixed, "a") != Integer
+
+
+def test_decimal_detection():
+    # Decimal strings
+    df_decimal = ibis.memtable({"a": ["1.1", "2.0", "-3.14", "1e-5"] * 10})
+    # Mixed data
+    df_mixed = ibis.memtable({"a": ["1.1", "not a number"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_decimal, "a") == Decimal
+    assert ts.infer_type(df_mixed, "a") != Decimal
