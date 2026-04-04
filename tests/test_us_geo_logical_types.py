@@ -1,6 +1,21 @@
 import ibis
 import polars as pl
-from ibis_profiling.logical_types import USState, USTerritory, USMilitaryMail, IbisLogicalTypeSystem
+from ibis_profiling.logical_types import (
+    USState,
+    USTerritory,
+    USMilitaryMail,
+    USZipCode,
+    IbisLogicalTypeSystem,
+)
+
+
+def test_us_zip_code_detection():
+    valid = ["12345", "90210-1234", "00501"]
+    invalid = ["1234", "123456", "ABCDE", "12345-678"]
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"z": valid})))["z"] == USZipCode
+    assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"z": invalid})))["z"] != USZipCode
 
 
 def test_us_state_detection():

@@ -860,6 +860,28 @@ class USMilitaryMail(LogicalType):
         return bool(results.get("mil_has_non_null", False) and results.get("mil_all_match", False))
 
 
+class USZipCode(LogicalType):
+    """
+    Semantic type for US Zip Codes (5-digit or Zip+4).
+    """
+
+    ZIP_REGEX = r"^\d{5}(?:-\d{4})?$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"zip_has_non_null": ibis.literal(False)}
+
+        return {
+            "zip_has_non_null": col.notnull().any(),
+            "zip_all_match": (col.re_search(cls.ZIP_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("zip_has_non_null", False) and results.get("zip_all_match", False))
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -992,6 +1014,7 @@ class IbisLogicalTypeSystem:
             URL,
             IPAddress,
             DateTime,
+            USZipCode,
             PhoneNumber,
             MACAddress,
             USState,
