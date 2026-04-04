@@ -28,6 +28,8 @@ class SummaryEngine:
                 "CreditCard": "Credit Card",
                 "SSN": "SSN",
                 "JSON": "JSON",
+                "CUID": "CUID",
+                "NanoID": "NanoID",
             }
             ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
 

@@ -293,6 +293,56 @@ class JSON(LogicalType):
         )
 
 
+class CUID(LogicalType):
+    """
+    Semantic type for CUID (Collision-resistant Unique Identifier).
+    Standard format: 'c' followed by 24 alphanumeric characters.
+    """
+
+    CUID_REGEX = r"^c[a-z0-9]{24}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"cuid_has_non_null": ibis.literal(False)}
+
+        return {
+            "cuid_has_non_null": col.notnull().any(),
+            "cuid_all_match": (col.re_search(cls.CUID_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("cuid_has_non_null", False) and results.get("cuid_all_match", False)
+        )
+
+
+class NanoID(LogicalType):
+    """
+    Semantic type for NanoID.
+    Default format: 21 alphanumeric characters (including _ and -).
+    """
+
+    NANOID_REGEX = r"^[a-zA-Z0-9_-]{21}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"nanoid_has_non_null": ibis.literal(False)}
+
+        return {
+            "nanoid_has_non_null": col.notnull().any(),
+            "nanoid_all_match": (col.re_search(cls.NANOID_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("nanoid_has_non_null", False) and results.get("nanoid_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -425,6 +475,8 @@ class IbisLogicalTypeSystem:
             Ordinal,
             Count,
             UUID,
+            CUID,
+            NanoID,
             Integer,
             Decimal,
             Categorical,
