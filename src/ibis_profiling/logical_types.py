@@ -1,0 +1,141 @@
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
+from abc import ABC, abstractmethod
+from typing import Type, Dict, Any, List
+
+
+class LogicalType(ABC):
+    @classmethod
+    @abstractmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        """Returns a dict of Ibis expressions to be aggregated."""
+        ...
+
+    @classmethod
+    @abstractmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        """Evaluates results from the aggregate call to decide if it's a match."""
+        ...
+
+    @classmethod
+    def matches(cls, table: ibis.Table, column: str) -> bool:
+        """Helper for single-type checks."""
+        exprs = {f"{cls.__name__}_{k}": v for k, v in cls.get_check_exprs(table[column]).items()}
+        res = table.aggregate([v.name(k) for k, v in exprs.items()]).to_pandas().iloc[0].to_dict()
+        type_results = {
+            k[len(cls.__name__) + 1 :]: v
+            for k, v in res.items()
+            if k.startswith(cls.__name__ + "_")
+        }
+        return cls.evaluate(type_results)
+
+
+class String(LogicalType):
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        return {"is_string": ibis.literal(isinstance(col.type(), dt.String))}
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("is_string", False))
+
+
+class Email(LogicalType):
+    EMAIL_REGEX = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"email_has_non_null": ibis.literal(False)}
+
+        return {
+            "email_has_non_null": col.notnull().any(),
+            "email_all_match": (col.re_search(cls.EMAIL_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("email_has_non_null", False) and results.get("email_all_match", False)
+        )
+
+
+class UUID(LogicalType):
+    UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"uuid_has_non_null": ibis.literal(False)}
+
+        return {
+            "uuid_has_non_null": col.notnull().any(),
+            "uuid_all_match": (col.re_search(cls.UUID_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("uuid_has_non_null", False) and results.get("uuid_all_match", False)
+        )
+
+
+class Categorical(LogicalType):
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), (dt.String, dt.Integer)):
+            return {"cat_n_unique": ibis.literal(0)}
+
+        return {
+            "cat_n_unique": col.nunique(),
+            "cat_total": col.count() + col.isnull().sum(),  # table.count() replacement
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        n_unique = results.get("cat_n_unique", 0)
+        total = results.get("cat_total", 0)
+        if total == 0:
+            return False
+        return n_unique < 20 or (n_unique / total) < 0.05
+
+
+class IbisLogicalTypeSystem:
+    def __init__(self):
+        # Ordered by specificity
+        self.types: List[Type[LogicalType]] = [Email, UUID, Categorical, String]
+
+    def infer_type(self, table: ibis.Table, column: str) -> Type[LogicalType]:
+        col = table[column]
+
+        # 1. Collect all expressions
+        all_exprs = {}
+        for ltype in self.types:
+            all_exprs.update(
+                {f"{ltype.__name__}_{k}": v for k, v in ltype.get_check_exprs(col).items()}
+            )
+
+        # 2. Execute in one batch
+        try:
+            res = (
+                table.aggregate([v.name(k) for k, v in all_exprs.items()])
+                .to_pandas()
+                .iloc[0]
+                .to_dict()
+            )
+        except Exception:
+            # Fallback if batching fails
+            return LogicalType
+
+        # 3. Evaluate results in order
+        for ltype in self.types:
+            type_results = {
+                k[len(ltype.__name__) + 1 :]: v
+                for k, v in res.items()
+                if k.startswith(ltype.__name__ + "_")
+            }
+            if ltype.evaluate(type_results):
+                return ltype
+
+        return LogicalType
