@@ -18,7 +18,15 @@ class SummaryEngine:
                 continue
 
             ltype_cls = logical_types.get(col_name) if logical_types else None
-            ltype_name = ltype_cls.__name__ if ltype_cls else "String"
+            raw_ltype_name = ltype_cls.__name__ if ltype_cls else "String"
+
+            # Format logical type names for display (e.g. IPAddress -> IP Address)
+            ltype_display_map = {
+                "IPAddress": "IP Address",
+                "PhoneNumber": "Phone Number",
+                "DateTime": "Date Time",
+            }
+            ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
 
             # Use Ibis DataType hierarchy for robust classification
             if isinstance(dtype, dt.Numeric) or ltype_name in ["Integer", "Decimal", "Count"]:
