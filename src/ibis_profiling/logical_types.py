@@ -735,6 +735,131 @@ class Passport(LogicalType):
         )
 
 
+class USState(LogicalType):
+    """
+    Semantic type for US State abbreviations (50 states + DC).
+    """
+
+    STATE_CODES = {
+        "AL",
+        "AK",
+        "AZ",
+        "AR",
+        "CA",
+        "CO",
+        "CT",
+        "DE",
+        "FL",
+        "GA",
+        "HI",
+        "ID",
+        "IL",
+        "IN",
+        "IA",
+        "KS",
+        "KY",
+        "LA",
+        "ME",
+        "MD",
+        "MA",
+        "MI",
+        "MN",
+        "MS",
+        "MO",
+        "MT",
+        "NE",
+        "NV",
+        "NH",
+        "NJ",
+        "NM",
+        "NY",
+        "NC",
+        "ND",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UT",
+        "VT",
+        "VA",
+        "WA",
+        "WV",
+        "WI",
+        "WY",
+        "DC",
+    }
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"state_has_non_null": ibis.literal(False)}
+
+        return {
+            "state_has_non_null": col.notnull().any(),
+            "state_all_match": (col.upper().isin(list(cls.STATE_CODES)) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("state_has_non_null", False) and results.get("state_all_match", False)
+        )
+
+
+class USTerritory(LogicalType):
+    """
+    Semantic type for US Territory abbreviations (PR, VI, GU, AS, MP).
+    """
+
+    TERRITORY_CODES = {"PR", "VI", "GU", "AS", "MP"}
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"territory_has_non_null": ibis.literal(False)}
+
+        return {
+            "territory_has_non_null": col.notnull().any(),
+            "territory_all_match": (
+                col.upper().isin(list(cls.TERRITORY_CODES)) | col.isnull()
+            ).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("territory_has_non_null", False)
+            and results.get("territory_all_match", False)
+        )
+
+
+class USMilitaryMail(LogicalType):
+    """
+    Semantic type for US Military Mail abbreviations (AA, AE, AP).
+    """
+
+    MILITARY_CODES = {"AA", "AE", "AP"}
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"mil_has_non_null": ibis.literal(False)}
+
+        return {
+            "mil_has_non_null": col.notnull().any(),
+            "mil_all_match": (col.upper().isin(list(cls.MILITARY_CODES)) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("mil_has_non_null", False) and results.get("mil_all_match", False))
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -869,6 +994,9 @@ class IbisLogicalTypeSystem:
             DateTime,
             PhoneNumber,
             MACAddress,
+            USState,
+            USTerritory,
+            USMilitaryMail,
             CountryCode,
             FilePath,
             Complex,
