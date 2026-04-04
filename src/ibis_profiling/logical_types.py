@@ -593,6 +593,148 @@ class ISIN(LogicalType):
         )
 
 
+class StockTicker(LogicalType):
+    """
+    Semantic type for Stock Tickers.
+    Standard format: 1-5 uppercase letters.
+    """
+
+    TICKER_REGEX = r"^[A-Z]{1,5}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"ticker_has_non_null": ibis.literal(False)}
+
+        return {
+            "ticker_has_non_null": col.notnull().any(),
+            "ticker_all_match": (col.re_search(cls.TICKER_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("ticker_has_non_null", False) and results.get("ticker_all_match", False)
+        )
+
+
+class Age(LogicalType):
+    """
+    Semantic type for human age.
+    Heuristic: Integer values between 0 and 120.
+    """
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.Integer):
+            return {"age_is_integer": ibis.literal(False)}
+
+        return {
+            "age_is_integer": ibis.literal(True),
+            "age_has_non_null": col.notnull().any(),
+            "age_in_range": (col.between(0, 120) | col.isnull()).all(),
+            # Human age columns should have a significant portion of older values
+            # compared to binary/small counters.
+            "age_percent_above_14": (col > 14).mean(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("age_is_integer", False)
+            and results.get("age_has_non_null", False)
+            and results.get("age_in_range", False)
+            and results.get("age_percent_above_14", 0) > 0.5
+        )
+
+
+class Gender(LogicalType):
+    """
+    Semantic type for Gender identification.
+    Heuristic: Case-insensitive set of common values.
+    """
+
+    GENDER_VALUES = {
+        "male",
+        "female",
+        "m",
+        "f",
+        "nb",
+        "non-binary",
+        "nonbinary",
+        "other",
+        "unknown",
+        "u",
+    }
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"gender_has_non_null": ibis.literal(False)}
+
+        # Use case-insensitive containment check
+        return {
+            "gender_has_non_null": col.notnull().any(),
+            "gender_all_match": (col.lower().isin(list(cls.GENDER_VALUES)) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("gender_has_non_null", False) and results.get("gender_all_match", False)
+        )
+
+
+class LanguageCode(LogicalType):
+    """
+    Semantic type for Language Codes (ISO 639-1).
+    Heuristic: 2-letter lowercase strings.
+    """
+
+    LANG_REGEX = r"^[a-z]{2}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"lang_has_non_null": ibis.literal(False)}
+
+        return {
+            "lang_has_non_null": col.notnull().any(),
+            "lang_all_match": (col.re_search(cls.LANG_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("lang_has_non_null", False) and results.get("lang_all_match", False)
+        )
+
+
+class Passport(LogicalType):
+    """
+    Semantic type for Passport numbers.
+    Heuristic: 6-9 alphanumeric characters.
+    """
+
+    PASSPORT_REGEX = r"^[A-Z0-9]{6,9}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"passport_has_non_null": ibis.literal(False)}
+
+        return {
+            "passport_has_non_null": col.notnull().any(),
+            "passport_all_match": (col.re_search(cls.PASSPORT_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("passport_has_non_null", False) and results.get("passport_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -733,14 +875,19 @@ class IbisLogicalTypeSystem:
             Geometry,
             Currency,
             Boolean,
+            Age,
             Ordinal,
             Count,
             UUID,
             CUID,
             NanoID,
+            Passport,
+            LanguageCode,
+            Gender,
             Integer,
             Decimal,
             Categorical,
+            StockTicker,
             String,
         ]
         self.minimal = minimal

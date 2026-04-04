@@ -1,6 +1,13 @@
 import ibis
 import polars as pl
-from ibis_profiling.logical_types import IBAN, SWIFT, TaxID, ISIN, IbisLogicalTypeSystem
+from ibis_profiling.logical_types import (
+    IBAN,
+    SWIFT,
+    TaxID,
+    ISIN,
+    StockTicker,
+    IbisLogicalTypeSystem,
+)
 
 
 def test_iban_detection():
@@ -53,3 +60,17 @@ def test_isin_detection():
     ts = IbisLogicalTypeSystem()
     assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"isin": valid})))["isin"] == ISIN
     assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"isin": invalid})))["isin"] != ISIN
+
+
+def test_stock_ticker_detection():
+    valid = ["AAPL", "TSLA", "BTC", "MSFT", "A"]
+    invalid = ["aapl", "APPLE123", "THISISTOOLONG"]
+
+    ts = IbisLogicalTypeSystem()
+    assert (
+        ts.infer_all_types(ibis.memtable(pl.DataFrame({"ticker": valid})))["ticker"] == StockTicker
+    )
+    assert (
+        ts.infer_all_types(ibis.memtable(pl.DataFrame({"ticker": invalid})))["ticker"]
+        != StockTicker
+    )
