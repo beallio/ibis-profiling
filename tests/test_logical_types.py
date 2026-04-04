@@ -2,7 +2,6 @@ import ibis
 from ibis_profiling.logical_types import (
     IbisLogicalTypeSystem,
     Categorical,
-    String,
     Email,
     UUID,
     URL,
@@ -10,6 +9,7 @@ from ibis_profiling.logical_types import (
     PhoneNumber,
     Boolean,
     DateTime,
+    Integer,
 )
 
 
@@ -22,7 +22,7 @@ def test_categorical_detection():
 
     ts = IbisLogicalTypeSystem()
 
-    assert ts.infer_type(df1, "a") == String
+    assert ts.infer_type(df1, "a") == Integer
     assert ts.infer_type(df2, "a") == Categorical
 
 
@@ -125,3 +125,14 @@ def test_datetime_detection():
     assert ts.infer_type(df_date, "a") == DateTime
     assert ts.infer_type(df_ts, "a") == DateTime
     assert ts.infer_type(df_native, "a") == DateTime
+
+
+def test_integer_detection():
+    # Integer strings
+    df_int = ibis.memtable({"a": ["1", "2", "-3", "42"] * 10})
+    # Mixed data (floats as strings)
+    df_mixed = ibis.memtable({"a": ["1", "2.5"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_int, "a") == Integer
+    assert ts.infer_type(df_mixed, "a") != Integer
