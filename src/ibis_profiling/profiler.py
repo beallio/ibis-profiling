@@ -38,6 +38,7 @@ class Profiler:
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
         n_unique_threshold: int | None = None,
+        inference_sample_size: int | None = 10_000,
         monotonicity_order_by: str | None = None,
         parallel: bool = False,
         pool_size: int = 4,
@@ -88,6 +89,7 @@ class Profiler:
             table,
             minimal=minimal,
             n_unique_threshold=self.n_unique_threshold,
+            inference_sample_size=inference_sample_size,
             row_count=n_rows,
         )
 
@@ -781,6 +783,7 @@ def profile(
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
     n_unique_threshold: int | None = None,
+    inference_sample_size: int | None = 10_000,
     monotonicity_order_by: str | None = None,
     parallel: bool = False,
     pool_size: int = 4,
@@ -806,6 +809,7 @@ def profile(
         monotonicity_threshold=monotonicity_threshold,
         duplicates_threshold=duplicates_threshold,
         n_unique_threshold=n_unique_threshold,
+        inference_sample_size=inference_sample_size,
         monotonicity_order_by=monotonicity_order_by,
         parallel=parallel,
         pool_size=pool_size,

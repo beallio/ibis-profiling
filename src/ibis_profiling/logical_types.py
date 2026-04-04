@@ -608,6 +608,7 @@ class IbisLogicalTypeSystem:
         self,
         minimal: bool = False,
         n_unique_threshold: int = 100_000,
+        inference_sample_size: int | None = 10_000,
         row_count: int | None = None,
     ):
         # Ordered by specificity
@@ -639,6 +640,7 @@ class IbisLogicalTypeSystem:
         ]
         self.minimal = minimal
         self.n_unique_threshold = n_unique_threshold
+        self.inference_sample_size = inference_sample_size
         self.row_count = row_count
 
     def get_fallback_type(self, dtype: dt.DataType) -> Type[LogicalType]:
@@ -672,9 +674,10 @@ class IbisLogicalTypeSystem:
             return {col: self.get_fallback_type(schema[col]) for col in cols}
 
         # 1. Use a sample for semantic inference to maintain performance on massive datasets
-        # 10,000 rows is a standard heuristic for high-precision inference.
-        sample_size = 10_000
-        inference_table = table.head(sample_size)
+        if self.inference_sample_size is not None:
+            inference_table = table.head(self.inference_sample_size)
+        else:
+            inference_table = table
 
         # 2. Collect all expressions for all columns
         all_exprs = {}

@@ -1,43 +1,55 @@
 import ibis
 import ibis.expr.datatypes as dt
-from .logical_types import IbisLogicalTypeSystem, LogicalType
-from typing import Type
+from .logical_types import IbisLogicalTypeSystem
 
 
 class DatasetInspector:
+    """Handles dataset-wide heuristics and metadata analysis."""
+
     def __init__(
         self,
         table: ibis.Table,
         minimal: bool = False,
         n_unique_threshold: int = 100_000,
+        inference_sample_size: int | None = 10_000,
         row_count: int | None = None,
     ):
         self.table = table
-        self.schema = table.schema()
+        self.minimal = minimal
+        self.n_unique_threshold = n_unique_threshold
+        self.row_count = row_count
         self.type_system = IbisLogicalTypeSystem(
-            minimal=minimal, n_unique_threshold=n_unique_threshold, row_count=row_count
+            minimal=minimal,
+            n_unique_threshold=n_unique_threshold,
+            inference_sample_size=inference_sample_size,
+            row_count=row_count,
         )
 
-    def get_column_types(self) -> dict[str, dt.DataType]:
-        return {name: dtype for name, dtype in self.schema.items()}
-
-    def get_logical_types(self) -> dict[str, Type[LogicalType]]:
-        """Infers logical types for all columns in the table."""
+    def get_logical_types(self):
         return self.type_system.infer_all_types(self.table)
+
+    def is_hashable(self, column_name: str) -> bool:
+        """Determines if a column can be used in group-by/distinct operations."""
+        dtype = self.table[column_name].type()
+        return not isinstance(dtype, (dt.Array, dt.Map, dt.Struct, dt.JSON))
+
+    def get_column_types(self) -> dict:
+        return {name: self.table[name].type() for name in self.table.columns}
 
     def estimate_memory_size(self, row_count: int) -> int:
         """
-        Estimates the memory footprint of the dataset based on schema and row count.
+        Rough heuristic for memory size based on schema and row count.
+        Used as fallback if backend doesn't provide physical size.
         """
+        schema = self.table.schema()
         total_bytes_per_row = 0
-        for dtype in self.schema.values():
-            if isinstance(dtype, (dt.Int64, dt.Float64, dt.Timestamp)):
+
+        for dtype in schema.values():
+            if isinstance(dtype, dt.Integer):
                 total_bytes_per_row += 8
-            elif isinstance(dtype, (dt.Int32, dt.Float32, dt.Date)):
-                total_bytes_per_row += 4
-            elif isinstance(dtype, (dt.Int16, dt.UInt16)):
-                total_bytes_per_row += 2
-            elif isinstance(dtype, (dt.Int8, dt.UInt8, dt.Boolean)):
+            elif isinstance(dtype, dt.Floating):
+                total_bytes_per_row += 8
+            elif isinstance(dtype, dt.Boolean):
                 total_bytes_per_row += 1
             elif isinstance(dtype, dt.String):
                 # We use a 20-byte heuristic for strings
@@ -47,8 +59,3 @@ class DatasetInspector:
                 total_bytes_per_row += 16
 
         return total_bytes_per_row * row_count
-
-    def is_hashable(self, col_name: str) -> bool:
-        """Determines if a column type is hashable (stable)."""
-        dtype = self.schema[col_name]
-        return not isinstance(dtype, (dt.Array, dt.Map, dt.Struct))
