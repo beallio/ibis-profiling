@@ -27,6 +27,7 @@ class SummaryEngine:
                 "DateTime": "Date Time",
                 "CreditCard": "Credit Card",
                 "SSN": "SSN",
+                "JSON": "JSON",
             }
             ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
 

@@ -268,6 +268,31 @@ class SSN(LogicalType):
         return bool(results.get("ssn_has_non_null", False) and results.get("ssn_all_match", False))
 
 
+class JSON(LogicalType):
+    """
+    Semantic type for JSON strings.
+    Detects strings that start with { or [ and end with } or ].
+    """
+
+    JSON_REGEX = r"^\s*(?:\{.*\}|\[.*\])\s*$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"json_has_non_null": ibis.literal(False)}
+
+        return {
+            "json_has_non_null": col.notnull().any(),
+            "json_all_match": (col.re_search(cls.JSON_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("json_has_non_null", False) and results.get("json_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -391,6 +416,7 @@ class IbisLogicalTypeSystem:
             CreditCard,
             SSN,
             Email,
+            JSON,
             URL,
             IPAddress,
             DateTime,
