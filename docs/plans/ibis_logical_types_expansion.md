@@ -47,13 +47,18 @@ For each type $T \in \{URL, IPAddress, Boolean, DateTime, PhoneNumber, Integer, 
 - Use `ibis.memtable` for fast, reproducible tests.
 - Cover positive cases (all values match), negative cases (mixed data), and null handling.
 
-## Phase 6: Stabilization & Scale (Failure Recovery)
-- **Chunked Inference**: Update `infer_all_types` to process columns in batches (default: 5 columns per batch) to stay well within backend expression limits.
-- **Physical-Type Fallback**: Implement a robust fallback that maps native Ibis types to logical types when inference is skipped or fails.
-- **Performance Guardrails**:
-    - Respect `minimal=True` by skipping all non-native logical type checks.
-    - Respect `n_unique_threshold` in `Categorical` detection to avoid expensive `nunique()` on high-cardinality strings.
-- **Optimization**: Use `approx_nunique` if `use_sketches=True`.
+## Phase 6: Stabilization & Scale (Complete)
+- **Chunked Inference**: Processed in 5-column batches. Verified stability on 100-column datasets.
+- **Physical-Type Fallback**: Implemented `from_native` for all logical types.
+- **Performance Benchmarks (100M Rows)**:
+    - **100k Threshold**: 39.4s (Baseline)
+    - **No Threshold**: 66.6s (+69% latency spike)
+    - **Conclusion**: Heuristic-based unique counts are mandatory for large-scale dataset stability.
+
+## Phase 7: Dynamic Threshold Optimization
+- **Goal**: Implement a smarter `n_unique_threshold` that balances semantic precision with performance.
+- **Logic**: `max(1,000,000, 0.1 * total_rows)`.
+- **Rationale**: For smaller datasets, we can afford higher precision. For very large datasets, we scale the threshold to allow meaningful sampling/sketching if implemented later.
 
 ## Git Strategy
 - **Branch**: `feat/logical-type-inference` (Active)

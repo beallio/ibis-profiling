@@ -37,7 +37,7 @@ class Profiler:
         missing_matrix_max_columns: int = 50,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
-        n_unique_threshold: int = 100_000,
+        n_unique_threshold: int | None = None,
         monotonicity_order_by: str | None = None,
         parallel: bool = False,
         pool_size: int = 4,
@@ -63,7 +63,6 @@ class Profiler:
         self.missing_matrix_max_columns = max(2, missing_matrix_max_columns)
         self.monotonicity_threshold = monotonicity_threshold
         self.duplicates_threshold = duplicates_threshold
-        self.n_unique_threshold = n_unique_threshold
         self.monotonicity_order_by = monotonicity_order_by
         self.parallel = parallel
         self.pool_size = pool_size
@@ -75,12 +74,20 @@ class Profiler:
         n_rows = MemoryManager.to_int(self.table.count().execute())
         n_cols = len(self.table.columns)
 
+        # Dynamic Threshold Logic: max(1M, 10% of total rows)
+        if n_unique_threshold is None:
+            self.n_unique_threshold = max(1_000_000, int(0.1 * n_rows))
+        else:
+            self.n_unique_threshold = n_unique_threshold
+
         self.start_time = datetime.now()
-        self.analysis = {}
+        self.analysis = {
+            "n_unique_threshold": self.n_unique_threshold,
+        }
         self.inspector = DatasetInspector(
             table,
             minimal=minimal,
-            n_unique_threshold=n_unique_threshold,
+            n_unique_threshold=self.n_unique_threshold,
             row_count=n_rows,
         )
 
@@ -99,7 +106,7 @@ class Profiler:
             table,
             registry,
             use_sketches=use_sketches,
-            n_unique_threshold=n_unique_threshold,
+            n_unique_threshold=self.n_unique_threshold,
             global_batch_size=self.global_batch_size,
         )
         self.engine = ExecutionEngine()
@@ -216,7 +223,7 @@ class Profiler:
                     "record_size": mem_size / row_count if row_count > 0 else 0,
                 }
 
-                # NEW: Logical Type Inference
+                # Logical Type Inference
                 logical_types = self.inspector.get_logical_types()
 
                 report = InternalProfileReport(
@@ -773,7 +780,7 @@ def profile(
     missing_matrix_max_columns: int = 50,
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
-    n_unique_threshold: int = 100_000,
+    n_unique_threshold: int | None = None,
     monotonicity_order_by: str | None = None,
     parallel: bool = False,
     pool_size: int = 4,
