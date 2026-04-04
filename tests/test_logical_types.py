@@ -6,6 +6,7 @@ from ibis_profiling.logical_types import (
     Email,
     UUID,
     URL,
+    IPAddress,
 )
 
 
@@ -61,3 +62,19 @@ def test_url_detection():
     ts = IbisLogicalTypeSystem()
     assert ts.infer_type(df_url, "a") == URL
     assert ts.infer_type(df_not_url, "a") != URL
+
+
+def test_ip_address_detection():
+    # IPv4
+    df_ipv4 = ibis.memtable({"a": ["192.168.1.1", "8.8.8.8", "127.0.0.1"] * 10})
+    # IPv6
+    df_ipv6 = ibis.memtable(
+        {"a": ["2001:0db8:85a3:0000:0000:8a2e:0370:7334", "::1", "fb00::1"] * 10}
+    )
+    # Mixed data
+    df_not_ip = ibis.memtable({"a": ["not an ip", "192.168.1.1"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_ipv4, "a") == IPAddress
+    assert ts.infer_type(df_ipv6, "a") == IPAddress
+    assert ts.infer_type(df_not_ip, "a") != IPAddress

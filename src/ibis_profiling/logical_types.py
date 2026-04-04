@@ -79,6 +79,25 @@ class URL(LogicalType):
         return bool(results.get("url_has_non_null", False) and results.get("url_all_match", False))
 
 
+class IPAddress(LogicalType):
+    # Regex for IPv4 and simplified IPv6
+    IP_REGEX = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$|^::1$|^([a-fA-F0-9]{1,4}:){1,7}:|^:([a-fA-F0-9]{1,4}:){1,7}|^[a-fA-F0-9]{1,4}(:[a-fA-F0-9]{1,4}){0,6}::([a-fA-F0-9]{1,4}(:[a-fA-F0-9]{1,4}){0,6})?$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"ip_has_non_null": ibis.literal(False)}
+
+        return {
+            "ip_has_non_null": col.notnull().any(),
+            "ip_all_match": (col.re_search(cls.IP_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("ip_has_non_null", False) and results.get("ip_all_match", False))
+
+
 class UUID(LogicalType):
     UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
@@ -122,7 +141,7 @@ class Categorical(LogicalType):
 class IbisLogicalTypeSystem:
     def __init__(self):
         # Ordered by specificity
-        self.types: List[Type[LogicalType]] = [Email, URL, UUID, Categorical, String]
+        self.types: List[Type[LogicalType]] = [Email, URL, IPAddress, UUID, Categorical, String]
 
     def infer_type(self, table: ibis.Table, column: str) -> Type[LogicalType]:
         col = table[column]
