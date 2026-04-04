@@ -567,6 +567,32 @@ class TaxID(LogicalType):
         )
 
 
+class ISIN(LogicalType):
+    """
+    Semantic type for ISIN (International Securities Identification Number).
+    Standard format: 12-character alphanumeric.
+    Starts with 2 letters, ends with a digit.
+    """
+
+    ISIN_REGEX = r"^[A-Z]{2}[A-Z0-9]{9}\d$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"isin_has_non_null": ibis.literal(False)}
+
+        return {
+            "isin_has_non_null": col.notnull().any(),
+            "isin_all_match": (col.re_search(cls.ISIN_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("isin_has_non_null", False) and results.get("isin_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -694,6 +720,7 @@ class IbisLogicalTypeSystem:
             IBAN,
             SWIFT,
             TaxID,
+            ISIN,
             JSON,
             URL,
             IPAddress,
