@@ -1,6 +1,6 @@
 import ibis
 import polars as pl
-from ibis_profiling.logical_types import IBAN, SWIFT, IbisLogicalTypeSystem
+from ibis_profiling.logical_types import IBAN, SWIFT, TaxID, IbisLogicalTypeSystem
 
 
 def test_iban_detection():
@@ -29,9 +29,18 @@ def test_swift_detection():
     invalid = [
         "ABCD",  # Too short
         "ABCDEFGHIJKLM",  # Too long
-        "12345678",  # All numbers (Standard requires letters for bank code)
+        "12345678",  # All numbers
     ]
 
     ts = IbisLogicalTypeSystem()
     assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"s": valid})))["s"] == SWIFT
     assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"s": invalid})))["s"] != SWIFT
+
+
+def test_taxid_detection():
+    valid = ["12-3456789", "98-7654321"]
+    invalid = ["123-456789", "12-345678", "ABC-DEFG"]
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"t": valid})))["t"] == TaxID
+    assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"t": invalid})))["t"] != TaxID

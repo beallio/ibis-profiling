@@ -542,6 +542,31 @@ class SWIFT(LogicalType):
         )
 
 
+class TaxID(LogicalType):
+    """
+    Semantic type for US Tax ID (EIN).
+    Standard format: XX-XXXXXXX.
+    """
+
+    TAXID_REGEX = r"^\d{2}-\d{7}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"taxid_has_non_null": ibis.literal(False)}
+
+        return {
+            "taxid_has_non_null": col.notnull().any(),
+            "taxid_all_match": (col.re_search(cls.TAXID_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("taxid_has_non_null", False) and results.get("taxid_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -668,6 +693,7 @@ class IbisLogicalTypeSystem:
             Email,
             IBAN,
             SWIFT,
+            TaxID,
             JSON,
             URL,
             IPAddress,
