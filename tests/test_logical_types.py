@@ -7,6 +7,7 @@ from ibis_profiling.logical_types import (
     UUID,
     URL,
     IPAddress,
+    PhoneNumber,
 )
 
 
@@ -78,3 +79,17 @@ def test_ip_address_detection():
     assert ts.infer_type(df_ipv4, "a") == IPAddress
     assert ts.infer_type(df_ipv6, "a") == IPAddress
     assert ts.infer_type(df_not_ip, "a") != IPAddress
+
+
+def test_phone_number_detection():
+    # E.164
+    df_e164 = ibis.memtable({"a": ["+1234567890", "+442071234567", "+1-541-754-3010"] * 10})
+    # US format
+    df_us = ibis.memtable({"a": ["(541) 754-3010", "541-754-3010", "5417543010"] * 10})
+    # Mixed data
+    df_not_phone = ibis.memtable({"a": ["not a phone", "123"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_e164, "a") == PhoneNumber
+    assert ts.infer_type(df_us, "a") == PhoneNumber
+    assert ts.infer_type(df_not_phone, "a") != PhoneNumber

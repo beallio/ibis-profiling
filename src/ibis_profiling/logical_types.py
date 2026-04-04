@@ -98,6 +98,27 @@ class IPAddress(LogicalType):
         return bool(results.get("ip_has_non_null", False) and results.get("ip_all_match", False))
 
 
+class PhoneNumber(LogicalType):
+    # Basic phone regex covering E.164 and common US/International formats
+    PHONE_REGEX = r"^(?:\+?[0-9]{1,3}[-.\s]?)?\(?[0-9]{1,4}\)?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,4}(?:[-.\s]?[0-9]{1,9})?$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"phone_has_non_null": ibis.literal(False)}
+
+        return {
+            "phone_has_non_null": col.notnull().any(),
+            "phone_all_match": (col.re_search(cls.PHONE_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("phone_has_non_null", False) and results.get("phone_all_match", False)
+        )
+
+
 class UUID(LogicalType):
     UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
@@ -141,7 +162,15 @@ class Categorical(LogicalType):
 class IbisLogicalTypeSystem:
     def __init__(self):
         # Ordered by specificity
-        self.types: List[Type[LogicalType]] = [Email, URL, IPAddress, UUID, Categorical, String]
+        self.types: List[Type[LogicalType]] = [
+            Email,
+            URL,
+            IPAddress,
+            PhoneNumber,
+            UUID,
+            Categorical,
+            String,
+        ]
 
     def infer_type(self, table: ibis.Table, column: str) -> Type[LogicalType]:
         col = table[column]
