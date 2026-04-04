@@ -36,6 +36,15 @@ class SummaryEngine:
                 "Complex": "Complex",
                 "Geometry": "Geometry",
                 "Currency": "Currency",
+                "IBAN": "IBAN",
+                "SWIFT": "SWIFT/BIC",
+                "TaxID": "Tax ID (EIN)",
+                "ISIN": "ISIN",
+                "StockTicker": "Stock Ticker",
+                "Age": "Age",
+                "Gender": "Gender",
+                "LanguageCode": "Language Code",
+                "Passport": "Passport",
             }
             ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
 
