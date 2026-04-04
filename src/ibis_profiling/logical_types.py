@@ -119,6 +119,39 @@ class PhoneNumber(LogicalType):
         )
 
 
+class Boolean(LogicalType):
+    BOOLEAN_STRINGS = {"true", "false", "t", "f", "yes", "no", "y", "n", "1", "0"}
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if isinstance(col.type(), dt.Boolean):
+            return {"bool_is_native": ibis.literal(True)}
+
+        if isinstance(col.type(), dt.String):
+            # Check if all non-null values are in the boolean string set
+            return {
+                "bool_has_non_null": col.notnull().any(),
+                "bool_all_match": (col.lower().isin(cls.BOOLEAN_STRINGS) | col.isnull()).all(),
+            }
+
+        if isinstance(col.type(), dt.Integer):
+            # Check if all non-null values are 0 or 1
+            return {
+                "bool_has_non_null": col.notnull().any(),
+                "bool_all_match": (col.isin([0, 1]) | col.isnull()).all(),
+            }
+
+        return {"bool_is_native": ibis.literal(False)}
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        if results.get("bool_is_native", False):
+            return True
+        return bool(
+            results.get("bool_has_non_null", False) and results.get("bool_all_match", False)
+        )
+
+
 class UUID(LogicalType):
     UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
@@ -167,6 +200,7 @@ class IbisLogicalTypeSystem:
             URL,
             IPAddress,
             PhoneNumber,
+            Boolean,
             UUID,
             Categorical,
             String,

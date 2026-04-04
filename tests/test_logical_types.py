@@ -8,6 +8,7 @@ from ibis_profiling.logical_types import (
     URL,
     IPAddress,
     PhoneNumber,
+    Boolean,
 )
 
 
@@ -93,3 +94,17 @@ def test_phone_number_detection():
     assert ts.infer_type(df_e164, "a") == PhoneNumber
     assert ts.infer_type(df_us, "a") == PhoneNumber
     assert ts.infer_type(df_not_phone, "a") != PhoneNumber
+
+
+def test_boolean_detection():
+    # Yes/No strings
+    df_yes_no = ibis.memtable({"a": ["yes", "no", "Yes", "NO"] * 10})
+    # 1/0 integers
+    df_one_zero = ibis.memtable({"a": [1, 0, 1, 0] * 10})
+    # True/False strings
+    df_true_false = ibis.memtable({"a": ["true", "false", "t", "f"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_yes_no, "a") == Boolean
+    assert ts.infer_type(df_one_zero, "a") == Boolean
+    assert ts.infer_type(df_true_false, "a") == Boolean
