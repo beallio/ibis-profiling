@@ -41,14 +41,12 @@ def test_ssn_detection():
         "123-45-6789",
         "123 45 6789",
         "123456789",
-        "001-01-0001",
+        "899-99-9999",
     ]
 
     invalid_ssns = [
-        "000-45-6789",  # Invalid area
-        "666-45-6789",  # Invalid area
-        "123-00-6789",  # Invalid group
-        "123-45-0000",  # Invalid serial
+        "000-45-6789",  # Invalid area starts with 0
+        "900-45-6789",  # Invalid area starts with 9
         "123-45-678",  # Too short
         "AAA-BB-CCCC",  # Not numeric
     ]

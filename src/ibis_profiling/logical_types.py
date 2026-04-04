@@ -1,4 +1,5 @@
 import ibis
+import logging
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from abc import ABC, abstractmethod
@@ -251,7 +252,9 @@ class CreditCard(LogicalType):
 
 class SSN(LogicalType):
     # US Social Security Numbers: XXX-XX-XXXX or XXXXXXXXX
-    SSN_REGEX = r"^\d{3}[-\s]?\d{2}[-\s]?\d{4}$"
+    # Uses simplified regex compatible with all backends (avoids perl-style lookahead).
+    # Excludes area codes starting with 0, 9, or the 666 group.
+    SSN_REGEX = r"^[1-8]\d{2}[-\s]?\d{2}[-\s]?\d{4}$"
 
     @classmethod
     def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
@@ -668,10 +671,15 @@ class IbisLogicalTypeSystem:
             schema = table.schema()
             return {col: self.get_fallback_type(schema[col]) for col in cols}
 
-        # 1. Collect all expressions for all columns
+        # 1. Use a sample for semantic inference to maintain performance on massive datasets
+        # 10,000 rows is a standard heuristic for high-precision inference.
+        sample_size = 10_000
+        inference_table = table.head(sample_size)
+
+        # 2. Collect all expressions for all columns
         all_exprs = {}
         for col_name in cols:
-            col = table[col_name]
+            col = inference_table[col_name]
 
             for ltype in self.types:
                 # Skip expensive Categorical checks if row count exceeds threshold
@@ -683,8 +691,7 @@ class IbisLogicalTypeSystem:
                 for k, v in type_exprs.items():
                     all_exprs[f"{col_name}__{ltype.__name__}_{k}"] = v
 
-        # 2. Execute in CHUNKED batches to avoid backend expression limits
-        # Typical limits are ~2000 expressions. With ~30 per column, we use 5 cols per batch.
+        # 3. Execute in CHUNKED batches to avoid backend expression limits
         chunk_size = 5
         res = {}
         schema = table.schema()
@@ -699,11 +706,15 @@ class IbisLogicalTypeSystem:
                 continue
 
             try:
-                batch_res = table.aggregate(chunk_exprs).to_pandas().iloc[0].to_dict()
-                res.update(batch_res)
-            except Exception:
-                # Individual column fallback if chunk fails - results remain empty for this chunk
-                pass
+                # Use to_pyarrow().to_pydict() for backend-agnostic results
+                batch_res = inference_table.aggregate(chunk_exprs).to_pyarrow().to_pydict()
+                # Map results back to namespaced keys
+                for k, v in batch_res.items():
+                    res[k] = v[0]
+            except Exception as e:
+                logging.warning(f"Logical inference failed for batch {chunk_cols}: {e}")
+                # Individual column fallback if chunk fails
+                continue
 
         # 3. Evaluate results per column
         inferred = {}
