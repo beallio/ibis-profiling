@@ -6,7 +6,9 @@ class SummaryEngine:
     """Handles the transformation of raw Ibis results into the Canonical Variable Model."""
 
     @staticmethod
-    def process_variables(raw_results: pl.DataFrame, schema: dict) -> Dict[str, Any]:
+    def process_variables(
+        raw_results: pl.DataFrame, schema: dict, logical_types: dict | None = None
+    ) -> Dict[str, Any]:
         import ibis.expr.datatypes as dt
 
         variables = {}
@@ -14,12 +16,16 @@ class SummaryEngine:
         for col_name, dtype in schema.items():
             if col_name == "_dataset":
                 continue
+
+            ltype_cls = logical_types.get(col_name) if logical_types else None
+            ltype_name = ltype_cls.__name__ if ltype_cls else "String"
+
             # Use Ibis DataType hierarchy for robust classification
-            if isinstance(dtype, dt.Numeric):
+            if isinstance(dtype, dt.Numeric) or ltype_name in ["Integer", "Decimal", "Count"]:
                 mapped_type = "Numeric"
-            elif isinstance(dtype, dt.Boolean):
+            elif isinstance(dtype, dt.Boolean) or ltype_name == "Boolean":
                 mapped_type = "Boolean"
-            elif isinstance(dtype, (dt.Date, dt.Time, dt.Timestamp)):
+            elif isinstance(dtype, (dt.Date, dt.Time, dt.Timestamp)) or ltype_name == "DateTime":
                 mapped_type = "DateTime"
             elif isinstance(dtype, dt.String):
                 mapped_type = "Categorical"
@@ -32,6 +38,7 @@ class SummaryEngine:
             # Initialize base model
             variables[col_name] = {
                 "type": mapped_type,
+                "logical_type": ltype_name,
                 "n_distinct": 0,
                 "n_unique": 0,
                 "n_missing": 0,

@@ -76,9 +76,11 @@ class ProfileReport:
         schema: dict,
         title: str = "Ibis Profiling Report",
         analysis_metadata: dict[str, Any] | None = None,
+        logical_types: dict | None = None,
     ):
         self.raw_results = raw_results
         self.schema = schema
+        self.logical_types = logical_types
 
         # Core Model Sections
         self.table = {}
@@ -140,7 +142,9 @@ class ProfileReport:
         # Temporarily store _dataset if it exists in schema
         schema_copy = dict(self.schema)
         dataset_meta = schema_copy.pop("_dataset", {})
-        self.variables = SummaryEngine.process_variables(self.raw_results, schema_copy)
+        self.variables = SummaryEngine.process_variables(
+            self.raw_results, schema_copy, logical_types=self.logical_types
+        )
 
         # 2. Table Summary
         n = 0

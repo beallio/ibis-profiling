@@ -47,5 +47,14 @@ For each type $T \in \{URL, IPAddress, Boolean, DateTime, PhoneNumber, Integer, 
 - Use `ibis.memtable` for fast, reproducible tests.
 - Cover positive cases (all values match), negative cases (mixed data), and null handling.
 
-## Performance Benchmarking
-- Benchmark the full inference suite against a 10M row dataset to ensure batching prevents linear scaling of latency with the number of types.
+## Phase 6: Stabilization & Scale (Failure Recovery)
+- **Chunked Inference**: Update `infer_all_types` to process columns in batches (default: 5 columns per batch) to stay well within backend expression limits.
+- **Physical-Type Fallback**: Implement a robust fallback that maps native Ibis types to logical types when inference is skipped or fails.
+- **Performance Guardrails**:
+    - Respect `minimal=True` by skipping all non-native logical type checks.
+    - Respect `n_unique_threshold` in `Categorical` detection to avoid expensive `nunique()` on high-cardinality strings.
+- **Optimization**: Use `approx_nunique` if `use_sketches=True`.
+
+## Git Strategy
+- **Branch**: `feat/logical-type-inference` (Active)
+- **Commit Frequency**: Atomic commit per stabilization fix.

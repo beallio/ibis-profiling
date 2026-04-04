@@ -748,6 +748,15 @@ const TYPE_LABELS = {
   Categorical: 'Cat',
   Boolean: 'Bool',
   DateTime: 'Date',
+  Email: 'Email',
+  URL: 'URL',
+  IPAddress: 'IP',
+  PhoneNumber: 'Phone',
+  UUID: 'UUID',
+  Integer: 'Int',
+  Decimal: 'Dec',
+  Ordinal: 'Ord',
+  Count: 'Count',
   Unsupported: 'Other'
 };
 function AppContent() {
@@ -1272,7 +1281,7 @@ function AppContent() {
       className: "flex gap-3 mt-1"
     }, /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] ${theme.bgMain} ${theme.textMuted} border ${theme.borderAlt} px-2 py-0.5 rounded uppercase font-bold tracking-wider`
-    }, meta.type), meta.n_distinct !== undefined && /*#__PURE__*/React.createElement("span", {
+    }, meta.logical_type && meta.logical_type !== meta.type ? `${meta.type} (${meta.logical_type})` : meta.type), meta.n_distinct !== undefined && /*#__PURE__*/React.createElement("span", {
       className: `text-[10px] ${theme.textSub} font-mono`
     }, meta.n_distinct.toLocaleString(), " distinct")))), /*#__PURE__*/React.createElement("div", {
       className: "flex gap-6"

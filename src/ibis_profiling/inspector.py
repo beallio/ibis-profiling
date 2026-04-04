@@ -1,14 +1,29 @@
 import ibis
 import ibis.expr.datatypes as dt
+from .logical_types import IbisLogicalTypeSystem, LogicalType
+from typing import Type
 
 
 class DatasetInspector:
-    def __init__(self, table: ibis.Table):
+    def __init__(
+        self,
+        table: ibis.Table,
+        minimal: bool = False,
+        n_unique_threshold: int = 100_000,
+        row_count: int | None = None,
+    ):
         self.table = table
         self.schema = table.schema()
+        self.type_system = IbisLogicalTypeSystem(
+            minimal=minimal, n_unique_threshold=n_unique_threshold, row_count=row_count
+        )
 
     def get_column_types(self) -> dict[str, dt.DataType]:
         return {name: dtype for name, dtype in self.schema.items()}
+
+    def get_logical_types(self) -> dict[str, Type[LogicalType]]:
+        """Infers logical types for all columns in the table."""
+        return self.type_system.infer_all_types(self.table)
 
     def estimate_memory_size(self, row_count: int) -> int:
         """

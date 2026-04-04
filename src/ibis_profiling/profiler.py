@@ -37,7 +37,7 @@ class Profiler:
         missing_matrix_max_columns: int = 50,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
-        n_unique_threshold: int = 50_000_000,
+        n_unique_threshold: int = 100_000,
         monotonicity_order_by: str | None = None,
         parallel: bool = False,
         pool_size: int = 4,
@@ -69,15 +69,20 @@ class Profiler:
         self.pool_size = pool_size
         self.use_sketches = use_sketches
 
-        self.start_time = datetime.now()
-        self.analysis = {}
-        self.inspector = DatasetInspector(table)
-
         # 1. Memory and Batching Heuristics
         # Note: We execute count() early to inform heuristics.
         # For remote backends, this is fast.
         n_rows = MemoryManager.to_int(self.table.count().execute())
         n_cols = len(self.table.columns)
+
+        self.start_time = datetime.now()
+        self.analysis = {}
+        self.inspector = DatasetInspector(
+            table,
+            minimal=minimal,
+            n_unique_threshold=n_unique_threshold,
+            row_count=n_rows,
+        )
 
         if global_batch_size is None:
             self.global_batch_size = MemoryManager.calculate_batch_size(n_rows, n_cols)
@@ -211,8 +216,15 @@ class Profiler:
                     "record_size": mem_size / row_count if row_count > 0 else 0,
                 }
 
+                # NEW: Logical Type Inference
+                logical_types = self.inspector.get_logical_types()
+
                 report = InternalProfileReport(
-                    raw_results, self.col_types, title=self.title, analysis_metadata=self.analysis
+                    raw_results,
+                    self.col_types,
+                    title=self.title,
+                    analysis_metadata=self.analysis,
+                    logical_types=logical_types,
                 )
                 report.analysis["date_start"] = self.start_time.isoformat()
                 report.analysis["performance"] = self.performance
@@ -761,7 +773,7 @@ def profile(
     missing_matrix_max_columns: int = 50,
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
-    n_unique_threshold: int = 50_000_000,
+    n_unique_threshold: int = 100_000,
     monotonicity_order_by: str | None = None,
     parallel: bool = False,
     pool_size: int = 4,

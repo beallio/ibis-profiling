@@ -322,11 +322,31 @@ class Categorical(LogicalType):
         total = results.get("cat_total", 0)
         if total == 0:
             return False
-        return n_unique < 20 or (n_unique / total) < 0.05
+
+        # Improved heuristic:
+        # 1. Must have low absolute cardinality (< 20) OR low relative cardinality (< 5%)
+        # 2. MUST NOT be essentially unique (n_unique < total * 0.8)
+        #    to avoid marking ID columns [1, 2, 3...10] as categorical.
+        # 3. If total count is very low, we require even lower cardinality.
+
+        is_low_cardinality = n_unique < 20 or (n_unique / total) < 0.05
+
+        # Guard against small datasets where 1..10 is both low cardinality and high relative cardinality
+        if total < 50:
+            is_not_unique = n_unique < total * 0.5
+        else:
+            is_not_unique = n_unique < total * 0.8
+
+        return bool(is_low_cardinality and is_not_unique)
 
 
 class IbisLogicalTypeSystem:
-    def __init__(self):
+    def __init__(
+        self,
+        minimal: bool = False,
+        n_unique_threshold: int = 100_000,
+        row_count: int | None = None,
+    ):
         # Ordered by specificity
         self.types: List[Type[LogicalType]] = [
             Email,
@@ -343,37 +363,97 @@ class IbisLogicalTypeSystem:
             Categorical,
             String,
         ]
+        self.minimal = minimal
+        self.n_unique_threshold = n_unique_threshold
+        self.row_count = row_count
+
+    def get_fallback_type(self, dtype: dt.DataType) -> Type[LogicalType]:
+        """Maps physical types to logical types without expensive data-driven checks."""
+        if isinstance(dtype, dt.Integer):
+            return Integer
+        if isinstance(dtype, (dt.Decimal, dt.Floating)):
+            return Decimal
+        if isinstance(dtype, (dt.Date, dt.Timestamp)):
+            return DateTime
+        if isinstance(dtype, dt.Boolean):
+            return Boolean
+        return String
 
     def infer_type(self, table: ibis.Table, column: str) -> Type[LogicalType]:
-        col = table[column]
+        results = self.infer_all_types(table, [column])
+        return results.get(column, String)
 
-        # 1. Collect all expressions
+    def infer_all_types(
+        self, table: ibis.Table, columns: List[str] | Any | None = None
+    ) -> Dict[str, Type[LogicalType]]:
+        """Infers logical types for all specified columns in one batch."""
+        if columns is None:
+            cols = list(table.columns)
+        else:
+            cols = list(columns)
+
+        # Optimization: In minimal mode, only use native type mapping
+        if self.minimal:
+            schema = table.schema()
+            return {col: self.get_fallback_type(schema[col]) for col in cols}
+
+        # 1. Collect all expressions for all columns
         all_exprs = {}
-        for ltype in self.types:
-            all_exprs.update(
-                {f"{ltype.__name__}_{k}": v for k, v in ltype.get_check_exprs(col).items()}
-            )
+        for col_name in cols:
+            col = table[col_name]
 
-        # 2. Execute in one batch
-        try:
-            res = (
-                table.aggregate([v.name(k) for k, v in all_exprs.items()])
-                .to_pandas()
-                .iloc[0]
-                .to_dict()
-            )
-        except Exception:
-            # Fallback if batching fails
-            return LogicalType
+            for ltype in self.types:
+                # Skip expensive Categorical checks if row count exceeds threshold
+                if ltype == Categorical:
+                    if self.row_count and self.row_count > self.n_unique_threshold:
+                        continue
 
-        # 3. Evaluate results in order
-        for ltype in self.types:
-            type_results = {
-                k[len(ltype.__name__) + 1 :]: v
-                for k, v in res.items()
-                if k.startswith(ltype.__name__ + "_")
-            }
-            if ltype.evaluate(type_results):
-                return ltype
+                type_exprs = ltype.get_check_exprs(col)
+                for k, v in type_exprs.items():
+                    all_exprs[f"{col_name}__{ltype.__name__}_{k}"] = v
 
-        return LogicalType
+        # 2. Execute in CHUNKED batches to avoid backend expression limits
+        # Typical limits are ~2000 expressions. With ~30 per column, we use 5 cols per batch.
+        chunk_size = 5
+        res = {}
+        schema = table.schema()
+
+        for i in range(0, len(cols), chunk_size):
+            chunk_cols = cols[i : i + chunk_size]
+            chunk_exprs = [
+                v.name(k) for k, v in all_exprs.items() if k.split("__")[0] in chunk_cols
+            ]
+
+            if not chunk_exprs:
+                continue
+
+            try:
+                batch_res = table.aggregate(chunk_exprs).to_pandas().iloc[0].to_dict()
+                res.update(batch_res)
+            except Exception:
+                # Individual column fallback if chunk fails - results remain empty for this chunk
+                pass
+
+        # 3. Evaluate results per column
+        inferred = {}
+        for col_name in cols:
+            # Default to physical-based fallback
+            col_inferred = self.get_fallback_type(schema[col_name])
+
+            # If results were successfully fetched for this column, try to find a more specific inferred type
+            # We check if at least one key for this column exists in res
+            col_results_exist = any(k.startswith(f"{col_name}__") for k in res.keys())
+
+            if col_results_exist:
+                for ltype in self.types:
+                    prefix = f"{col_name}__{ltype.__name__}_"
+                    # Filter results for this specific column and type
+                    type_results = {
+                        k[len(prefix) :]: v for k, v in res.items() if k.startswith(prefix)
+                    }
+                    if type_results and ltype.evaluate(type_results):
+                        col_inferred = ltype
+                        break
+            inferred[col_name] = col_inferred
+
+        return inferred
