@@ -343,6 +343,77 @@ class NanoID(LogicalType):
         )
 
 
+class MACAddress(LogicalType):
+    """
+    Semantic type for MAC Addresses.
+    Standard 48-bit formats: 00:00:00:00:00:00 or 00-00-00-00-00-00.
+    """
+
+    MAC_REGEX = r"^(?:[0-9A-Fa-f]{2}[:-]){5}(?:[0-9A-Fa-f]{2})$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"mac_has_non_null": ibis.literal(False)}
+
+        return {
+            "mac_has_non_null": col.notnull().any(),
+            "mac_all_match": (col.re_search(cls.MAC_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("mac_has_non_null", False) and results.get("mac_all_match", False))
+
+
+class CountryCode(LogicalType):
+    """
+    Semantic type for ISO 3166-1 alpha-2 or alpha-3 country codes.
+    Regex matches 2 or 3 uppercase letters.
+    """
+
+    CC_REGEX = r"^[A-Z]{2,3}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"cc_has_non_null": ibis.literal(False)}
+
+        return {
+            "cc_has_non_null": col.notnull().any(),
+            "cc_all_match": (col.re_search(cls.CC_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("cc_has_non_null", False) and results.get("cc_all_match", False))
+
+
+class FilePath(LogicalType):
+    """
+    Semantic type for system paths or cloud URIs.
+    Matches common path structures (Unix, Windows, S3, GS).
+    """
+
+    PATH_REGEX = r"^(?:\/|[a-zA-Z]:\\|s3:\/\/|gs:\/\/).+$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"path_has_non_null": ibis.literal(False)}
+
+        return {
+            "path_has_non_null": col.notnull().any(),
+            "path_all_match": (col.re_search(cls.PATH_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("path_has_non_null", False) and results.get("path_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -471,6 +542,9 @@ class IbisLogicalTypeSystem:
             IPAddress,
             DateTime,
             PhoneNumber,
+            MACAddress,
+            CountryCode,
+            FilePath,
             Boolean,
             Ordinal,
             Count,
