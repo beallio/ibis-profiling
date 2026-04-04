@@ -178,6 +178,34 @@ class Boolean(LogicalType):
         )
 
 
+class Count(LogicalType):
+    COUNT_REGEX = r"^\d+$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if isinstance(col.type(), dt.Integer):
+            return {
+                "count_has_non_null": col.notnull().any(),
+                "count_all_positive": ((col >= 0) | col.isnull()).all(),
+            }
+
+        if isinstance(col.type(), dt.String):
+            return {
+                "count_has_non_null": col.notnull().any(),
+                "count_all_match": (col.re_search(cls.COUNT_REGEX) | col.isnull()).all(),
+            }
+
+        return {"count_has_non_null": ibis.literal(False)}
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        if "count_all_positive" in results:
+            return bool(results.get("count_has_non_null", False) and results["count_all_positive"])
+        return bool(
+            results.get("count_has_non_null", False) and results.get("count_all_match", False)
+        )
+
+
 class Integer(LogicalType):
     INTEGER_REGEX = r"^-?\d+$"
 
@@ -275,6 +303,7 @@ class IbisLogicalTypeSystem:
             DateTime,
             PhoneNumber,
             Boolean,
+            Count,
             UUID,
             Integer,
             Decimal,

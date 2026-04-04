@@ -11,6 +11,7 @@ from ibis_profiling.logical_types import (
     DateTime,
     Integer,
     Decimal,
+    Count,
 )
 
 
@@ -23,7 +24,7 @@ def test_categorical_detection():
 
     ts = IbisLogicalTypeSystem()
 
-    assert ts.infer_type(df1, "a") == Integer
+    assert ts.infer_type(df1, "a") == Count
     assert ts.infer_type(df2, "a") == Categorical
 
 
@@ -148,3 +149,14 @@ def test_decimal_detection():
     ts = IbisLogicalTypeSystem()
     assert ts.infer_type(df_decimal, "a") == Decimal
     assert ts.infer_type(df_mixed, "a") != Decimal
+
+
+def test_count_detection():
+    # Count (positive integers)
+    df_count = ibis.memtable({"a": [0, 1, 2, 100] * 10})
+    # Not count (negative)
+    df_neg = ibis.memtable({"a": [0, 1, -1] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_count, "a") == Count
+    assert ts.infer_type(df_neg, "a") == Integer
