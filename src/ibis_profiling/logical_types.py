@@ -229,6 +229,45 @@ class Integer(LogicalType):
         return bool(results.get("int_has_non_null", False) and results.get("int_all_match", False))
 
 
+class CreditCard(LogicalType):
+    # Simplified standard formats: Visa, Mastercard, Amex, Discover
+    # Handles spaces or dashes
+    CARD_REGEX = r"^(?:\d{4}[-\s]?){3}\d{4}$|^\d{15,16}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"cc_has_non_null": ibis.literal(False)}
+
+        return {
+            "cc_has_non_null": col.notnull().any(),
+            "cc_all_match": (col.re_search(cls.CARD_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("cc_has_non_null", False) and results.get("cc_all_match", False))
+
+
+class SSN(LogicalType):
+    # US Social Security Numbers: XXX-XX-XXXX or XXXXXXXXX
+    SSN_REGEX = r"^\d{3}[-\s]?\d{2}[-\s]?\d{4}$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"ssn_has_non_null": ibis.literal(False)}
+
+        return {
+            "ssn_has_non_null": col.notnull().any(),
+            "ssn_all_match": (col.re_search(cls.SSN_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("ssn_has_non_null", False) and results.get("ssn_all_match", False))
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -349,6 +388,8 @@ class IbisLogicalTypeSystem:
     ):
         # Ordered by specificity
         self.types: List[Type[LogicalType]] = [
+            CreditCard,
+            SSN,
             Email,
             URL,
             IPAddress,

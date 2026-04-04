@@ -25,6 +25,8 @@ class SummaryEngine:
                 "IPAddress": "IP Address",
                 "PhoneNumber": "Phone Number",
                 "DateTime": "Date Time",
+                "CreditCard": "Credit Card",
+                "SSN": "SSN",
             }
             ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
 
