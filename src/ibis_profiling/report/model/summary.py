@@ -33,6 +33,9 @@ class SummaryEngine:
                 "MACAddress": "MAC Address",
                 "CountryCode": "Country Code",
                 "FilePath": "File Path",
+                "Complex": "Complex",
+                "Geometry": "Geometry",
+                "Currency": "Currency",
             }
             ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
 

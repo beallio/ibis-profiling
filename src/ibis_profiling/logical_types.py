@@ -414,6 +414,81 @@ class FilePath(LogicalType):
         )
 
 
+class Complex(LogicalType):
+    """
+    Semantic type for complex numbers represented as strings.
+    Matches formats like '1+2j', '-3.14j', '0.5-0.5j'.
+    """
+
+    COMPLEX_REGEX = r"^-?\d+(?:\.\d+)?(?:[+-]\d+(?:\.\d+)?)?j$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"complex_has_non_null": ibis.literal(False)}
+
+        return {
+            "complex_has_non_null": col.notnull().any(),
+            "complex_all_match": (col.re_search(cls.COMPLEX_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("complex_has_non_null", False) and results.get("complex_all_match", False)
+        )
+
+
+class Geometry(LogicalType):
+    """
+    Semantic type for Geometry data in WKT (Well-Known Text) format.
+    Matches POINT, LINESTRING, POLYGON, etc.
+    """
+
+    WKT_REGEX = (
+        r"(?i)^(?:POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON)\s?\(.+\)$"
+    )
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"geo_has_non_null": ibis.literal(False)}
+
+        return {
+            "geo_has_non_null": col.notnull().any(),
+            "geo_all_match": (col.re_search(cls.WKT_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("geo_has_non_null", False) and results.get("geo_all_match", False))
+
+
+class Currency(LogicalType):
+    """
+    Semantic type for currency values represented as strings.
+    Matches symbols like $, €, £, ¥ followed by numeric patterns.
+    """
+
+    CURRENCY_REGEX = r"^[$€£¥]\s?-?\d+(?:,\d{3})*(?:\.\d{2})?$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"currency_has_non_null": ibis.literal(False)}
+
+        return {
+            "currency_has_non_null": col.notnull().any(),
+            "currency_all_match": (col.re_search(cls.CURRENCY_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("currency_has_non_null", False) and results.get("currency_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -545,6 +620,9 @@ class IbisLogicalTypeSystem:
             MACAddress,
             CountryCode,
             FilePath,
+            Complex,
+            Geometry,
+            Currency,
             Boolean,
             Ordinal,
             Count,
