@@ -253,6 +253,38 @@ class Decimal(LogicalType):
         return bool(results.get("dec_has_non_null", False) and results.get("dec_all_match", False))
 
 
+class Ordinal(LogicalType):
+    ORDINAL_GROUPS = [
+        {"low", "medium", "high"},
+        {"small", "medium", "large"},
+        {"first", "second", "third"},
+        {"very low", "low", "medium", "high", "very high"},
+        {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"},
+        {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"},
+        {"mon", "tue", "wed", "thu", "fri", "sat", "sun"},
+    ]
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"ord_has_non_null": ibis.literal(False)}
+
+        # Optimization: only check unique values if count is low
+        # But we need to do it in aggregate.
+        # We'll check if ALL non-null values belong to ONE of the groups.
+        checks = {}
+        for i, group in enumerate(cls.ORDINAL_GROUPS):
+            checks[f"group_{i}"] = (col.lower().isin(group) | col.isnull()).all()
+
+        return {"ord_has_non_null": col.notnull().any(), **checks}
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        if not results.get("ord_has_non_null", False):
+            return False
+        return any(v for k, v in results.items() if k.startswith("group_"))
+
+
 class UUID(LogicalType):
     UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
@@ -303,6 +335,7 @@ class IbisLogicalTypeSystem:
             DateTime,
             PhoneNumber,
             Boolean,
+            Ordinal,
             Count,
             UUID,
             Integer,

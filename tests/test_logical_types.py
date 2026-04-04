@@ -12,6 +12,7 @@ from ibis_profiling.logical_types import (
     Integer,
     Decimal,
     Count,
+    Ordinal,
 )
 
 
@@ -20,7 +21,7 @@ def test_categorical_detection():
     # High cardinality
     df1 = ibis.memtable({"a": [str(i) for i in range(100)]})
     # Low cardinality (Categorical)
-    df2 = ibis.memtable({"a": ["A", "B", "A", "B"] * 25})
+    df2 = ibis.memtable({"a": ["A", "B", "A", "B", "C"] * 20})
 
     ts = IbisLogicalTypeSystem()
 
@@ -136,6 +137,7 @@ def test_integer_detection():
     df_mixed = ibis.memtable({"a": ["1", "2.5"] * 10})
 
     ts = IbisLogicalTypeSystem()
+    # -3 makes it Integer, not Count.
     assert ts.infer_type(df_int, "a") == Integer
     assert ts.infer_type(df_mixed, "a") != Integer
 
@@ -160,3 +162,14 @@ def test_count_detection():
     ts = IbisLogicalTypeSystem()
     assert ts.infer_type(df_count, "a") == Count
     assert ts.infer_type(df_neg, "a") == Integer
+
+
+def test_ordinal_detection():
+    # Ordinal (Low/Medium/High)
+    df_ordinal = ibis.memtable({"a": ["low", "medium", "high", "Medium"] * 10})
+    # Ordinal (Small/Large)
+    df_ordinal_size = ibis.memtable({"a": ["small", "medium", "large"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_ordinal, "a") == Ordinal
+    assert ts.infer_type(df_ordinal_size, "a") == Ordinal
