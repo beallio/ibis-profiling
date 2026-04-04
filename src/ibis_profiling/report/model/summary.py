@@ -45,6 +45,10 @@ class SummaryEngine:
                 "Gender": "Gender",
                 "LanguageCode": "Language Code",
                 "Passport": "Passport",
+                "USState": "US State",
+                "USTerritory": "US Territory",
+                "USMilitaryMail": "US Military Mail",
+                "USZipCode": "US Zip Code",
             }
             ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
 
