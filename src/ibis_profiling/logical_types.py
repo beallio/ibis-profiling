@@ -152,6 +152,32 @@ class Boolean(LogicalType):
         )
 
 
+class DateTime(LogicalType):
+    # Broad ISO8601 regex
+    ISO8601_REGEX = (
+        r"^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$"
+    )
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if isinstance(col.type(), (dt.Date, dt.Timestamp)):
+            return {"dt_is_native": ibis.literal(True)}
+
+        if isinstance(col.type(), dt.String):
+            return {
+                "dt_has_non_null": col.notnull().any(),
+                "dt_all_match": (col.re_search(cls.ISO8601_REGEX) | col.isnull()).all(),
+            }
+
+        return {"dt_is_native": ibis.literal(False)}
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        if results.get("dt_is_native", False):
+            return True
+        return bool(results.get("dt_has_non_null", False) and results.get("dt_all_match", False))
+
+
 class UUID(LogicalType):
     UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
@@ -199,6 +225,7 @@ class IbisLogicalTypeSystem:
             Email,
             URL,
             IPAddress,
+            DateTime,
             PhoneNumber,
             Boolean,
             UUID,

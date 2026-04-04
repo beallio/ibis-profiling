@@ -9,6 +9,7 @@ from ibis_profiling.logical_types import (
     IPAddress,
     PhoneNumber,
     Boolean,
+    DateTime,
 )
 
 
@@ -108,3 +109,19 @@ def test_boolean_detection():
     assert ts.infer_type(df_yes_no, "a") == Boolean
     assert ts.infer_type(df_one_zero, "a") == Boolean
     assert ts.infer_type(df_true_false, "a") == Boolean
+
+
+def test_datetime_detection():
+    # ISO Dates
+    df_date = ibis.memtable({"a": ["2023-01-01", "2023-12-31"] * 10})
+    # ISO Timestamps
+    df_ts = ibis.memtable({"a": ["2023-01-01 12:00:00", "2023-01-01T12:00:00Z"] * 10})
+    # Native timestamps
+    import datetime
+
+    df_native = ibis.memtable({"a": [datetime.datetime.now()] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_date, "a") == DateTime
+    assert ts.infer_type(df_ts, "a") == DateTime
+    assert ts.infer_type(df_native, "a") == DateTime
