@@ -517,6 +517,31 @@ class IBAN(LogicalType):
         )
 
 
+class SWIFT(LogicalType):
+    """
+    Semantic type for SWIFT/BIC codes.
+    Matches 8 or 11 alphanumeric characters.
+    """
+
+    SWIFT_REGEX = r"^[A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"swift_has_non_null": ibis.literal(False)}
+
+        return {
+            "swift_has_non_null": col.notnull().any(),
+            "swift_all_match": (col.re_search(cls.SWIFT_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(
+            results.get("swift_has_non_null", False) and results.get("swift_all_match", False)
+        )
+
+
 class Decimal(LogicalType):
     # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
@@ -642,6 +667,7 @@ class IbisLogicalTypeSystem:
             SSN,
             Email,
             IBAN,
+            SWIFT,
             JSON,
             URL,
             IPAddress,

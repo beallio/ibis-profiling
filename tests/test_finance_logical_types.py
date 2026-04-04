@@ -1,6 +1,6 @@
 import ibis
 import polars as pl
-from ibis_profiling.logical_types import IBAN, IbisLogicalTypeSystem
+from ibis_profiling.logical_types import IBAN, SWIFT, IbisLogicalTypeSystem
 
 
 def test_iban_detection():
@@ -18,3 +18,20 @@ def test_iban_detection():
     ts = IbisLogicalTypeSystem()
     assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"i": valid})))["i"] == IBAN
     assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"i": invalid})))["i"] != IBAN
+
+
+def test_swift_detection():
+    valid = [
+        "ABCDEFGH",  # 8 chars
+        "ABCDEFGH123",  # 11 chars
+        "NWBKGB2L",
+    ]
+    invalid = [
+        "ABCD",  # Too short
+        "ABCDEFGHIJKLM",  # Too long
+        "12345678",  # All numbers (Standard requires letters for bank code)
+    ]
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"s": valid})))["s"] == SWIFT
+    assert ts.infer_all_types(ibis.memtable(pl.DataFrame({"s": invalid})))["s"] != SWIFT
