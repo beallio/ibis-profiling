@@ -61,6 +61,24 @@ class Email(LogicalType):
         )
 
 
+class URL(LogicalType):
+    URL_REGEX = r"^(?:http|ftp)s?://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:[a-zA-Z]{2,6}\.?|[a-zA-Z0-9-]{2,}\.?)|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::\d+)?(?:/?|[/?]\S+)$"
+
+    @classmethod
+    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+        if not isinstance(col.type(), dt.String):
+            return {"url_has_non_null": ibis.literal(False)}
+
+        return {
+            "url_has_non_null": col.notnull().any(),
+            "url_all_match": (col.re_search(cls.URL_REGEX) | col.isnull()).all(),
+        }
+
+    @classmethod
+    def evaluate(cls, results: Dict[str, Any]) -> bool:
+        return bool(results.get("url_has_non_null", False) and results.get("url_all_match", False))
+
+
 class UUID(LogicalType):
     UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
@@ -104,7 +122,7 @@ class Categorical(LogicalType):
 class IbisLogicalTypeSystem:
     def __init__(self):
         # Ordered by specificity
-        self.types: List[Type[LogicalType]] = [Email, UUID, Categorical, String]
+        self.types: List[Type[LogicalType]] = [Email, URL, UUID, Categorical, String]
 
     def infer_type(self, table: ibis.Table, column: str) -> Type[LogicalType]:
         col = table[column]

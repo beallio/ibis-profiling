@@ -1,5 +1,12 @@
 import ibis
-from ibis_profiling.logical_types import IbisLogicalTypeSystem, Categorical, String, Email, UUID
+from ibis_profiling.logical_types import (
+    IbisLogicalTypeSystem,
+    Categorical,
+    String,
+    Email,
+    UUID,
+    URL,
+)
 
 
 def test_categorical_detection():
@@ -41,3 +48,16 @@ def test_uuid_detection():
 
     ts = IbisLogicalTypeSystem()
     assert ts.infer_type(df_uuid, "a") == UUID
+
+
+def test_url_detection():
+    # Valid URLs
+    df_url = ibis.memtable(
+        {"a": ["https://google.com", "http://domain.co.uk/path?q=1", "ftp://files.org"] * 10}
+    )
+    # Mixed data (not URLs)
+    df_not_url = ibis.memtable({"a": ["not a url", "http://google.com"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+    assert ts.infer_type(df_url, "a") == URL
+    assert ts.infer_type(df_not_url, "a") != URL
