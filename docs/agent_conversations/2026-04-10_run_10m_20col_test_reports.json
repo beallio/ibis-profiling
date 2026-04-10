@@ -1,0 +1,15 @@
+{
+  "date": "2026-04-10",
+  "task_objective": "Run test reports in both default themes using 10M x 20 cols of varied customer data",
+  "files_modified": [
+    "docs/plans/run_10m_20col_test_reports.md",
+    "scripts/generate_10m_20col_customer_data.py"
+  ],
+  "tests_added": [],
+  "design_decisions": [
+    "Created a custom data generation script for 10M x 20 customer data using Polars and Faker.",
+    "Used 'minimal' mode for the profiler to ensure fast execution on 10M rows.",
+    "Used 'ydata-like' for the second theme as per the code's ALLOWED_THEMES."
+  ],
+  "results": "Successfully generated four reports (minimal and full for both default and ydata-like themes) in /tmp/ibis-profiling/."
+}

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-logo.png?cacheBuster=1" width="400" alt="Ibis Profiling Logo">
+  <img src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-logo.png?cacheBuster=2" width="400" alt="Ibis Profiling Logo">
 </p>
 
 # Ibis Profiling
 
-[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=15)](https://badge.fury.io/py/ibis-profiling)
+[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=16)](https://badge.fury.io/py/ibis-profiling)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An ultra-high-performance data profiling system built natively for **Ibis**.
@@ -20,13 +20,13 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 ## 🖼️ Preview
 
 ### Overview Dashboard
-![Overview Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_overview.png?cacheBuster=1)
+![Overview Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_overview.png?cacheBuster=2)
 
 ### Variable Detail View
-![Variables Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_variables.png?cacheBuster=1)
+![Variables Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_variables.png?cacheBuster=2)
 
 ### Missing Values Analysis
-![Missing Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_missing.png?cacheBuster=1)
+![Missing Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_missing.png?cacheBuster=2)
 
 
 ---
@@ -79,11 +79,12 @@ Benchmarks were conducted using a synthetic dataset with 20 columns (mix of nume
 | **500k Rows** | 2.29s | 3.56s | 91.93s | ~3m (est) | ~2.0 MB | ~2.5 GB | ~4.4 MB | ~2.8 GB (est) |
 | **1M Rows** | 3.14s | 5.44s | 166.31s | ~6m (est) | ~2.1 MB | ~4.9 GB | ~4.4 MB | ~5.3 GB (est) |
 | **5M Rows** | 10.69s | 17.88s | ~14m (est) | ~45m (est) | ~2.0 MB | >20 GB (est) | ~4.4 MB | >25 GB (est) |
-| **10M Rows** | 20.64s | 21.29s* | ~28m (est) | ~1.5h (est) | ~2.4 MB | >40 GB (est) | ~2.6 MB* | >50 GB (est) |
+| **10M Rows** | 20.64s | 32.67s*** | ~28m (est) | ~1.5h (est) | ~2.4 MB | >40 GB (est) | ~2.6 MB* | >50 GB (est) |
 | **20M Rows** | 43.98s | 8.77s** | >1h (est) | >3h (est) | ~2.4 MB | >80 GB (est) | ~1.0 MB** | >100 GB (est) |
 
 *Notes:
 - 10M Full (21.29s) used 10 columns.
+- 10M Full (32.67s) used 20 columns.***
 - 20M Full (8.77s) used 5 columns.
 - All other benchmarks use 20 columns.
 - Ibis memory usage is nearly constant and extremely low compared to ydata-profiling due to database-native pushdown.*
