@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-logo.png?cacheBuster=2" width="400" alt="Ibis Profiling Logo">
+  <img src="https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/ibis-profiling-logo.png?cacheBuster=3" width="400" alt="Ibis Profiling Logo">
 </p>
 
 # Ibis Profiling
 
-[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=16)](https://badge.fury.io/py/ibis-profiling)
+[![PyPI version](https://badge.fury.io/py/ibis-profiling.svg?cacheBuster=17)](https://badge.fury.io/py/ibis-profiling)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An ultra-high-performance data profiling system built natively for **Ibis**.
@@ -20,13 +20,13 @@ It compiles dozens of statistical metrics into a **minimal set of optimized SQL 
 ## 🖼️ Preview
 
 ### Overview Dashboard
-![Overview Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_overview.png?cacheBuster=2)
+![Overview Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_overview.png?cacheBuster=3)
 
 ### Variable Detail View
-![Variables Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_variables.png?cacheBuster=2)
+![Variables Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_variables.png?cacheBuster=3)
 
 ### Missing Values Analysis
-![Missing Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_missing.png?cacheBuster=2)
+![Missing Screenshot](https://raw.githubusercontent.com/beallio/ibis-profiling/main/src/ibis_profiling/assets/img/report_missing.png?cacheBuster=3)
 
 
 ---
