@@ -1,0 +1,8 @@
+{
+  "date": "2026-05-12",
+  "task_objective": "Fix DuckDB backend dependencies and automate Playwright setup",
+  "files_modified": ["pyproject.toml", "run.sh"],
+  "tests_added": [],
+  "design_decisions": "1. Explicitly included 'duckdb' and 'polars' extras for 'ibis-framework' in pyproject.toml to ensure all transitive dependencies are available. 2. Updated run.sh to automatically detect and install Playwright Chromium into the isolated cache directory (/tmp/ibis-profiling/.cache) to satisfy E2E testing requirements without manual steps.",
+  "results": "Successfully verified DuckDB connectivity and confirmed that frontend E2E tests now pass automatically through the wrapper script."
+}
