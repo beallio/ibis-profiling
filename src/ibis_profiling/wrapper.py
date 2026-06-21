@@ -64,8 +64,6 @@ class ProfileReport:
                 "correlations_sampling_threshold", 1_000_000
             ),
             correlations_sample_size=kwargs.get("correlations_sample_size", 1_000_000),
-            parallel=kwargs.get("parallel", False),
-            pool_size=kwargs.get("pool_size", 4),
             use_sketches=kwargs.get("use_sketches", False),
             global_batch_size=global_batch_size,
         )
