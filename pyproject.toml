@@ -69,7 +69,8 @@ cache-dir = "/tmp/ibis-profiling/.ruff_cache"
 [tool.pytest.ini_options]
 addopts = "--cov=src --cov-report=term"
 cache_dir = "/tmp/ibis-profiling/.pytest_cache"
-pythonpath = ["src"]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
 
 [tool.coverage.run]
 data_file = "/tmp/ibis-profiling/.coverage"
