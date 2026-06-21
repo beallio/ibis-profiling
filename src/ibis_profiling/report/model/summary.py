@@ -17,40 +17,8 @@ class SummaryEngine:
             if col_name == "_dataset":
                 continue
 
-            ltype_cls = logical_types.get(col_name) if logical_types else None
-            raw_ltype_name = ltype_cls.__name__ if ltype_cls else "String"
-
-            # Format logical type names for display (e.g. IPAddress -> IP Address)
-            ltype_display_map = {
-                "IPAddress": "IP Address",
-                "PhoneNumber": "Phone Number",
-                "DateTime": "Date Time",
-                "CreditCard": "Credit Card",
-                "SSN": "SSN",
-                "JSON": "JSON",
-                "CUID": "CUID",
-                "NanoID": "NanoID",
-                "MACAddress": "MAC Address",
-                "CountryCode": "Country Code",
-                "FilePath": "File Path",
-                "Complex": "Complex",
-                "Geometry": "Geometry",
-                "Currency": "Currency",
-                "IBAN": "IBAN",
-                "SWIFT": "SWIFT/BIC",
-                "TaxID": "Tax ID (EIN)",
-                "ISIN": "ISIN",
-                "StockTicker": "Stock Ticker",
-                "Age": "Age",
-                "Gender": "Gender",
-                "LanguageCode": "Language Code",
-                "Passport": "Passport",
-                "USState": "US State",
-                "USTerritory": "US Territory",
-                "USMilitaryMail": "US Military Mail",
-                "USZipCode": "US Zip Code",
-            }
-            ltype_name = ltype_display_map.get(raw_ltype_name, raw_ltype_name)
+            logical_type = logical_types.get(col_name) if logical_types else None
+            ltype_name = logical_type.display_label if logical_type else "String"
 
             # Use Ibis DataType hierarchy for robust classification
             if isinstance(dtype, dt.Numeric) or ltype_name in ["Integer", "Decimal", "Count"]:

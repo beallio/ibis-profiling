@@ -1,6 +1,7 @@
 import ibis
 from ibis_profiling.logical_types import (
     IbisLogicalTypeSystem,
+    LogicalTypeRule,
     Categorical,
     Email,
     UUID,
@@ -13,7 +14,57 @@ from ibis_profiling.logical_types import (
     Decimal,
     Count,
     Ordinal,
+    String,
 )
+
+
+def test_declarative_rule_registry_contract():
+    ts = IbisLogicalTypeSystem()
+
+    assert isinstance(Email, LogicalTypeRule)
+    assert Email.name == "Email"
+    assert Email.display_label == "Email"
+    assert String.name == "String"
+    assert String.display_label == "String"
+    assert [logical_type.name for logical_type in ts.types] == [
+        "CreditCard",
+        "SSN",
+        "Email",
+        "IBAN",
+        "SWIFT",
+        "TaxID",
+        "ISIN",
+        "JSON",
+        "URL",
+        "IPAddress",
+        "DateTime",
+        "USZipCode",
+        "PhoneNumber",
+        "MACAddress",
+        "USState",
+        "USTerritory",
+        "USMilitaryMail",
+        "CountryCode",
+        "FilePath",
+        "Complex",
+        "Geometry",
+        "Currency",
+        "Boolean",
+        "Age",
+        "Ordinal",
+        "Count",
+        "UUID",
+        "CUID",
+        "NanoID",
+        "Passport",
+        "LanguageCode",
+        "Gender",
+        "Integer",
+        "Decimal",
+        "Categorical",
+        "StockTicker",
+        "String",
+    ]
 
 
 def test_categorical_detection():

@@ -1,177 +1,163 @@
-import ibis
 import logging
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any
+
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from abc import ABC, abstractmethod
-from typing import Type, Dict, Any, List
 
 
 class LogicalType(ABC):
+    name: str
+    display_label: str
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        cls.name = cls.__name__
+        if "display_label" not in cls.__dict__:
+            cls.display_label = cls.name
+
     @classmethod
     @abstractmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        """Returns a dict of Ibis expressions to be aggregated."""
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
+        """Return Ibis expressions to aggregate for this logical type."""
         ...
 
     @classmethod
     @abstractmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        """Evaluates results from the aggregate call to decide if it's a match."""
+    def evaluate(cls, results: dict[str, Any]) -> bool:
+        """Evaluate aggregate results to decide whether this type matches."""
         ...
 
     @classmethod
     def matches(cls, table: ibis.Table, column: str) -> bool:
-        """Helper for single-type checks."""
-        exprs = {f"{cls.__name__}_{k}": v for k, v in cls.get_check_exprs(table[column]).items()}
-        res = table.aggregate([v.name(k) for k, v in exprs.items()]).to_pandas().iloc[0].to_dict()
+        """Check one table column against this logical type."""
+        exprs = {
+            f"{cls.name}_{key}": value for key, value in cls.get_check_exprs(table[column]).items()
+        }
+        result = (
+            table.aggregate([value.name(key) for key, value in exprs.items()])
+            .to_pandas()
+            .iloc[0]
+            .to_dict()
+        )
+        prefix = f"{cls.name}_"
         type_results = {
-            k[len(cls.__name__) + 1 :]: v
-            for k, v in res.items()
-            if k.startswith(cls.__name__ + "_")
+            key[len(prefix) :]: value for key, value in result.items() if key.startswith(prefix)
         }
         return cls.evaluate(type_results)
 
 
+@dataclass(frozen=True)
+class LogicalTypeRule:
+    name: str
+    display_label: str
+    regex: str | None = None
+    allowed_values: frozenset[str] | None = None
+    accepted_physical_types: tuple[type[dt.DataType], ...] = (dt.String,)
+
+    def __post_init__(self) -> None:
+        if (self.regex is None) == (self.allowed_values is None):
+            raise ValueError("exactly one of regex or allowed_values must be provided")
+
+    @property
+    def __name__(self) -> str:
+        """Retain compatibility with callers that treated logical types as classes."""
+        return self.name
+
+    def get_check_exprs(self, col: ibis.Column) -> dict[str, ir.Scalar]:
+        if not isinstance(col.type(), self.accepted_physical_types):
+            return {"has_non_null": ibis.literal(False)}
+
+        if self.regex is not None:
+            all_match = (col.re_search(self.regex) | col.isnull()).all()
+        else:
+            values = sorted(value.lower() for value in self.allowed_values or ())
+            all_match = (col.lower().isin(values) | col.isnull()).all()
+
+        return {
+            "has_non_null": col.notnull().any(),
+            "all_match": all_match,
+        }
+
+    def evaluate(self, results: dict[str, Any]) -> bool:
+        return bool(results.get("has_non_null", False) and results.get("all_match", False))
+
+    def matches(self, table: ibis.Table, column: str) -> bool:
+        """Check one table column against this logical type."""
+        exprs = {
+            f"{self.name}_{key}": value
+            for key, value in self.get_check_exprs(table[column]).items()
+        }
+        result = (
+            table.aggregate([value.name(key) for key, value in exprs.items()])
+            .to_pandas()
+            .iloc[0]
+            .to_dict()
+        )
+        prefix = f"{self.name}_"
+        type_results = {
+            key[len(prefix) :]: value for key, value in result.items() if key.startswith(prefix)
+        }
+        return self.evaluate(type_results)
+
+
 class String(LogicalType):
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         return {"is_string": ibis.literal(isinstance(col.type(), dt.String))}
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         return bool(results.get("is_string", False))
 
 
-class Email(LogicalType):
-    EMAIL_REGEX = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"email_has_non_null": ibis.literal(False)}
-
-        return {
-            "email_has_non_null": col.notnull().any(),
-            "email_all_match": (col.re_search(cls.EMAIL_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("email_has_non_null", False) and results.get("email_all_match", False)
-        )
-
-
-class URL(LogicalType):
-    URL_REGEX = r"^(?:http|ftp)s?://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:[a-zA-Z]{2,6}\.?|[a-zA-Z0-9-]{2,}\.?)|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::\d+)?(?:/?|[/?]\S+)$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"url_has_non_null": ibis.literal(False)}
-
-        return {
-            "url_has_non_null": col.notnull().any(),
-            "url_all_match": (col.re_search(cls.URL_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("url_has_non_null", False) and results.get("url_all_match", False))
-
-
-class IPAddress(LogicalType):
-    # Regex for IPv4 and simplified IPv6
-    IP_REGEX = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$|^::1$|^([a-fA-F0-9]{1,4}:){1,7}:|^:([a-fA-F0-9]{1,4}:){1,7}|^[a-fA-F0-9]{1,4}(:[a-fA-F0-9]{1,4}){0,6}::([a-fA-F0-9]{1,4}(:[a-fA-F0-9]{1,4}){0,6})?$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"ip_has_non_null": ibis.literal(False)}
-
-        return {
-            "ip_has_non_null": col.notnull().any(),
-            "ip_all_match": (col.re_search(cls.IP_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("ip_has_non_null", False) and results.get("ip_all_match", False))
-
-
 class DateTime(LogicalType):
-    # Broad ISO8601 regex
+    display_label = "Date Time"
     ISO8601_REGEX = (
         r"^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?$"
     )
 
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if isinstance(col.type(), (dt.Date, dt.Timestamp)):
             return {"dt_is_native": ibis.literal(True)}
-
         if isinstance(col.type(), dt.String):
             return {
                 "dt_has_non_null": col.notnull().any(),
                 "dt_all_match": (col.re_search(cls.ISO8601_REGEX) | col.isnull()).all(),
             }
-
         return {"dt_is_native": ibis.literal(False)}
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         if results.get("dt_is_native", False):
             return True
         return bool(results.get("dt_has_non_null", False) and results.get("dt_all_match", False))
-
-
-class PhoneNumber(LogicalType):
-    # Basic phone regex covering E.164 and common US/International formats
-    PHONE_REGEX = r"^(?:\+?[0-9]{1,3}[-.\s]?)?\(?[0-9]{1,4}\)?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,4}(?:[-.\s]?[0-9]{1,9})?$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"phone_has_non_null": ibis.literal(False)}
-
-        return {
-            "phone_has_non_null": col.notnull().any(),
-            "phone_all_match": (col.re_search(cls.PHONE_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("phone_has_non_null", False) and results.get("phone_all_match", False)
-        )
 
 
 class Boolean(LogicalType):
     BOOLEAN_STRINGS = {"true", "false", "t", "f", "yes", "no", "y", "n", "1", "0"}
 
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if isinstance(col.type(), dt.Boolean):
             return {"bool_is_native": ibis.literal(True)}
-
         if isinstance(col.type(), dt.String):
-            # Check if all non-null values are in the boolean string set
             return {
                 "bool_has_non_null": col.notnull().any(),
                 "bool_all_match": (col.lower().isin(cls.BOOLEAN_STRINGS) | col.isnull()).all(),
             }
-
         if isinstance(col.type(), dt.Integer):
-            # Check if all non-null values are 0 or 1
             return {
                 "bool_has_non_null": col.notnull().any(),
                 "bool_all_match": (col.isin([0, 1]) | col.isnull()).all(),
             }
-
         return {"bool_is_native": ibis.literal(False)}
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         if results.get("bool_is_native", False):
             return True
         return bool(
@@ -183,23 +169,21 @@ class Count(LogicalType):
     COUNT_REGEX = r"^\d+$"
 
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if isinstance(col.type(), dt.Integer):
             return {
                 "count_has_non_null": col.notnull().any(),
                 "count_all_positive": ((col >= 0) | col.isnull()).all(),
             }
-
         if isinstance(col.type(), dt.String):
             return {
                 "count_has_non_null": col.notnull().any(),
                 "count_all_match": (col.re_search(cls.COUNT_REGEX) | col.isnull()).all(),
             }
-
         return {"count_has_non_null": ibis.literal(False)}
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         if "count_all_positive" in results:
             return bool(results.get("count_has_non_null", False) and results["count_all_positive"])
         return bool(
@@ -211,435 +195,56 @@ class Integer(LogicalType):
     INTEGER_REGEX = r"^-?\d+$"
 
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if isinstance(col.type(), dt.Integer):
             return {"int_is_native": ibis.literal(True)}
-
         if isinstance(col.type(), dt.String):
             return {
                 "int_has_non_null": col.notnull().any(),
                 "int_all_match": (col.re_search(cls.INTEGER_REGEX) | col.isnull()).all(),
             }
-
         return {"int_is_native": ibis.literal(False)}
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         if results.get("int_is_native", False):
             return True
         return bool(results.get("int_has_non_null", False) and results.get("int_all_match", False))
 
 
-class CreditCard(LogicalType):
-    # Simplified standard formats: Visa, Mastercard, Amex, Discover
-    # Handles spaces or dashes
-    CARD_REGEX = r"^(?:\d{4}[-\s]?){3}\d{4}$|^\d{15,16}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"cc_has_non_null": ibis.literal(False)}
-
-        return {
-            "cc_has_non_null": col.notnull().any(),
-            "cc_all_match": (col.re_search(cls.CARD_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("cc_has_non_null", False) and results.get("cc_all_match", False))
-
-
-class SSN(LogicalType):
-    # US Social Security Numbers: XXX-XX-XXXX or XXXXXXXXX
-    # Uses simplified regex compatible with all backends (avoids perl-style lookahead).
-    # Excludes area codes starting with 0, 9, or the 666 group.
-    SSN_REGEX = r"^[1-8]\d{2}[-\s]?\d{2}[-\s]?\d{4}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"ssn_has_non_null": ibis.literal(False)}
-
-        return {
-            "ssn_has_non_null": col.notnull().any(),
-            "ssn_all_match": (col.re_search(cls.SSN_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("ssn_has_non_null", False) and results.get("ssn_all_match", False))
-
-
-class JSON(LogicalType):
-    """
-    Semantic type for JSON strings.
-    Detects strings that start with { or [ and end with } or ].
-    """
-
-    JSON_REGEX = r"^\s*(?:\{.*\}|\[.*\])\s*$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"json_has_non_null": ibis.literal(False)}
-
-        return {
-            "json_has_non_null": col.notnull().any(),
-            "json_all_match": (col.re_search(cls.JSON_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("json_has_non_null", False) and results.get("json_all_match", False)
-        )
-
-
-class CUID(LogicalType):
-    """
-    Semantic type for CUID (Collision-resistant Unique Identifier).
-    Standard format: 'c' followed by 24 alphanumeric characters.
-    """
-
-    CUID_REGEX = r"^c[a-z0-9]{24}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"cuid_has_non_null": ibis.literal(False)}
-
-        return {
-            "cuid_has_non_null": col.notnull().any(),
-            "cuid_all_match": (col.re_search(cls.CUID_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("cuid_has_non_null", False) and results.get("cuid_all_match", False)
-        )
-
-
-class NanoID(LogicalType):
-    """
-    Semantic type for NanoID.
-    Default format: 21 alphanumeric characters (including _ and -).
-    """
-
-    NANOID_REGEX = r"^[a-zA-Z0-9_-]{21}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"nanoid_has_non_null": ibis.literal(False)}
-
-        return {
-            "nanoid_has_non_null": col.notnull().any(),
-            "nanoid_all_match": (col.re_search(cls.NANOID_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("nanoid_has_non_null", False) and results.get("nanoid_all_match", False)
-        )
-
-
-class MACAddress(LogicalType):
-    """
-    Semantic type for MAC Addresses.
-    Standard 48-bit formats: 00:00:00:00:00:00 or 00-00-00-00-00-00.
-    """
-
-    MAC_REGEX = r"^(?:[0-9A-Fa-f]{2}[:-]){5}(?:[0-9A-Fa-f]{2})$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"mac_has_non_null": ibis.literal(False)}
-
-        return {
-            "mac_has_non_null": col.notnull().any(),
-            "mac_all_match": (col.re_search(cls.MAC_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("mac_has_non_null", False) and results.get("mac_all_match", False))
-
-
-class CountryCode(LogicalType):
-    """
-    Semantic type for ISO 3166-1 alpha-2 or alpha-3 country codes.
-    Regex matches 2 or 3 uppercase letters.
-    """
-
-    CC_REGEX = r"^[A-Z]{2,3}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"cc_has_non_null": ibis.literal(False)}
-
-        return {
-            "cc_has_non_null": col.notnull().any(),
-            "cc_all_match": (col.re_search(cls.CC_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("cc_has_non_null", False) and results.get("cc_all_match", False))
-
-
-class FilePath(LogicalType):
-    """
-    Semantic type for system paths or cloud URIs.
-    Matches common path structures (Unix, Windows, S3, GS).
-    """
-
-    PATH_REGEX = r"^(?:\/|[a-zA-Z]:\\|s3:\/\/|gs:\/\/).+$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"path_has_non_null": ibis.literal(False)}
-
-        return {
-            "path_has_non_null": col.notnull().any(),
-            "path_all_match": (col.re_search(cls.PATH_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("path_has_non_null", False) and results.get("path_all_match", False)
-        )
-
-
 class Complex(LogicalType):
-    """
-    Semantic type for complex numbers represented as strings.
-    Matches formats like '1+2j', '-3.14j', '0.5-0.5j'.
-    """
-
     COMPLEX_REGEX = r"^-?\d+(?:\.\d+)?(?:[+-]\d+(?:\.\d+)?)?j$"
 
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if not isinstance(col.type(), dt.String):
             return {"complex_has_non_null": ibis.literal(False)}
-
         return {
             "complex_has_non_null": col.notnull().any(),
             "complex_all_match": (col.re_search(cls.COMPLEX_REGEX) | col.isnull()).all(),
         }
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         return bool(
             results.get("complex_has_non_null", False) and results.get("complex_all_match", False)
         )
 
 
-class Geometry(LogicalType):
-    """
-    Semantic type for Geometry data in WKT (Well-Known Text) format.
-    Matches POINT, LINESTRING, POLYGON, etc.
-    """
-
-    WKT_REGEX = (
-        r"(?i)^(?:POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON)\s?\(.+\)$"
-    )
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"geo_has_non_null": ibis.literal(False)}
-
-        return {
-            "geo_has_non_null": col.notnull().any(),
-            "geo_all_match": (col.re_search(cls.WKT_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("geo_has_non_null", False) and results.get("geo_all_match", False))
-
-
-class Currency(LogicalType):
-    """
-    Semantic type for currency values represented as strings.
-    Matches symbols like $, €, £, ¥ followed by numeric patterns.
-    """
-
-    CURRENCY_REGEX = r"^[$€£¥]\s?-?\d+(?:,\d{3})*(?:\.\d{2})?$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"currency_has_non_null": ibis.literal(False)}
-
-        return {
-            "currency_has_non_null": col.notnull().any(),
-            "currency_all_match": (col.re_search(cls.CURRENCY_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("currency_has_non_null", False) and results.get("currency_all_match", False)
-        )
-
-
-class IBAN(LogicalType):
-    """
-    Semantic type for International Bank Account Numbers (IBAN).
-    Standard format: 2-letter country code, 2 check digits, and up to 30 alphanumeric characters.
-    """
-
-    IBAN_REGEX = r"^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"iban_has_non_null": ibis.literal(False)}
-
-        return {
-            "iban_has_non_null": col.notnull().any(),
-            "iban_all_match": (col.re_search(cls.IBAN_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("iban_has_non_null", False) and results.get("iban_all_match", False)
-        )
-
-
-class SWIFT(LogicalType):
-    """
-    Semantic type for SWIFT/BIC codes.
-    Matches 8 or 11 alphanumeric characters.
-    """
-
-    SWIFT_REGEX = r"^[A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"swift_has_non_null": ibis.literal(False)}
-
-        return {
-            "swift_has_non_null": col.notnull().any(),
-            "swift_all_match": (col.re_search(cls.SWIFT_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("swift_has_non_null", False) and results.get("swift_all_match", False)
-        )
-
-
-class TaxID(LogicalType):
-    """
-    Semantic type for US Tax ID (EIN).
-    Standard format: XX-XXXXXXX.
-    """
-
-    TAXID_REGEX = r"^\d{2}-\d{7}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"taxid_has_non_null": ibis.literal(False)}
-
-        return {
-            "taxid_has_non_null": col.notnull().any(),
-            "taxid_all_match": (col.re_search(cls.TAXID_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("taxid_has_non_null", False) and results.get("taxid_all_match", False)
-        )
-
-
-class ISIN(LogicalType):
-    """
-    Semantic type for ISIN (International Securities Identification Number).
-    Standard format: 12-character alphanumeric.
-    Starts with 2 letters, ends with a digit.
-    """
-
-    ISIN_REGEX = r"^[A-Z]{2}[A-Z0-9]{9}\d$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"isin_has_non_null": ibis.literal(False)}
-
-        return {
-            "isin_has_non_null": col.notnull().any(),
-            "isin_all_match": (col.re_search(cls.ISIN_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("isin_has_non_null", False) and results.get("isin_all_match", False)
-        )
-
-
-class StockTicker(LogicalType):
-    """
-    Semantic type for Stock Tickers.
-    Standard format: 1-5 uppercase letters.
-    """
-
-    TICKER_REGEX = r"^[A-Z]{1,5}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"ticker_has_non_null": ibis.literal(False)}
-
-        return {
-            "ticker_has_non_null": col.notnull().any(),
-            "ticker_all_match": (col.re_search(cls.TICKER_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("ticker_has_non_null", False) and results.get("ticker_all_match", False)
-        )
-
-
 class Age(LogicalType):
-    """
-    Semantic type for human age.
-    Heuristic: Integer values between 0 and 120.
-    """
-
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if not isinstance(col.type(), dt.Integer):
             return {"age_is_integer": ibis.literal(False)}
-
         return {
             "age_is_integer": ibis.literal(True),
             "age_has_non_null": col.notnull().any(),
             "age_in_range": (col.between(0, 120) | col.isnull()).all(),
-            # Human age columns should have a significant portion of older values
-            # compared to binary/small counters.
             "age_percent_above_14": (col > 14).mean(),
         }
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         return bool(
             results.get("age_is_integer", False)
             and results.get("age_has_non_null", False)
@@ -648,259 +253,22 @@ class Age(LogicalType):
         )
 
 
-class Gender(LogicalType):
-    """
-    Semantic type for Gender identification.
-    Heuristic: Case-insensitive set of common values.
-    """
-
-    GENDER_VALUES = {
-        "male",
-        "female",
-        "m",
-        "f",
-        "nb",
-        "non-binary",
-        "nonbinary",
-        "other",
-        "unknown",
-        "u",
-    }
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"gender_has_non_null": ibis.literal(False)}
-
-        # Use case-insensitive containment check
-        return {
-            "gender_has_non_null": col.notnull().any(),
-            "gender_all_match": (col.lower().isin(list(cls.GENDER_VALUES)) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("gender_has_non_null", False) and results.get("gender_all_match", False)
-        )
-
-
-class LanguageCode(LogicalType):
-    """
-    Semantic type for Language Codes (ISO 639-1).
-    Heuristic: 2-letter lowercase strings.
-    """
-
-    LANG_REGEX = r"^[a-z]{2}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"lang_has_non_null": ibis.literal(False)}
-
-        return {
-            "lang_has_non_null": col.notnull().any(),
-            "lang_all_match": (col.re_search(cls.LANG_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("lang_has_non_null", False) and results.get("lang_all_match", False)
-        )
-
-
-class Passport(LogicalType):
-    """
-    Semantic type for Passport numbers.
-    Heuristic: 6-9 alphanumeric characters.
-    """
-
-    PASSPORT_REGEX = r"^[A-Z0-9]{6,9}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"passport_has_non_null": ibis.literal(False)}
-
-        return {
-            "passport_has_non_null": col.notnull().any(),
-            "passport_all_match": (col.re_search(cls.PASSPORT_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("passport_has_non_null", False) and results.get("passport_all_match", False)
-        )
-
-
-class USState(LogicalType):
-    """
-    Semantic type for US State abbreviations (50 states + DC).
-    """
-
-    STATE_CODES = {
-        "AL",
-        "AK",
-        "AZ",
-        "AR",
-        "CA",
-        "CO",
-        "CT",
-        "DE",
-        "FL",
-        "GA",
-        "HI",
-        "ID",
-        "IL",
-        "IN",
-        "IA",
-        "KS",
-        "KY",
-        "LA",
-        "ME",
-        "MD",
-        "MA",
-        "MI",
-        "MN",
-        "MS",
-        "MO",
-        "MT",
-        "NE",
-        "NV",
-        "NH",
-        "NJ",
-        "NM",
-        "NY",
-        "NC",
-        "ND",
-        "OH",
-        "OK",
-        "OR",
-        "PA",
-        "RI",
-        "SC",
-        "SD",
-        "TN",
-        "TX",
-        "UT",
-        "VT",
-        "VA",
-        "WA",
-        "WV",
-        "WI",
-        "WY",
-        "DC",
-    }
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"state_has_non_null": ibis.literal(False)}
-
-        return {
-            "state_has_non_null": col.notnull().any(),
-            "state_all_match": (col.upper().isin(list(cls.STATE_CODES)) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("state_has_non_null", False) and results.get("state_all_match", False)
-        )
-
-
-class USTerritory(LogicalType):
-    """
-    Semantic type for US Territory abbreviations (PR, VI, GU, AS, MP).
-    """
-
-    TERRITORY_CODES = {"PR", "VI", "GU", "AS", "MP"}
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"territory_has_non_null": ibis.literal(False)}
-
-        return {
-            "territory_has_non_null": col.notnull().any(),
-            "territory_all_match": (
-                col.upper().isin(list(cls.TERRITORY_CODES)) | col.isnull()
-            ).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("territory_has_non_null", False)
-            and results.get("territory_all_match", False)
-        )
-
-
-class USMilitaryMail(LogicalType):
-    """
-    Semantic type for US Military Mail abbreviations (AA, AE, AP).
-    """
-
-    MILITARY_CODES = {"AA", "AE", "AP"}
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"mil_has_non_null": ibis.literal(False)}
-
-        return {
-            "mil_has_non_null": col.notnull().any(),
-            "mil_all_match": (col.upper().isin(list(cls.MILITARY_CODES)) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("mil_has_non_null", False) and results.get("mil_all_match", False))
-
-
-class USZipCode(LogicalType):
-    """
-    Semantic type for US Zip Codes (5-digit or Zip+4).
-    """
-
-    ZIP_REGEX = r"^\d{5}(?:-\d{4})?$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"zip_has_non_null": ibis.literal(False)}
-
-        return {
-            "zip_has_non_null": col.notnull().any(),
-            "zip_all_match": (col.re_search(cls.ZIP_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(results.get("zip_has_non_null", False) and results.get("zip_all_match", False))
-
-
 class Decimal(LogicalType):
-    # Regex for decimal numbers (including scientific notation)
     DECIMAL_REGEX = r"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$"
 
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if isinstance(col.type(), (dt.Decimal, dt.Floating)):
             return {"dec_is_native": ibis.literal(True)}
-
         if isinstance(col.type(), dt.String):
             return {
                 "dec_has_non_null": col.notnull().any(),
                 "dec_all_match": (col.re_search(cls.DECIMAL_REGEX) | col.isnull()).all(),
             }
-
         return {"dec_is_native": ibis.literal(False)}
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         if results.get("dec_is_native", False):
             return True
         return bool(results.get("dec_has_non_null", False) and results.get("dec_all_match", False))
@@ -918,79 +286,240 @@ class Ordinal(LogicalType):
     ]
 
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if not isinstance(col.type(), dt.String):
             return {"ord_has_non_null": ibis.literal(False)}
-
-        # Optimization: only check unique values if count is low
-        # But we need to do it in aggregate.
-        # We'll check if ALL non-null values belong to ONE of the groups.
-        checks = {}
-        for i, group in enumerate(cls.ORDINAL_GROUPS):
-            checks[f"group_{i}"] = (col.lower().isin(group) | col.isnull()).all()
-
+        checks = {
+            f"group_{index}": (col.lower().isin(group) | col.isnull()).all()
+            for index, group in enumerate(cls.ORDINAL_GROUPS)
+        }
         return {"ord_has_non_null": col.notnull().any(), **checks}
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         if not results.get("ord_has_non_null", False):
             return False
-        return any(v for k, v in results.items() if k.startswith("group_"))
-
-
-class UUID(LogicalType):
-    UUID_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-
-    @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
-        if not isinstance(col.type(), dt.String):
-            return {"uuid_has_non_null": ibis.literal(False)}
-
-        return {
-            "uuid_has_non_null": col.notnull().any(),
-            "uuid_all_match": (col.re_search(cls.UUID_REGEX) | col.isnull()).all(),
-        }
-
-    @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
-        return bool(
-            results.get("uuid_has_non_null", False) and results.get("uuid_all_match", False)
-        )
+        return any(value for key, value in results.items() if key.startswith("group_"))
 
 
 class Categorical(LogicalType):
     @classmethod
-    def get_check_exprs(cls, col: ibis.Column) -> Dict[str, ir.Scalar]:
+    def get_check_exprs(cls, col: ibis.Column) -> dict[str, ir.Scalar]:
         if not isinstance(col.type(), (dt.String, dt.Integer)):
             return {"cat_n_unique": ibis.literal(0)}
-
         return {
             "cat_n_unique": col.nunique(),
-            "cat_total": col.count() + col.isnull().sum(),  # table.count() replacement
+            "cat_total": col.count() + col.isnull().sum(),
         }
 
     @classmethod
-    def evaluate(cls, results: Dict[str, Any]) -> bool:
+    def evaluate(cls, results: dict[str, Any]) -> bool:
         n_unique = results.get("cat_n_unique", 0)
         total = results.get("cat_total", 0)
         if total == 0:
             return False
-
-        # Improved heuristic:
-        # 1. Must have low absolute cardinality (< 20) OR low relative cardinality (< 5%)
-        # 2. MUST NOT be essentially unique (n_unique < total * 0.8)
-        #    to avoid marking ID columns [1, 2, 3...10] as categorical.
-        # 3. If total count is very low, we require even lower cardinality.
-
         is_low_cardinality = n_unique < 20 or (n_unique / total) < 0.05
-
-        # Guard against small datasets where 1..10 is both low cardinality and high relative cardinality
         if total < 50:
             is_not_unique = n_unique < total * 0.5
         else:
             is_not_unique = n_unique < total * 0.8
-
         return bool(is_low_cardinality and is_not_unique)
+
+
+Email = LogicalTypeRule(
+    name="Email",
+    display_label="Email",
+    regex=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
+)
+URL = LogicalTypeRule(
+    name="URL",
+    display_label="URL",
+    regex=r"^(?:http|ftp)s?://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:[a-zA-Z]{2,6}\.?|[a-zA-Z0-9-]{2,}\.?)|localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::\d+)?(?:/?|[/?]\S+)$",
+)
+IPAddress = LogicalTypeRule(
+    name="IPAddress",
+    display_label="IP Address",
+    regex=r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$|^::1$|^([a-fA-F0-9]{1,4}:){1,7}:|^:([a-fA-F0-9]{1,4}:){1,7}|^[a-fA-F0-9]{1,4}(:[a-fA-F0-9]{1,4}){0,6}::([a-fA-F0-9]{1,4}(:[a-fA-F0-9]{1,4}){0,6})?$",
+)
+PhoneNumber = LogicalTypeRule(
+    name="PhoneNumber",
+    display_label="Phone Number",
+    regex=r"^(?:\+?[0-9]{1,3}[-.\s]?)?\(?[0-9]{1,4}\)?[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,4}(?:[-.\s]?[0-9]{1,9})?$",
+)
+CreditCard = LogicalTypeRule(
+    name="CreditCard",
+    display_label="Credit Card",
+    regex=r"^(?:\d{4}[-\s]?){3}\d{4}$|^\d{15,16}$",
+)
+SSN = LogicalTypeRule(
+    name="SSN",
+    display_label="SSN",
+    regex=r"^[1-8]\d{2}[-\s]?\d{2}[-\s]?\d{4}$",
+)
+JSON = LogicalTypeRule(
+    name="JSON",
+    display_label="JSON",
+    regex=r"^\s*(?:\{.*\}|\[.*\])\s*$",
+)
+CUID = LogicalTypeRule(
+    name="CUID",
+    display_label="CUID",
+    regex=r"^c[a-z0-9]{24}$",
+)
+NanoID = LogicalTypeRule(
+    name="NanoID",
+    display_label="NanoID",
+    regex=r"^[a-zA-Z0-9_-]{21}$",
+)
+MACAddress = LogicalTypeRule(
+    name="MACAddress",
+    display_label="MAC Address",
+    regex=r"^(?:[0-9A-Fa-f]{2}[:-]){5}(?:[0-9A-Fa-f]{2})$",
+)
+CountryCode = LogicalTypeRule(
+    name="CountryCode",
+    display_label="Country Code",
+    regex=r"^[A-Z]{2,3}$",
+)
+FilePath = LogicalTypeRule(
+    name="FilePath",
+    display_label="File Path",
+    regex=r"^(?:\/|[a-zA-Z]:\\|s3:\/\/|gs:\/\/).+$",
+)
+Geometry = LogicalTypeRule(
+    name="Geometry",
+    display_label="Geometry",
+    regex=r"(?i)^(?:POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON)\s?\(.+\)$",
+)
+Currency = LogicalTypeRule(
+    name="Currency",
+    display_label="Currency",
+    regex=r"^[$€£¥]\s?-?\d+(?:,\d{3})*(?:\.\d{2})?$",
+)
+IBAN = LogicalTypeRule(
+    name="IBAN",
+    display_label="IBAN",
+    regex=r"^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$",
+)
+SWIFT = LogicalTypeRule(
+    name="SWIFT",
+    display_label="SWIFT/BIC",
+    regex=r"^[A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$",
+)
+TaxID = LogicalTypeRule(
+    name="TaxID",
+    display_label="Tax ID (EIN)",
+    regex=r"^\d{2}-\d{7}$",
+)
+ISIN = LogicalTypeRule(
+    name="ISIN",
+    display_label="ISIN",
+    regex=r"^[A-Z]{2}[A-Z0-9]{9}\d$",
+)
+StockTicker = LogicalTypeRule(
+    name="StockTicker",
+    display_label="Stock Ticker",
+    regex=r"^[A-Z]{1,5}$",
+)
+Gender = LogicalTypeRule(
+    name="Gender",
+    display_label="Gender",
+    allowed_values=frozenset(
+        {"male", "female", "m", "f", "nb", "non-binary", "nonbinary", "other", "unknown", "u"}
+    ),
+)
+LanguageCode = LogicalTypeRule(
+    name="LanguageCode",
+    display_label="Language Code",
+    regex=r"^[a-z]{2}$",
+)
+Passport = LogicalTypeRule(
+    name="Passport",
+    display_label="Passport",
+    regex=r"^[A-Z0-9]{6,9}$",
+)
+USState = LogicalTypeRule(
+    name="USState",
+    display_label="US State",
+    allowed_values=frozenset(
+        {
+            "AL",
+            "AK",
+            "AZ",
+            "AR",
+            "CA",
+            "CO",
+            "CT",
+            "DE",
+            "FL",
+            "GA",
+            "HI",
+            "ID",
+            "IL",
+            "IN",
+            "IA",
+            "KS",
+            "KY",
+            "LA",
+            "ME",
+            "MD",
+            "MA",
+            "MI",
+            "MN",
+            "MS",
+            "MO",
+            "MT",
+            "NE",
+            "NV",
+            "NH",
+            "NJ",
+            "NM",
+            "NY",
+            "NC",
+            "ND",
+            "OH",
+            "OK",
+            "OR",
+            "PA",
+            "RI",
+            "SC",
+            "SD",
+            "TN",
+            "TX",
+            "UT",
+            "VT",
+            "VA",
+            "WA",
+            "WV",
+            "WI",
+            "WY",
+            "DC",
+        }
+    ),
+)
+USTerritory = LogicalTypeRule(
+    name="USTerritory",
+    display_label="US Territory",
+    allowed_values=frozenset({"PR", "VI", "GU", "AS", "MP"}),
+)
+USMilitaryMail = LogicalTypeRule(
+    name="USMilitaryMail",
+    display_label="US Military Mail",
+    allowed_values=frozenset({"AA", "AE", "AP"}),
+)
+USZipCode = LogicalTypeRule(
+    name="USZipCode",
+    display_label="US Zip Code",
+    regex=r"^\d{5}(?:-\d{4})?$",
+)
+UUID = LogicalTypeRule(
+    name="UUID",
+    display_label="UUID",
+    regex=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+)
+
+
+LogicalTypeDefinition = type[LogicalType] | LogicalTypeRule
 
 
 class IbisLogicalTypeSystem:
@@ -1001,8 +530,7 @@ class IbisLogicalTypeSystem:
         inference_sample_size: int | None = 10_000,
         row_count: int | None = None,
     ):
-        # Ordered by specificity
-        self.types: List[Type[LogicalType]] = [
+        self.types: list[LogicalTypeDefinition] = [
             CreditCard,
             SSN,
             Email,
@@ -1046,8 +574,8 @@ class IbisLogicalTypeSystem:
         self.inference_sample_size = inference_sample_size
         self.row_count = row_count
 
-    def get_fallback_type(self, dtype: dt.DataType) -> Type[LogicalType]:
-        """Maps physical types to logical types without expensive data-driven checks."""
+    def get_fallback_type(self, dtype: dt.DataType) -> LogicalTypeDefinition:
+        """Map physical types to logical types without data-driven checks."""
         if isinstance(dtype, dt.Integer):
             return Integer
         if isinstance(dtype, (dt.Decimal, dt.Floating)):
@@ -1058,89 +586,72 @@ class IbisLogicalTypeSystem:
             return Boolean
         return String
 
-    def infer_type(self, table: ibis.Table, column: str) -> Type[LogicalType]:
+    def infer_type(self, table: ibis.Table, column: str) -> LogicalTypeDefinition:
         results = self.infer_all_types(table, [column])
         return results.get(column, String)
 
     def infer_all_types(
-        self, table: ibis.Table, columns: List[str] | Any | None = None
-    ) -> Dict[str, Type[LogicalType]]:
-        """Infers logical types for all specified columns in one batch."""
-        if columns is None:
-            cols = list(table.columns)
-        else:
-            cols = list(columns)
+        self, table: ibis.Table, columns: list[str] | Any | None = None
+    ) -> dict[str, LogicalTypeDefinition]:
+        """Infer logical types for all specified columns in one batch."""
+        cols = list(table.columns) if columns is None else list(columns)
 
-        # Optimization: In minimal mode, only use native type mapping
         if self.minimal:
             schema = table.schema()
             return {col: self.get_fallback_type(schema[col]) for col in cols}
 
-        # 1. Use a sample for semantic inference to maintain performance on massive datasets
         if self.inference_sample_size is not None:
             inference_table = table.head(self.inference_sample_size)
         else:
             inference_table = table
 
-        # 2. Collect all expressions for all columns
         all_exprs = {}
         for col_name in cols:
             col = inference_table[col_name]
+            for logical_type in self.types:
+                if (
+                    logical_type == Categorical
+                    and self.row_count
+                    and self.row_count > self.n_unique_threshold
+                ):
+                    continue
+                for key, value in logical_type.get_check_exprs(col).items():
+                    all_exprs[f"{col_name}__{logical_type.name}_{key}"] = value
 
-            for ltype in self.types:
-                # Skip expensive Categorical checks if row count exceeds threshold
-                if ltype == Categorical:
-                    if self.row_count and self.row_count > self.n_unique_threshold:
-                        continue
-
-                type_exprs = ltype.get_check_exprs(col)
-                for k, v in type_exprs.items():
-                    all_exprs[f"{col_name}__{ltype.__name__}_{k}"] = v
-
-        # 3. Execute in CHUNKED batches to avoid backend expression limits
         chunk_size = 5
-        res = {}
+        results = {}
         schema = table.schema()
 
-        for i in range(0, len(cols), chunk_size):
-            chunk_cols = cols[i : i + chunk_size]
+        for index in range(0, len(cols), chunk_size):
+            chunk_cols = cols[index : index + chunk_size]
             chunk_exprs = [
-                v.name(k) for k, v in all_exprs.items() if k.split("__")[0] in chunk_cols
+                value.name(key)
+                for key, value in all_exprs.items()
+                if key.split("__")[0] in chunk_cols
             ]
-
             if not chunk_exprs:
                 continue
-
             try:
-                # Use to_pyarrow().to_pydict() for backend-agnostic results
-                batch_res = inference_table.aggregate(chunk_exprs).to_pyarrow().to_pydict()
-                # Map results back to namespaced keys
-                for k, v in batch_res.items():
-                    res[k] = v[0]
-            except Exception as e:
-                logging.warning(f"Logical inference failed for batch {chunk_cols}: {e}")
-                # Individual column fallback if chunk fails
-                continue
+                batch_results = inference_table.aggregate(chunk_exprs).to_pyarrow().to_pydict()
+                for key, value in batch_results.items():
+                    results[key] = value[0]
+            except Exception as error:
+                logging.warning("Logical inference failed for batch %s: %s", chunk_cols, error)
 
-        # 3. Evaluate results per column
         inferred = {}
         for col_name in cols:
-            # Default to physical-based fallback
             col_inferred = self.get_fallback_type(schema[col_name])
-
-            # If results were successfully fetched for this column, try to find a more specific inferred type
-            # We check if at least one key for this column exists in res
-            col_results_exist = any(k.startswith(f"{col_name}__") for k in res.keys())
-
+            col_results_exist = any(key.startswith(f"{col_name}__") for key in results)
             if col_results_exist:
-                for ltype in self.types:
-                    prefix = f"{col_name}__{ltype.__name__}_"
-                    # Filter results for this specific column and type
+                for logical_type in self.types:
+                    prefix = f"{col_name}__{logical_type.name}_"
                     type_results = {
-                        k[len(prefix) :]: v for k, v in res.items() if k.startswith(prefix)
+                        key[len(prefix) :]: value
+                        for key, value in results.items()
+                        if key.startswith(prefix)
                     }
-                    if type_results and ltype.evaluate(type_results):
-                        col_inferred = ltype
+                    if type_results and logical_type.evaluate(type_results):
+                        col_inferred = logical_type
                         break
             inferred[col_name] = col_inferred
 
