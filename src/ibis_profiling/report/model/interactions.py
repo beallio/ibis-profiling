@@ -11,6 +11,7 @@ class InteractionEngine:
         variables: Dict[str, Any],
         row_count: int | None = None,
         sample_size: int = 1000,
+        sample_seed: int | None = None,
         max_interaction_pairs: int = 10,
         correlations: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
@@ -68,7 +69,7 @@ class InteractionEngine:
 
         if row_count > sample_size:
             try:
-                sampled_table = table.sample(sample_size / row_count)
+                sampled_table = table.sample(sample_size / row_count, seed=sample_seed)
             except Exception:
                 sampled_table = table.limit(sample_size)
         else:

@@ -31,6 +31,7 @@ class Profiler:
         max_interaction_pairs: int = 10,
         correlations_sampling_threshold: int = 1_000_000,
         correlations_sample_size: int = 1_000_000,
+        sample_seed: int = 42,
         correlations_max_columns: int = 15,
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,
@@ -62,6 +63,7 @@ class Profiler:
             max_interaction_pairs=max_interaction_pairs,
             correlations_sampling_threshold=correlations_sampling_threshold,
             correlations_sample_size=correlations_sample_size,
+            sample_seed=sample_seed,
             correlations_max_columns=correlations_max_columns,
             missing_heatmap_max_columns=missing_heatmap_max_columns,
             missing_matrix_max_columns=missing_matrix_max_columns,
@@ -85,6 +87,7 @@ class Profiler:
         self.max_interaction_pairs = self.config.max_interaction_pairs
         self.correlations_sampling_threshold = self.config.correlations_sampling_threshold
         self.correlations_sample_size = self.config.correlations_sample_size
+        self.sample_seed = self.config.sample_seed
         self.correlations_max_columns = self.config.correlations_max_columns
         self.missing_heatmap_max_columns = self.config.missing_heatmap_max_columns
         self.missing_matrix_max_columns = self.config.missing_matrix_max_columns
@@ -581,6 +584,7 @@ class Profiler:
                 row_count=cast(int | None, report.table.get("n")),
                 sampling_threshold=self.correlations_sampling_threshold,
                 sample_size=self.correlations_sample_size,
+                sample_seed=self.config.sample_seed,
                 max_columns=self.correlations_max_columns,
             )
             meta = res.get("_metadata", {})
@@ -699,6 +703,7 @@ class Profiler:
                 self.table,
                 report.variables,
                 row_count=n_total,
+                sample_seed=self.config.sample_seed,
                 max_interaction_pairs=self.max_interaction_pairs,
                 correlations=report.correlations,
             )
@@ -718,6 +723,7 @@ def profile(
     max_interaction_pairs: int = 10,
     correlations_sampling_threshold: int = 1_000_000,
     correlations_sample_size: int = 1_000_000,
+    sample_seed: int = 42,
     correlations_max_columns: int = 15,
     missing_heatmap_max_columns: int = 15,
     missing_matrix_max_columns: int = 50,
@@ -742,6 +748,7 @@ def profile(
         max_interaction_pairs=max_interaction_pairs,
         correlations_sampling_threshold=correlations_sampling_threshold,
         correlations_sample_size=correlations_sample_size,
+        sample_seed=sample_seed,
         correlations_max_columns=correlations_max_columns,
         missing_heatmap_max_columns=missing_heatmap_max_columns,
         missing_matrix_max_columns=missing_matrix_max_columns,
