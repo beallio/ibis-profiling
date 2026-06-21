@@ -12,6 +12,7 @@ class CorrelationEngine:
         row_count: int | None = None,
         sampling_threshold: int = 1_000_000,
         sample_size: int = 1_000_000,
+        sample_seed: int | None = None,
         max_columns: int = 15,
     ) -> Dict[str, Any]:
         """Calculates all supported correlation matrices with sampling for large datasets."""
@@ -81,7 +82,7 @@ class CorrelationEngine:
             if sample_fraction < 1.0:
                 is_sampled = True
                 try:
-                    calc_table = table.sample(sample_fraction)
+                    calc_table = table.sample(sample_fraction, seed=sample_seed)
                 except Exception:
                     calc_table = table.limit(sample_size)
 

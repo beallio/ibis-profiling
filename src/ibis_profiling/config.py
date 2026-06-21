@@ -15,6 +15,7 @@ class ProfileConfig:
     max_interaction_pairs: int
     correlations_sampling_threshold: int
     correlations_sample_size: int
+    sample_seed: int
     correlations_max_columns: int
     missing_heatmap_max_columns: int
     missing_matrix_max_columns: int
@@ -42,6 +43,7 @@ class ProfileConfig:
         max_interaction_pairs: int = 10,
         correlations_sampling_threshold: int = 1_000_000,
         correlations_sample_size: int = 1_000_000,
+        sample_seed: int = 42,
         correlations_max_columns: int = 15,
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,
@@ -103,6 +105,7 @@ class ProfileConfig:
             max_interaction_pairs=max_interaction_pairs,
             correlations_sampling_threshold=correlations_sampling_threshold,
             correlations_sample_size=correlations_sample_size,
+            sample_seed=sample_seed,
             correlations_max_columns=correlations_max_columns_resolved,
             missing_heatmap_max_columns=missing_heatmap_max_columns_resolved,
             missing_matrix_max_columns=missing_matrix_max_columns_resolved,
