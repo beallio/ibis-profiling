@@ -181,7 +181,7 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | `monotonicity_threshold` | `100,000` | Row count threshold above which monotonicity is skipped by default. |
 | `duplicates_threshold` | `50,000,000` | Row count threshold above which duplicate check is skipped by default. |
 | `n_unique_threshold` | `50,000,000` | Row count threshold above which exact `n_unique` (singleton) calculation is skipped. |
-| `global_batch_size` | `500` | Maximum number of aggregate expressions per backend query. |
+| `global_batch_size` | `dynamic (memory-aware)` | Maximum number of aggregate expressions per backend query. |
 | `compute_duplicates` | `True` | Explicitly enable/disable duplicate row detection. |
 
 #### 🔍 Interaction Pruning & "Interactivity"

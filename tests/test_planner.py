@@ -8,7 +8,7 @@ def test_planner_aggregation_building():
     schema = ibis.schema({"a": dt.Int64()})
     table = ibis.table(schema, name="test")
 
-    planner = QueryPlanner(table, registry)
+    planner = QueryPlanner(table, registry, global_batch_size=50)
     plans = planner.build_global_aggregation()
 
     assert isinstance(plans, list)

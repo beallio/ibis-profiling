@@ -25,7 +25,7 @@
     }
   ],
   "analysis": {
-    "n_unique_threshold": 1000000,
+    "n_unique_threshold": 50000000,
     "title": "Ibis Profiling Report",
     "warnings": [
       "Skipped monotonicity checks for large dataset (2,000,000 rows). Threshold: 100,000 rows."
@@ -6095,23 +6095,20 @@
       "n_infinite": 0,
       "n_missing": 0,
       "n_negative": 999927,
-      "n_unique": "Skipped",
+      "n_unique": 2000000,
       "n_zeros": 0,
       "p_distinct": 1.0,
       "p_infinite": 0.0,
       "p_missing": 0.0,
       "p_negative": 0.4999635,
-      "p_unique": "Skipped",
+      "p_unique": 1.0,
       "p_zeros": 0.0,
       "range": 51580.37404336505,
       "skewness": -0.0014145293464461334,
       "std": 5002.311596472706,
       "sum": -3631656.8359049866,
       "type": "Numeric",
-      "variance": 25023121.308205314,
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "variance": 25023121.308205314
     },
     "category": {
       "count": 2000000,
@@ -6161,7 +6158,7 @@
           1000624
         ]
       },
-      "logical_type": "String",
+      "logical_type": "Categorical",
       "max_length": 7,
       "mean_length": 4.999827,
       "min_length": 4,
@@ -6323,23 +6320,20 @@
       "n_infinite": 0,
       "n_missing": 200308,
       "n_negative": 0,
-      "n_unique": "Skipped",
+      "n_unique": 1799692,
       "n_zeros": 0,
       "p_distinct": 0.899846,
       "p_infinite": 0.0,
       "p_missing": 0.100154,
       "p_negative": 0.0,
-      "p_unique": "Skipped",
+      "p_unique": 0.899846,
       "p_zeros": 0.0,
       "range": 0.49999966108397786,
       "skewness": 0.0006804097041796091,
       "std": 0.14427180390176894,
       "sum": 449905.2146361554,
       "type": "Numeric",
-      "variance": 0.02081435340107047,
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "variance": 0.02081435340107047
     },
     "email": {
       "count": 2000000,
@@ -6358,6 +6352,52 @@
         "user1000005@example.com"
       ],
       "hashable": true,
+      "histogram": {
+        "bins": [
+          "user1039106@example.com",
+          "user1051686@example.com",
+          "user1024784@example.com",
+          "user2357510@example.com",
+          "user2232312@example.com",
+          "user1211122@example.com",
+          "user190311@example.com",
+          "user2583573@example.com",
+          "user2876668@example.com",
+          "user2096861@example.com",
+          "user816575@example.com",
+          "user1201733@example.com",
+          "user735384@example.com",
+          "user710089@example.com",
+          "user594340@example.com",
+          "user1906389@example.com",
+          "user2844288@example.com",
+          "user1449466@example.com",
+          "user114269@example.com",
+          "user55048@example.com"
+        ],
+        "counts": [
+          8,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
       "is_unique": false,
       "length_histogram": {
         "bins": [
@@ -6387,17 +6427,12 @@
       "n_distinct": 1459047,
       "n_empty": 0,
       "n_missing": 0,
-      "n_unique": "Skipped",
+      "n_unique": 1025392,
       "p_distinct": 0.7295235,
       "p_empty": 0.0,
       "p_missing": 0.0,
-      "p_unique": "Skipped",
-      "top_values": "Skipped",
-      "type": "Categorical",
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000",
-        "Frequency table skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "p_unique": 0.512696,
+      "type": "Categorical"
     },
     "id": {
       "25%": 499999.75,
@@ -6482,22 +6517,19 @@
       "n_distinct": 2000000,
       "n_missing": 0,
       "n_negative": 0,
-      "n_unique": "Skipped",
+      "n_unique": 2000000,
       "n_zeros": 1,
       "p_distinct": 1.0,
       "p_missing": 0.0,
       "p_negative": 0.0,
-      "p_unique": "Skipped",
+      "p_unique": 1.0,
       "p_zeros": 5e-07,
       "range": 1999999,
       "skewness": -2.3248070135650778e-17,
       "std": 577350.4135271753,
       "sum": 1999999000000,
       "type": "Numeric",
-      "variance": 333333500000.00037,
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "variance": 333333500000.00037
     },
     "income": {
       "25%": 49883.63338357679,
@@ -6583,23 +6615,20 @@
       "n_infinite": 0,
       "n_missing": 0,
       "n_negative": 60,
-      "n_unique": "Skipped",
+      "n_unique": 2000000,
       "n_zeros": 0,
       "p_distinct": 1.0,
       "p_infinite": 0.0,
       "p_missing": 0.0,
       "p_negative": 3e-05,
-      "p_unique": "Skipped",
+      "p_unique": 1.0,
       "p_zeros": 0.0,
       "range": 159822.29930448392,
       "skewness": 0.0017901356559035916,
       "std": 15000.726337668882,
       "sum": 119999890345.0251,
       "type": "Numeric",
-      "variance": 225021790.6576329,
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "variance": 225021790.6576329
     },
     "is_active": {
       "count": 2000000,
@@ -6716,22 +6745,19 @@
       "n_distinct": 1986564,
       "n_missing": 0,
       "n_negative": 0,
-      "n_unique": "Skipped",
+      "n_unique": 1973174,
       "n_zeros": 0,
       "p_distinct": 0.993282,
       "p_missing": 0.0,
       "p_negative": 0.0,
-      "p_unique": "Skipped",
+      "p_unique": 0.986587,
       "p_zeros": 0.0,
       "range": 149999798,
       "skewness": 0.0006069764127909424,
       "std": 43267493.613284335,
       "sum": 3349965901376441,
       "type": "Numeric",
-      "variance": 1872076003575601.0,
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "variance": 1872076003575601.0
     },
     "notes": {
       "count": 1899713,
@@ -6787,7 +6813,7 @@
           100287
         ]
       },
-      "logical_type": "String",
+      "logical_type": "Categorical",
       "max_length": 7,
       "mean_length": 3.4404981173471993,
       "min_length": 0,
@@ -7177,7 +7203,7 @@
           800840
         ]
       },
-      "logical_type": "String",
+      "logical_type": "Categorical",
       "max_length": 7,
       "mean_length": 5.0004185,
       "min_length": 4,
@@ -7276,23 +7302,20 @@
       "n_infinite": 0,
       "n_missing": 0,
       "n_negative": 0,
-      "n_unique": "Skipped",
+      "n_unique": 2000000,
       "n_zeros": 0,
       "p_distinct": 1.0,
       "p_infinite": 0.0,
       "p_missing": 0.0,
       "p_negative": 0.0,
-      "p_unique": "Skipped",
+      "p_unique": 1.0,
       "p_zeros": 0.0,
       "range": 0.9999995553284825,
       "skewness": 0.0006046919025845837,
       "std": 0.2886221030480389,
       "sum": 999395.6325142414,
       "type": "Numeric",
-      "variance": 0.08330271836787281,
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "variance": 0.08330271836787281
     },
     "signup_date": {
       "count": 2000000,
@@ -7484,6 +7507,52 @@
         "u00000008"
       ],
       "hashable": true,
+      "histogram": {
+        "bins": [
+          "u01595299",
+          "u03859103",
+          "u01539841",
+          "u01899526",
+          "u01552690",
+          "u04585368",
+          "u02894085",
+          "u03528516",
+          "u04556666",
+          "u00846592",
+          "u03173490",
+          "u04959324",
+          "u04718265",
+          "u03034821",
+          "u02879432",
+          "u01500024",
+          "u04213830",
+          "u02916800",
+          "u00350508",
+          "u01109199"
+        ],
+        "counts": [
+          7,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
       "is_unique": false,
       "length_histogram": {
         "bins": [
@@ -7501,17 +7570,12 @@
       "n_distinct": 1648012,
       "n_empty": 0,
       "n_missing": 0,
-      "n_unique": "Skipped",
+      "n_unique": 1339763,
       "p_distinct": 0.824006,
       "p_empty": 0.0,
       "p_missing": 0.0,
-      "p_unique": "Skipped",
-      "top_values": "Skipped",
-      "type": "Categorical",
-      "warnings": [
-        "Unique values skipped for large high-cardinality column. Threshold: 1,000,000",
-        "Frequency table skipped for large high-cardinality column. Threshold: 1,000,000"
-      ]
+      "p_unique": 0.6698815,
+      "type": "Categorical"
     }
   }
 }

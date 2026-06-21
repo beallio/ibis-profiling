@@ -93,7 +93,7 @@ from ibis_profiling import ProfileReport, __version__
 @click.option(
     "--global-batch-size",
     type=int,
-    default=500,
+    default=None,
     show_default=True,
     help="Maximum number of metrics to compute in a single global aggregate query.",
 )

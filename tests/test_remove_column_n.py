@@ -9,7 +9,7 @@ from ibis_profiling import ProfileReport
 def test_no_column_n_in_planner():
     df = pd.DataFrame({"a": [1, 2, None], "b": [4, 5, 6]})
     table = ibis.memtable(df)
-    planner = QueryPlanner(table, registry)
+    planner = QueryPlanner(table, registry, global_batch_size=50)
 
     plans = planner.build_global_aggregation()
     assert len(plans) > 0

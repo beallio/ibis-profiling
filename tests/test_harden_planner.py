@@ -9,7 +9,7 @@ def test_harden_planner_skip_unknown_distinct():
     schema = ibis.schema({"huge_col": dt.string, "json_col": dt.json})
     table = con.create_table("test_harden", schema=schema, temp=True)
 
-    planner = QueryPlanner(table, registry, n_unique_threshold=1000)
+    planner = QueryPlanner(table, registry, n_unique_threshold=1000, global_batch_size=50)
 
     # 1. Test skip when n_distinct is missing (unknown) but n_total > threshold
     metadata = {
@@ -38,7 +38,7 @@ def test_harden_planner_json_non_hashable():
     schema = ibis.schema({"json_col": dt.json})
     table = con.create_table("test_json", schema=schema, temp=True)
 
-    planner = QueryPlanner(table, registry)
+    planner = QueryPlanner(table, registry, global_batch_size=50)
 
     plans = planner.build_complex_metrics()
 
