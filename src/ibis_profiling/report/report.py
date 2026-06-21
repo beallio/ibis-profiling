@@ -390,21 +390,12 @@ class ProfileReport:
 
     def to_dict(self) -> dict:
         self.finalize()
-        from .. import __version__
+        from .models import ReportModel
 
-        pkg_version = __version__
+        d = ReportModel.from_internal(self).to_dict()
+        d["correlations"] = self._format_matrices(d["correlations"])
+        d["missing"] = self._format_matrices(d["missing"])
 
-        d = {
-            "analysis": self.analysis,
-            "table": self.table,
-            "variables": self.variables,
-            "correlations": self._format_matrices(self.correlations),
-            "interactions": self.interactions,
-            "missing": self._format_matrices(self.missing),
-            "alerts": self.alerts,
-            "sample": self.samples,
-            "package": {"name": "ibis-profiling", "version": pkg_version},
-        }
         return self._clean_dict(d)
 
     def _format_matrices(self, obj: Any) -> Any:
