@@ -407,5 +407,21 @@ ibis-profiling/
 
 ---
 
+## 🛠 Development Setup
+
+For first-time or after-reboot local development setup, run the bootstrap script to sync dependencies and install Playwright Chromium (required for e2e tests):
+
+```bash
+./scripts/bootstrap.sh
+```
+
+Then, always run commands through the wrapper script:
+
+```bash
+./run.sh uv run pytest
+```
+
+---
+
 ## 📄 License
 Ibis Profiling is licensed under the **MIT License**. See `LICENSE` for details.
