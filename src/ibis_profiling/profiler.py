@@ -36,45 +36,65 @@ class Profiler:
         missing_matrix_max_columns: int = 50,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
-        n_unique_threshold: int | None = None,
+        n_unique_threshold: int | None = 50_000_000,
         inference_sample_size: int | None = 10_000,
         monotonicity_order_by: str | None = None,
         use_sketches: bool = False,
         global_batch_size: int | None = None,
     ):
         self.table = table
-        self.minimal = minimal
-        self.title = title
         self.on_progress = on_progress
-        self.compute_correlations = not minimal if correlations is None else correlations
-        self.compute_monotonicity = not minimal if monotonicity is None else monotonicity
-        self.explicit_monotonicity = monotonicity is True
-        self.compute_duplicates = not minimal if compute_duplicates is None else compute_duplicates
-        self.explicit_duplicates = compute_duplicates is True
-        self.cardinality_threshold = cardinality_threshold
-        self.max_interaction_pairs = max_interaction_pairs
-        self.correlations_sampling_threshold = correlations_sampling_threshold
-        self.correlations_sample_size = correlations_sample_size
-        # Enforce minimum of 2 columns for correlations
-        self.correlations_max_columns = max(2, correlations_max_columns)
-        self.missing_heatmap_max_columns = max(2, missing_heatmap_max_columns)
-        self.missing_matrix_max_columns = max(2, missing_matrix_max_columns)
-        self.monotonicity_threshold = monotonicity_threshold
-        self.duplicates_threshold = duplicates_threshold
-        self.monotonicity_order_by = monotonicity_order_by
-        self.use_sketches = use_sketches
 
-        # 1. Memory and Batching Heuristics
-        # Note: We execute count() early to inform heuristics.
-        # For remote backends, this is fast.
         n_rows = MemoryManager.to_int(self.table.count().execute())
         n_cols = len(self.table.columns)
 
-        # Dynamic Threshold Logic: max(1M, 10% of total rows)
-        if n_unique_threshold is None:
-            self.n_unique_threshold = max(1_000_000, int(0.1 * n_rows))
-        else:
-            self.n_unique_threshold = n_unique_threshold
+        from .config import ProfileConfig
+
+        self.config = ProfileConfig.resolve(
+            n_rows=n_rows,
+            n_cols=n_cols,
+            minimal=minimal,
+            title=title,
+            correlations=correlations,
+            monotonicity=monotonicity,
+            compute_duplicates=compute_duplicates,
+            cardinality_threshold=cardinality_threshold,
+            max_interaction_pairs=max_interaction_pairs,
+            correlations_sampling_threshold=correlations_sampling_threshold,
+            correlations_sample_size=correlations_sample_size,
+            correlations_max_columns=correlations_max_columns,
+            missing_heatmap_max_columns=missing_heatmap_max_columns,
+            missing_matrix_max_columns=missing_matrix_max_columns,
+            monotonicity_threshold=monotonicity_threshold,
+            duplicates_threshold=duplicates_threshold,
+            n_unique_threshold=n_unique_threshold,
+            inference_sample_size=inference_sample_size,
+            monotonicity_order_by=monotonicity_order_by,
+            use_sketches=use_sketches,
+            global_batch_size=global_batch_size,
+        )
+
+        self.minimal = self.config.minimal
+        self.title = self.config.title
+        self.compute_correlations = self.config.compute_correlations
+        self.compute_monotonicity = self.config.compute_monotonicity
+        self.explicit_monotonicity = self.config.explicit_monotonicity
+        self.compute_duplicates = self.config.compute_duplicates
+        self.explicit_duplicates = self.config.explicit_duplicates
+        self.cardinality_threshold = self.config.cardinality_threshold
+        self.max_interaction_pairs = self.config.max_interaction_pairs
+        self.correlations_sampling_threshold = self.config.correlations_sampling_threshold
+        self.correlations_sample_size = self.config.correlations_sample_size
+        self.correlations_max_columns = self.config.correlations_max_columns
+        self.missing_heatmap_max_columns = self.config.missing_heatmap_max_columns
+        self.missing_matrix_max_columns = self.config.missing_matrix_max_columns
+        self.monotonicity_threshold = self.config.monotonicity_threshold
+        self.duplicates_threshold = self.config.duplicates_threshold
+        self.n_unique_threshold = self.config.n_unique_threshold
+        self.monotonicity_order_by = self.config.monotonicity_order_by
+        self.use_sketches = self.config.use_sketches
+        self.global_batch_size = self.config.global_batch_size
+        self.validation_warnings = list(self.config.validation_warnings)
 
         self.start_time = datetime.now()
         self.analysis = {
@@ -82,16 +102,11 @@ class Profiler:
         }
         self.inspector = DatasetInspector(
             table,
-            minimal=minimal,
+            minimal=self.minimal,
             n_unique_threshold=self.n_unique_threshold,
             inference_sample_size=inference_sample_size,
             row_count=n_rows,
         )
-
-        if global_batch_size is None:
-            self.global_batch_size = MemoryManager.calculate_batch_size(n_rows, n_cols)
-        else:
-            self.global_batch_size = global_batch_size
 
         try:
             con = self.table.get_backend()
@@ -102,29 +117,13 @@ class Profiler:
         self.planner = QueryPlanner(
             table,
             registry,
-            use_sketches=use_sketches,
+            use_sketches=self.use_sketches,
             n_unique_threshold=self.n_unique_threshold,
             global_batch_size=self.global_batch_size,
         )
         self.engine = ExecutionEngine()
 
         self.col_types: dict[str, Any] = self.inspector.get_column_types()
-        self.validation_warnings = []
-
-        # 2. Parameter Validation
-        if self.correlations_sampling_threshold <= 0:
-            self.correlations_sampling_threshold = 1_000_000
-            self.validation_warnings.append(
-                "Invalid correlations_sampling_threshold provided (must be > 0). "
-                "Resetting to default (1,000,000)."
-            )
-
-        if self.correlations_sample_size <= 0:
-            self.correlations_sample_size = 1_000_000
-            self.validation_warnings.append(
-                "Invalid correlations_sample_size provided (must be > 0). "
-                "Resetting to default (1,000,000)."
-            )
 
     def _update_progress(self, inc: int, label: str | None = None):
         if self.on_progress:
@@ -724,7 +723,7 @@ def profile(
     missing_matrix_max_columns: int = 50,
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
-    n_unique_threshold: int | None = None,
+    n_unique_threshold: int | None = 50_000_000,
     inference_sample_size: int | None = 10_000,
     monotonicity_order_by: str | None = None,
     use_sketches: bool = False,
