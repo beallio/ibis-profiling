@@ -300,6 +300,76 @@ class ProfileReport:
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
         self._finalized = True
 
+    _METRIC_HANDLERS = {
+        "top_values": "_metric_top_values",
+        "numeric_histogram": "_metric_numeric_histogram",
+        "length_histogram": "_metric_length_histogram",
+    }
+
+    def _metric_top_values(self, col_name: str, value: Any):
+        # Ibis value_counts() returns [col_name, count_col]
+        # We use positional indexing for robustness
+        keys = list(value.keys())
+        if len(keys) >= 2:
+            label_key = keys[0]
+            count_key = keys[1]
+
+            counts = list(value.get(count_key, []))
+            labels = []
+            for x in value.get(label_key, []):
+                if isinstance(x, (datetime, date)):
+                    labels.append(x.isoformat())
+                elif x == "":
+                    labels.append("(Empty)")
+                else:
+                    labels.append(str(x))
+            self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
+
+    def _metric_numeric_histogram(self, col_name: str, value: Any):
+        # Data is binned: {bin_idx: count, ...} + metadata
+        # We expect value to be a dict: {'counts': {idx: count}, 'min': val, 'max': val, 'nbins': val}
+        counts_dict = value.get("counts", {})
+        v_min = value.get("min", 0)
+        v_max = value.get("max", 0)
+        nbins = value.get("nbins", 20)
+
+        if v_max == v_min:
+            # Constant data
+            self.variables[col_name]["histogram"] = {
+                "bins": [str(v_min)],
+                "counts": [sum(counts_dict.values())],
+            }
+            return
+
+        bin_width = (v_max - v_min) / nbins
+
+        # Reconstruct full range even for empty bins
+        all_counts = []
+        all_labels = []
+        for i in range(nbins):
+            b_start = v_min + (i * bin_width)
+            b_end = v_min + ((i + 1) * bin_width)
+            all_labels.append(f"[{b_start:.2f}, {b_end:.2f}]")
+            all_counts.append(counts_dict.get(i, 0))
+
+        self.variables[col_name]["histogram"] = {"bins": all_labels, "counts": all_counts}
+
+    def _metric_length_histogram(self, col_name: str, value: Any):
+        # Value is a dict with two columns: the length and the count
+        keys = list(value.keys())
+        # First key is length, second is count
+        labels = [str(x) for x in value.get(keys[0], [])]
+        counts = list(value.get(keys[1], []))
+        self.variables[col_name]["length_histogram"] = {"bins": labels, "counts": counts}
+
+    def _metric_extreme_values(self, col_name: str, metric_name: str, value: Any):
+        # Value is a dict like {col_name: [v1, v2, ...]}
+        vals = value.get(col_name, [])
+        self.variables[col_name][metric_name] = [self._to_json_serializable(x) for x in vals]
+
+    def _metric_generic(self, col_name: str, metric_name: str, value: Any):
+        self.variables[col_name][metric_name] = self._to_json_serializable(value)
+
     def add_metric(self, col_name: str, metric_name: str, value: Any):
         """Adds extra data like samples or histograms to the model."""
         if metric_name in ["head", "tail"]:
@@ -310,70 +380,13 @@ class ProfileReport:
                 self.variables[col_name][metric_name] = "Skipped"
                 return
 
-            # Handle complex mapping like histograms
-            if metric_name == "top_values":
-                # Ibis value_counts() returns [col_name, count_col]
-                # We use positional indexing for robustness
-                keys = list(value.keys())
-                if len(keys) >= 2:
-                    label_key = keys[0]
-                    count_key = keys[1]
-
-                    counts = list(value.get(count_key, []))
-                    labels = []
-                    for x in value.get(label_key, []):
-                        if isinstance(x, (datetime, date)):
-                            labels.append(x.isoformat())
-                        elif x == "":
-                            labels.append("(Empty)")
-                        else:
-                            labels.append(str(x))
-                    self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
-
-            elif metric_name == "numeric_histogram":
-                # Data is binned: {bin_idx: count, ...} + metadata
-                # We expect value to be a dict: {'counts': {idx: count}, 'min': val, 'max': val, 'nbins': val}
-                counts_dict = value.get("counts", {})
-                v_min = value.get("min", 0)
-                v_max = value.get("max", 0)
-                nbins = value.get("nbins", 20)
-
-                if v_max == v_min:
-                    # Constant data
-                    self.variables[col_name]["histogram"] = {
-                        "bins": [str(v_min)],
-                        "counts": [sum(counts_dict.values())],
-                    }
-                    return
-
-                bin_width = (v_max - v_min) / nbins
-
-                # Reconstruct full range even for empty bins
-                all_counts = []
-                all_labels = []
-                for i in range(nbins):
-                    b_start = v_min + (i * bin_width)
-                    b_end = v_min + ((i + 1) * bin_width)
-                    all_labels.append(f"[{b_start:.2f}, {b_end:.2f}]")
-                    all_counts.append(counts_dict.get(i, 0))
-
-                self.variables[col_name]["histogram"] = {"bins": all_labels, "counts": all_counts}
-
-            elif metric_name == "length_histogram":
-                # Value is a dict with two columns: the length and the count
-                keys = list(value.keys())
-                # First key is length, second is count
-                labels = [str(x) for x in value.get(keys[0], [])]
-                counts = list(value.get(keys[1], []))
-                self.variables[col_name]["length_histogram"] = {"bins": labels, "counts": counts}
+            if metric_name in self._METRIC_HANDLERS:
+                handler_name = self._METRIC_HANDLERS[metric_name]
+                getattr(self, handler_name)(col_name, value)
             elif metric_name.startswith("extreme_values_"):
-                # Value is a dict like {col_name: [v1, v2, ...]}
-                vals = value.get(col_name, [])
-                self.variables[col_name][metric_name] = [
-                    self._to_json_serializable(x) for x in vals
-                ]
+                self._metric_extreme_values(col_name, metric_name, value)
             else:
-                self.variables[col_name][metric_name] = self._to_json_serializable(value)
+                self._metric_generic(col_name, metric_name, value)
 
     def to_dict(self) -> dict:
         self.finalize()
