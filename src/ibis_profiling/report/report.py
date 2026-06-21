@@ -65,6 +65,118 @@ class ReportEncoder(json.JSONEncoder):
         return res
 
 
+def _derive_variable_metrics(stats: dict, n: int) -> dict:
+    """Return variable statistics with finalized derived metrics."""
+    result = dict(stats)
+
+    m_count = result.get("n_missing", 0)
+    if not isinstance(m_count, (int, float)):
+        m_count = 0
+
+    result["p_missing"] = m_count / n if n > 0 else 0
+
+    n_distinct = result.get("n_distinct")
+    if isinstance(n_distinct, (int, float)):
+        result["p_distinct"] = n_distinct / n if n > 0 else 0
+    else:
+        result["p_distinct"] = n_distinct
+
+    result["count"] = n - m_count
+    result["is_unique"] = (
+        n > 0 and n_distinct == n if isinstance(n_distinct, (int, float)) else False
+    )
+
+    if result.get("type") == "Numeric":
+        if result.get("max") is not None and result.get("min") is not None:
+            result["range"] = result["max"] - result["min"]
+
+        if result.get("75%") is not None and result.get("25%") is not None:
+            result["iqr"] = result["75%"] - result["25%"]
+
+        if result.get("std") is not None and result.get("mean") is not None and result["mean"] != 0:
+            result["cv"] = result["std"] / result["mean"]
+
+        if result.get("n_zeros") is not None:
+            result["p_zeros"] = result["n_zeros"] / n if n > 0 else 0
+
+        if result.get("n_infinite") is not None:
+            result["p_infinite"] = result["n_infinite"] / n if n > 0 else 0
+
+        if result.get("n_negative") is not None:
+            result["p_negative"] = result["n_negative"] / n if n > 0 else 0
+    elif result.get("type") == "Categorical":
+        if result.get("n_empty") is not None:
+            result["p_empty"] = result["n_empty"] / n if n > 0 else 0
+
+        for key in NUMERIC_ONLY_METRICS:
+            result.pop(key, None)
+
+    n_unique = result.get("n_unique")
+    if n_unique is not None:
+        if isinstance(n_unique, (int, float)):
+            result["p_unique"] = n_unique / n if n > 0 else 0
+        else:
+            result["p_unique"] = n_unique
+
+    for key, value in list(result.items()):
+        serialized = serialize_report_value(value)
+        if isinstance(serialized, (str, int, float, bool, list, dict, type(None))):
+            result[key] = serialized
+        else:
+            result[key] = f"__unsupported_type__:{type(value).__name__}:{str(value)}"
+
+    return result
+
+
+def _compute_table_aggregates(variables: dict, n: int) -> dict:
+    """Return table-level aggregates derived from finalized variables."""
+    n_cells_missing = 0
+    n_cells_empty = 0
+    n_vars_constant = 0
+    n_vars_with_missing = 0
+    n_vars_all_missing = 0
+    n_vars_with_empty = 0
+
+    for stats in variables.values():
+        m_count = stats.get("n_missing", 0)
+        if not isinstance(m_count, (int, float)):
+            m_count = 0
+
+        n_cells_missing += m_count
+        if m_count > 0:
+            n_vars_with_missing += 1
+        if m_count == n and n > 0:
+            n_vars_all_missing += 1
+
+        n_distinct = stats.get("n_distinct")
+        if isinstance(n_distinct, (int, float)) and n_distinct == 1:
+            n_vars_constant += 1
+
+        e_count = stats.get("n_empty", 0)
+        if isinstance(e_count, (int, float)) and e_count > 0:
+            n_cells_empty += e_count
+            n_vars_with_empty += 1
+
+    n_var = len(variables)
+    if n > 0 and n_var > 0:
+        p_cells_missing = n_cells_missing / (n * n_var)
+        p_cells_empty = n_cells_empty / (n * n_var)
+    else:
+        p_cells_missing = 0
+        p_cells_empty = 0
+
+    return {
+        "n_cells_missing": n_cells_missing,
+        "n_cells_empty": n_cells_empty,
+        "n_vars_constant": n_vars_constant,
+        "n_vars_with_missing": n_vars_with_missing,
+        "n_vars_all_missing": n_vars_all_missing,
+        "n_vars_with_empty": n_vars_with_empty,
+        "p_cells_missing": p_cells_missing,
+        "p_cells_empty": p_cells_empty,
+    }
+
+
 class ProfileReport:
     """Canonical Report Model that assembles data from specialized engines."""
 
@@ -84,7 +196,7 @@ class ProfileReport:
 
         # Core Model Sections
         self.table = {}
-        self.variables = {}
+        self.variables: Any = {}
         self.correlations = {}
         self.interactions = {}
         self.missing = {}
@@ -187,114 +299,10 @@ class ProfileReport:
 
         n = cast(int, self.table["n"])
 
-        # Reset table counters for idempotency
-        self.table["n_cells_missing"] = 0
-        self.table["n_cells_empty"] = 0
-        self.table["n_vars_with_missing"] = 0
-        self.table["n_vars_with_empty"] = 0
-        self.table["n_vars_all_missing"] = 0
-        self.table["n_vars_constant"] = 0
-
-        n_cells_missing = 0
-        n_cells_empty = 0
-
-        # Post-process variables (normalization & derived metrics)
-        for col, stats in self.variables.items():
-            m_count = stats.get("n_missing", 0)
-            if not isinstance(m_count, (int, float)):
-                m_count = 0
-
-            stats["p_missing"] = m_count / n if n > 0 else 0
-
-            n_distinct = stats.get("n_distinct")
-            if isinstance(n_distinct, (int, float)):
-                stats["p_distinct"] = n_distinct / n if n > 0 else 0
-
-                # Constant detection
-                if n_distinct == 1:
-                    self.table["n_vars_constant"] = cast(int, self.table["n_vars_constant"]) + 1
-            else:
-                stats["p_distinct"] = n_distinct  # Likely "Skipped"
-
-            stats["count"] = n - m_count
-
-            if isinstance(n_distinct, (int, float)):
-                stats["is_unique"] = n > 0 and n_distinct == n
-            else:
-                stats["is_unique"] = False
-
-            # Explicitly accumulate into local variable
-            n_cells_missing += m_count
-
-            if m_count > 0:
-                self.table["n_vars_with_missing"] = cast(int, self.table["n_vars_with_missing"]) + 1
-
-            if m_count == n and n > 0:
-                self.table["n_vars_all_missing"] = cast(int, self.table["n_vars_all_missing"]) + 1
-
-            # Empty Strings (Categorical specific but accumulated here)
-            e_count = stats.get("n_empty", 0)
-            if isinstance(e_count, (int, float)) and e_count > 0:
-                n_cells_empty += e_count
-                self.table["n_vars_with_empty"] = cast(int, self.table["n_vars_with_empty"]) + 1
-
-            # Derived Numeric Stats
-            if stats.get("type") == "Numeric":
-                # Range
-                if stats.get("max") is not None and stats.get("min") is not None:
-                    stats["range"] = stats["max"] - stats["min"]
-
-                # IQR
-                if stats.get("75%") is not None and stats.get("25%") is not None:
-                    stats["iqr"] = stats["75%"] - stats["25%"]
-
-                # CV
-                if (
-                    stats.get("std") is not None
-                    and stats.get("mean") is not None
-                    and stats["mean"] != 0
-                ):
-                    stats["cv"] = stats["std"] / stats["mean"]
-
-                # Zeros Percentage
-                if stats.get("n_zeros") is not None:
-                    stats["p_zeros"] = stats["n_zeros"] / n if n > 0 else 0
-
-                # Infinite Percentage
-                if stats.get("n_infinite") is not None:
-                    stats["p_infinite"] = stats["n_infinite"] / n if n > 0 else 0
-
-                # Negative Percentage
-                if stats.get("n_negative") is not None:
-                    stats["p_negative"] = stats["n_negative"] / n if n > 0 else 0
-            elif stats.get("type") == "Categorical":
-                # Empty Percentage
-                if stats.get("n_empty") is not None:
-                    stats["p_empty"] = stats["n_empty"] / n if n > 0 else 0
-
-                for k in NUMERIC_ONLY_METRICS:
-                    stats.pop(k, None)
-
-            # Unique Percentage (Updated after add_metric calls)
-            n_unique = stats.get("n_unique")
-            if n_unique is not None:
-                if isinstance(n_unique, (int, float)):
-                    stats["p_unique"] = n_unique / n if n > 0 else 0
-                else:
-                    stats["p_unique"] = n_unique  # Likely "Skipped"
-
-            # Ensure other stats are serializable
-            for k, v in list(stats.items()):
-                stats[k] = self._to_json_serializable(v)
-
-        self.table["n_cells_missing"] = n_cells_missing
-        self.table["n_cells_empty"] = n_cells_empty
-        n_var = self.table.get("n_var", 0)
-        if isinstance(n_var, int) and n > 0 and n_var > 0:
-            self.table["p_cells_missing"] = n_cells_missing / (n * n_var)
-            self.table["p_cells_empty"] = n_cells_empty / (n * n_var)
-        else:
-            self.table["p_cells_missing"] = 0
+        self.variables = {
+            col: _derive_variable_metrics(stats, n) for col, stats in self.variables.items()
+        }
+        self.table.update(_compute_table_aggregates(self.variables, n))
 
         # Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
