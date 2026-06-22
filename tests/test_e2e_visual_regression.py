@@ -14,7 +14,7 @@ from ibis_profiling import profile
 BASELINE_DIR = Path(__file__).parent / "visual_baselines"
 ARTIFACT_DIR = Path("/tmp/ibis-profiling/visual_artifacts")
 PIXEL_THRESHOLD = 8
-MAX_DIFF_RATIO = 0.002
+MAX_DIFF_PIXELS = 350
 VIEWS = ("variables", "correlations", "interactions", "missing")
 DEFAULT_NAV = {
     "variables": "button:has-text('Variables')",
@@ -93,17 +93,16 @@ def _assert_or_update_baseline(theme: str, view: str, actual_png: bytes) -> None
     diff = Image.new("RGB", actual.size, "black")
     diff.paste((255, 0, 0), mask=threshold_mask)
 
-    total = actual.width * actual.height
-    ratio = differing / total
-    if ratio > MAX_DIFF_RATIO:
+    # Fine attribute/stroke changes like the sparkline are intentionally caught by the complementary DOM oracle tests/test_e2e_frontend_snapshot.py, not this one.
+    if differing > MAX_DIFF_PIXELS:
         ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
         actual_path = ARTIFACT_DIR / f"{theme}__{view}.actual.png"
         diff_path = ARTIFACT_DIR / f"{theme}__{view}.diff.png"
         actual.save(actual_path)
         diff.save(diff_path)
         pytest.fail(
-            f"Visual drift for {baseline_path}: {ratio:.6f} of pixels differ "
-            f"(maximum {MAX_DIFF_RATIO:.6f}); actual={actual_path}; diff={diff_path}"
+            f"Visual drift for {baseline_path}: {differing} pixels differ "
+            f"(maximum {MAX_DIFF_PIXELS}); actual={actual_path}; diff={diff_path}"
         )
 
 
