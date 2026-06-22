@@ -50,6 +50,12 @@ def visual_reports(tmp_path_factory):
     frame["correlated_col"] = frame["numeric_1"] * 2 + np.random.randn(n) * 0.1
 
     report = profile(ibis.memtable(frame), title="Visual", sample_seed=42)
+    # Pin volatile analysis fields so the rendered report is deterministic across runs
+    # (profiling duration / timestamps vary every run and would otherwise drift the screenshots).
+    report.analysis["date_start"] = "2020-01-01T00:00:00"
+    report.analysis["date_end"] = "2020-01-01T00:00:00"
+    report.analysis["duration"] = 0
+    report.analysis["performance"] = {}
     paths = {}
     for theme in ("default", "ydata-like"):
         path = output_dir / f"{theme}.html"
