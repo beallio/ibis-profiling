@@ -86,6 +86,7 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "pytest-playwright>=0.7.2",
+    "ruff>=0.15.14",
     "setuptools>=70.0.0",
     "ty>=0.0.24",
     "xlsxwriter>=3.2.9",
