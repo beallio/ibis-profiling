@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, refactor/findings-on-trunk]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: lint · type · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bootstrap (deps + Chromium + vendored esbuild)
+        # Installs the project venv, Playwright Chromium, and the pinned, SHA256-verified
+        # esbuild binary (tools/frontend/esbuild.lock.json). Fails on any checksum mismatch.
+        run: ./scripts/bootstrap.sh
+
+      - name: Playwright system dependencies
+        run: ./run.sh uv run playwright install-deps chromium
+
+      - name: esbuild supply-chain cooldown guard
+        run: ./run.sh uv run python scripts/check_esbuild_cooldown.py
+
+      - name: Lint (ruff)
+        run: ./run.sh uv run ruff check .
+
+      - name: Type check (ty)
+        run: ./run.sh uv run ty check src/
+
+      - name: Tests (pytest, incl. regression gate + e2e snapshots)
+        run: ./run.sh uv run pytest
