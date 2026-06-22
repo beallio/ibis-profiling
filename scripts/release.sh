@@ -49,8 +49,11 @@ if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
   exit 1
 fi
 
-git fetch --quiet origin "$branch" --tags
-if [[ -n "$(git log --oneline "HEAD..origin/$branch" 2>/dev/null || true)" ]]; then
+if ! git fetch --quiet origin "$branch" --tags; then
+  echo "warning: could not fetch origin/$branch; behind-check uses local refs" >&2
+fi
+if git rev-parse -q --verify "origin/$branch" >/dev/null &&
+  [[ -n "$(git log --oneline "HEAD..origin/$branch" 2>/dev/null || true)" ]]; then
   echo "error: $branch is behind origin/$branch; pull before releasing" >&2
   exit 1
 fi
