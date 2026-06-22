@@ -30,8 +30,9 @@ def test_benchmark_profile_returns_timing_statistics():
 
     result = benchmark_profile(table, repeat=2, minimal=True)
 
-    assert set(result) == {"min_seconds", "mean_seconds", "max_seconds"}
+    assert set(result) == {"min_seconds", "median_seconds", "mean_seconds", "max_seconds"}
     assert 0 <= result["min_seconds"] <= result["mean_seconds"] <= result["max_seconds"]
+    assert result["min_seconds"] <= result["median_seconds"] <= result["max_seconds"]
 
 
 def test_render_report_writes_json(tmp_path):
