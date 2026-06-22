@@ -18,7 +18,7 @@ THEMES = ("default", "ydata-like")
 def test_template_sources_use_extracted_app_bundles():
     entrypoints = {
         "default": FRONTEND_DIR / "default" / "index.jsx",
-        "ydata-like": FRONTEND_DIR / "ydata-like" / "app.jsx",
+        "ydata-like": FRONTEND_DIR / "ydata-like" / "index.jsx",
     }
 
     for theme, entrypoint in entrypoints.items():
@@ -29,6 +29,45 @@ def test_template_sources_use_extracted_app_bundles():
         assert template_source.count("<!-- {{APP_BUNDLE}} -->") == 1
         assert 'type="text/babel"' not in template_source
         assert "@babel/standalone" not in template_source
+
+
+def test_ydata_frontend_uses_foundation_modules():
+    ydata_frontend = FRONTEND_DIR / "ydata-like"
+    index_source = (ydata_frontend / "index.jsx").read_text()
+
+    assert not (ydata_frontend / "app.jsx").exists()
+    assert 'import { REPORT_DATA } from "./data.js";' in index_source
+    assert 'from "./helpers.js";' in index_source
+
+    component_names = (
+        "TypeIcon",
+        "HistogramChart",
+        "StatRow",
+        "NullityMatrix",
+        "CorrelationMatrixComponent",
+        "ScatterPlot",
+    )
+    for component_name in component_names:
+        component_path = ydata_frontend / "components" / f"{component_name}.jsx"
+        component_source = component_path.read_text()
+
+        assert f'from "./components/{component_name}.jsx";' in index_source
+        assert f"export const {component_name}" in component_source
+        assert f"const {component_name}" not in index_source
+        assert 'from "react"' not in component_source
+
+    for section_name in (
+        "OverviewSection",
+        "VariableDetails",
+        "VariableCard",
+        "MissingValuesSection",
+        "CorrelationsSection",
+        "SampleSection",
+        "InteractionsSection",
+    ):
+        assert f"const {section_name}" in index_source
+
+    assert "function App()" in index_source
 
 
 def test_default_frontend_uses_modular_app_shell():
