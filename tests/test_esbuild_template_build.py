@@ -31,6 +31,26 @@ def test_template_sources_use_extracted_app_bundles():
         assert "@babel/standalone" not in template_source
 
 
+def test_default_frontend_uses_modular_app_shell():
+    default_frontend = FRONTEND_DIR / "default"
+    index_source = (default_frontend / "index.jsx").read_text()
+    app_source = (default_frontend / "App.jsx").read_text()
+    app_content_source = (default_frontend / "AppContent.jsx").read_text()
+
+    assert index_source.strip() == (
+        'import { App } from "./App.jsx";\n\n'
+        "const root = ReactDOM.createRoot(document.getElementById('root'));\n"
+        "root.render(<App />);"
+    )
+    assert "export function App()" in app_source
+    assert 'import { AppContent } from "./AppContent.jsx";' in app_source
+    assert "export function AppContent()" in app_content_source
+    assert "function AppContent()" not in index_source
+    assert "function App()" not in index_source
+    assert 'from "react"' not in app_source
+    assert 'from "react"' not in app_content_source
+
+
 def test_template_builder_has_no_browser_or_report_runtime_dependencies():
     build_script = ROOT / "scripts" / "build_templates.py"
     tree = ast.parse(build_script.read_text())
