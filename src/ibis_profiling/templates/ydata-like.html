@@ -152,6 +152,22 @@
     return colors[type] || "bg-blue-100 text-blue-800 border-blue-200";
   };
 
+  // frontend/ydata-like/components/StatRow.jsx
+  var StatRow = ({ label, value, subValue = null, alert = false, compact = false }) => /* @__PURE__ */ React.createElement("div", { className: `flex justify-between ${compact ? "py-0" : "py-1.5"} ${compact ? "" : "border-b border-gray-100"} last:border-0 text-sm` }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-600" }, label), /* @__PURE__ */ React.createElement("div", { className: "text-right" }, /* @__PURE__ */ React.createElement("span", { className: `font-medium ${alert ? "text-red-600" : "text-gray-800"}` }, value), subValue && /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs ml-2" }, subValue)));
+
+  // frontend/ydata-like/components/OverviewSection.jsx
+  var { Info, AlertTriangle } = LucideReact;
+  var OverviewSection = ({ data }) => {
+    const table = data.table;
+    const types = Object.entries(table.types || {});
+    return /* @__PURE__ */ React.createElement("div", { id: "overview", className: "space-y-2 animate-fadeIn section-top" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(Info, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Overview")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-6" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider" }, "Dataset statistics"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-0 flex-1" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Number of variables", value: formatNum(table.n_var), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Number of observations", value: formatNum(table.n), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Missing cells", value: formatNum(table.n_cells_missing), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Missing cells (%)", value: formatPct(table.p_cells_missing), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Empty cells", value: formatNum(table.n_cells_empty), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Empty cells (%)", value: formatPct(table.p_cells_empty), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variables with missing values", value: formatNum(table.n_vars_with_missing), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variables with empty values", value: formatNum(table.n_vars_with_empty), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variables with all missing values", value: formatNum(table.n_vars_all_missing), compact: true }), table.n_vars_constant !== void 0 && /* @__PURE__ */ React.createElement(StatRow, { label: "Constant variables", value: formatNum(table.n_vars_constant), compact: true }), table.n_duplicates !== void 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(StatRow, { label: "Duplicate rows", value: formatNum(table.n_duplicates), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Duplicate rows (%)", value: formatPct(table.p_duplicates), compact: true })), /* @__PURE__ */ React.createElement(StatRow, { label: "Total size in memory", value: formatBytes(table.memory_size), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Average record size in memory", value: `${formatNum(table.record_size)} B`, compact: true }))), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider" }, "Variable types"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-0 flex-1" }, types.length > 0 ? types.map(([type, count]) => /* @__PURE__ */ React.createElement(StatRow, { key: type, label: type, value: count, compact: true })) : /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-sm italic" }, "No type data available."))), data.alerts && data.alerts.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 flex flex-col overflow-hidden lg:col-span-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-2 border-b border-gray-200 flex items-center shrink-0" }, /* @__PURE__ */ React.createElement(AlertTriangle, { size: 16, className: "text-yellow-500 mr-2" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-gray-700 uppercase tracking-wider" }, "Alerts")), /* @__PURE__ */ React.createElement("div", { className: "p-0 overflow-y-auto max-h-[300px] flex-1" }, /* @__PURE__ */ React.createElement("ul", { className: "divide-y divide-gray-100" }, data.alerts.map((alert, idx) => {
+      return /* @__PURE__ */ React.createElement("li", { key: idx, className: "p-2 hover:bg-gray-50 transition-colors flex items-start gap-3 text-xs" }, /* @__PURE__ */ React.createElement("span", { className: `
+                        inline-block px-1.5 py-0.5 text-[10px] rounded border font-medium whitespace-nowrap mt-0.5
+                        ${getAlertColor(alert.alert_type)}
+                      ` }, alert.alert_type.replace(/_/g, " ")), /* @__PURE__ */ React.createElement("span", { className: "text-gray-700" }, /* @__PURE__ */ React.createElement("strong", null, alert.fields.join(", ")), " has a ", alert.alert_type.toLowerCase().replace(/_/g, " "), " condition", alert.value !== void 0 ? ` (${typeof alert.value === "number" && alert.value < 1 ? formatPct(alert.value) : formatNum(alert.value)})` : "", "."));
+    })))) : /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-3 flex items-center justify-center lg:col-span-4 text-gray-400 italic text-sm" }, "No alerts detected.")));
+  };
+
   // frontend/ydata-like/components/TypeIcon.jsx
   var { Hash, AlignLeft, ToggleLeft, Database } = LucideReact;
   var TypeIcon = ({ type }) => {
@@ -199,57 +215,36 @@
     }));
   };
 
-  // frontend/ydata-like/components/StatRow.jsx
-  var StatRow = ({ label, value, subValue = null, alert = false, compact = false }) => /* @__PURE__ */ React.createElement("div", { className: `flex justify-between ${compact ? "py-0" : "py-1.5"} ${compact ? "" : "border-b border-gray-100"} last:border-0 text-sm` }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-600" }, label), /* @__PURE__ */ React.createElement("div", { className: "text-right" }, /* @__PURE__ */ React.createElement("span", { className: `font-medium ${alert ? "text-red-600" : "text-gray-800"}` }, value), subValue && /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs ml-2" }, subValue)));
+  // frontend/ydata-like/components/VariableDetails.jsx
+  var VariableDetails = ({ variable }) => {
+    const isNumeric = variable.type === "Numeric";
+    const isCategorical = variable.type === "Categorical" || variable.type === "Boolean";
+    return /* @__PURE__ */ React.createElement("div", { className: `mt-6 ${isNumeric ? "border-t border-gray-100 pt-6" : ""} animate-fadeIn` }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-8" }, isNumeric && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Quantile statistics"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Minimum", value: formatNum(variable.min) }), /* @__PURE__ */ React.createElement(StatRow, { label: "5-th percentile", value: formatNum(variable["5%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Q1", value: formatNum(variable["25%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Median", value: formatNum(variable["50%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Q3", value: formatNum(variable["75%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "95-th percentile", value: formatNum(variable["95%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Maximum", value: formatNum(variable.max) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Range", value: formatNum(variable.range) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Interquartile range", value: formatNum(variable.iqr) }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Descriptive statistics"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Standard deviation", value: formatNum(variable.std) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Coefficient of variation", value: formatNum(variable.cv) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Kurtosis", value: formatNum(variable.kurtosis) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Mean", value: formatNum(variable.mean) }), /* @__PURE__ */ React.createElement(StatRow, { label: "MAD", value: formatNum(variable.mad) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Skewness", value: formatNum(variable.skewness) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variance", value: formatNum(variable.variance) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Monotonicity", value: variable.monotonic_increasing === "Skipped" ? "Skipped" : variable.monotonic_increasing ? "Increasing" : variable.monotonic_decreasing ? "Decreasing" : "None" })))), isCategorical && /* @__PURE__ */ React.createElement(React.Fragment, null, variable.mean_length !== void 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Length (characters)"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Max length", value: formatNum(variable.max_length) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Mean length", value: formatNum(variable.mean_length) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Min length", value: formatNum(variable.min_length) }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Frequency Summary"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, variable.histogram && variable.histogram.bins.slice(0, 5).map((bin, i) => /* @__PURE__ */ React.createElement(StatRow, { key: i, label: String(bin), value: formatNum(variable.histogram.counts[i]), subValue: `(${(variable.histogram.counts[i] / REPORT_DATA.table.n * 100).toFixed(1)}%)` })), (!variable.histogram || variable.histogram.bins.length === 0) && /* @__PURE__ */ React.createElement("div", { className: "h-24 flex items-center justify-center text-gray-400 text-sm italic" }, "No frequency data available."))))));
+  };
 
-  // frontend/ydata-like/components/NullityMatrix.jsx
-  var { AlertTriangle } = LucideReact;
-  var NullityMatrix = ({ data, metadata }) => {
-    if (!data || !Array.isArray(data) || data.length === 0) return null;
-    const columns = Object.keys(data[0]);
-    const numRows = data.length;
-    const numCols = columns.length;
-    const values = data.map((row) => columns.map((c) => row[c]));
-    const svgWidth = 1e3;
-    const svgHeight = 400;
-    const colWidth = svgWidth / numCols;
-    const rowHeight = svgHeight / numRows;
-    const rowCompleteness = values.map((row) => row.filter((isMissing) => !isMissing).length);
-    const getBlocks = (cIdx) => {
-      const blocks = [];
-      let inBlock = false;
-      let start = 0;
-      for (let r = 0; r < numRows; r++) {
-        const isPresent = !values[r][cIdx];
-        if (isPresent && !inBlock) {
-          inBlock = true;
-          start = r;
-        } else if (!isPresent && inBlock) {
-          inBlock = false;
-          blocks.push({ start, end: r - 1 });
-        }
-      }
-      if (inBlock) {
-        blocks.push({ start, end: numRows - 1 });
-      }
-      return blocks;
-    };
-    const sparklinePoints = rowCompleteness.map(
-      (count, rIdx) => `${count / numCols * 100},${rIdx * rowHeight + rowHeight / 2}`
-    ).join(" ");
-    const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
-    return /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto mt-8 pt-4 border-t border-gray-100" }, /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-medium text-gray-800 mb-2" }, "Matrix"), metadata?.truncated && /* @__PURE__ */ React.createElement("div", { className: "mb-4 text-amber-600 text-xs font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(AlertTriangle, { size: 12 }), " Matrix truncated to first ", metadata.limit, " columns out of ", metadata.original_count), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-gray-500 mb-6" }, "Visualization of data completeness (first ", numRows, " rows). Gaps indicate missing data."), /* @__PURE__ */ React.createElement("div", { className: "flex gap-4 items-end", style: { minWidth: `${Math.max(800, numCols * 25)}px` } }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 relative" }, /* @__PURE__ */ React.createElement("div", { className: "flex mb-2" }, columns.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c, style: { width: `${100 / numCols}%` }, className: "flex justify-start h-32 relative overflow-visible" }, /* @__PURE__ */ React.createElement("span", { className: `absolute bottom-1 left-1/2 origin-bottom-left text-[10px] font-mono text-gray-500 whitespace-nowrap ${numCols > 15 ? "-rotate-90" : "-rotate-45"}` }, c)))), /* @__PURE__ */ React.createElement("svg", { viewBox: `0 0 ${svgWidth} ${svgHeight}`, preserveAspectRatio: "none", className: "w-full h-[500px] bg-gray-50 border border-gray-200 shadow-inner rounded-sm" }, columns.map((_, cIdx) => /* @__PURE__ */ React.createElement("g", { key: cIdx, transform: `translate(${cIdx * colWidth}, 0)` }, /* @__PURE__ */ React.createElement("line", { x1: colWidth / 2, y1: "0", x2: colWidth / 2, y2: svgHeight, stroke: "#e5e7eb", strokeWidth: "0.5", strokeDasharray: "4 4" }), getBlocks(cIdx).map((block, i) => /* @__PURE__ */ React.createElement(
-      "rect",
+  // frontend/ydata-like/components/VariableCard.jsx
+  var { useState } = React;
+  var { ChevronRight, ChevronDown, Grid } = LucideReact;
+  var VariableCard = ({ name, variable }) => {
+    const isNumeric = variable.type === "Numeric";
+    const isCategorical = variable.type === "Categorical" || variable.type === "Boolean";
+    const [expanded, setExpanded] = useState(true);
+    const isHighCardinality = variable.type === "Categorical" && variable.p_distinct > 0.5;
+    return /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4" }, /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(TypeIcon, { type: variable.type }), /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-bold text-gray-800" }, name)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 bg-gray-200 text-gray-700 text-xs rounded-full font-medium" }, variable.logical_type && variable.logical_type !== variable.type ? `${variable.type} (${variable.logical_type})` : variable.type), isHighCardinality && /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium border border-yellow-200" }, "High cardinality"), variable.is_unique && /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium border border-blue-200" }, "Unique"))), /* @__PURE__ */ React.createElement("div", { className: "p-5" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-8" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-x-8 gap-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "col-span-2 mb-3" }, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 uppercase tracking-wider" }, "Overview")), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Distinct"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.n_distinct), " ", /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal" }, "(", formatPct(variable.p_distinct), ")")), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Missing"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, /* @__PURE__ */ React.createElement("span", { className: variable.n_missing > 0 ? "text-red-600" : "" }, formatNum(variable.n_missing)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal ml-1" }, "(", formatPct(variable.p_missing), ")")), variable.type === "Categorical" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Empty"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, /* @__PURE__ */ React.createElement("span", { className: variable.n_empty > 0 ? "text-amber-600" : "" }, formatNum(variable.n_empty)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal ml-1" }, "(", formatPct(variable.p_empty), ")"))), isNumeric && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Infinite"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.n_infinite), " ", /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal" }, "(", formatPct(variable.p_infinite), ")")), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Mean"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.mean)), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Minimum"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.min)), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Maximum"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.max)), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Zeros"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, /* @__PURE__ */ React.createElement("span", { className: variable.n_zeros > 0 ? "text-yellow-600" : "" }, formatNum(variable.n_zeros)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal ml-1" }, "(", formatPct(variable.p_zeros), ")"))))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center items-center pb-6" }, variable.histogram && /* @__PURE__ */ React.createElement(
+      HistogramChart,
       {
-        key: i,
-        x: colWidth * 0.05,
-        y: block.start * rowHeight,
-        width: colWidth * 0.9,
-        height: (block.end - block.start + 1) * rowHeight,
-        fill: "#475569",
-        className: "transition-all hover:fill-blue-500"
+        data: variable.histogram,
+        isCategorical
       }
-    )))))), /* @__PURE__ */ React.createElement("div", { className: "w-20 h-[500px] relative flex flex-col items-center" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 font-mono text-center absolute -top-8 w-full" }, "Data", /* @__PURE__ */ React.createElement("br", null), "Completeness"), /* @__PURE__ */ React.createElement("svg", { viewBox: `0 0 100 ${svgHeight}`, preserveAspectRatio: "none", className: "w-full h-full border-r border-t border-b border-gray-200 bg-gray-50 rounded-r-sm" }, /* @__PURE__ */ React.createElement("polygon", { points: sparkPoly, fill: "rgba(59, 130, 246, 0.15)" }), /* @__PURE__ */ React.createElement("polyline", { points: sparklinePoints, fill: "none", stroke: "#3b82f6", strokeWidth: "1.5" })), /* @__PURE__ */ React.createElement("div", { className: "absolute top-2 right-2 text-xs font-mono text-gray-400" }, numCols), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2 right-2 text-xs font-mono text-gray-400" }, "0"))));
+    ), (!variable.histogram || variable.histogram.bins.length === 0) && isHighCardinality && /* @__PURE__ */ React.createElement("div", { className: "text-gray-400 text-sm flex flex-col items-center justify-center h-full text-center p-4" }, /* @__PURE__ */ React.createElement(Grid, { size: 32, className: "mb-2 opacity-20" }), "High cardinality variable.", /* @__PURE__ */ React.createElement("br", null), "Too many distinct values to display distribution."))), isNumeric && /* @__PURE__ */ React.createElement("div", { className: "mt-4 flex justify-end" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setExpanded(!expanded),
+        className: "flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded"
+      },
+      expanded ? "Hide details" : "More details",
+      expanded ? /* @__PURE__ */ React.createElement(ChevronDown, { size: 16 }) : /* @__PURE__ */ React.createElement(ChevronRight, { size: 16 })
+    )), (expanded || !isNumeric) && /* @__PURE__ */ React.createElement(VariableDetails, { variable })));
   };
 
   // frontend/ydata-like/components/CorrelationMatrixComponent.jsx
@@ -273,6 +268,33 @@
         isMissing ? /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[10px] italic" }, "Null") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: `font-mono text-[10px] ${bgOpacity > 0.5 ? "text-white" : "text-gray-800"}` }, cell === 1 ? "1.0" : cell.toFixed(2)))
       );
     }))))));
+  };
+
+  // frontend/ydata-like/components/CorrelationsSection.jsx
+  var { useState: useState2, useMemo: useMemo2, useEffect } = React;
+  var { PieChart, Info: Info2, AlertTriangle: AlertTriangle2 } = LucideReact;
+  var CorrelationsSection = ({ data }) => {
+    if (!data.correlations || Object.keys(data.correlations).length === 0) return null;
+    const defaultCorrType = useMemo2(() => {
+      const keys = Object.keys(data.correlations).filter((k) => k !== "_metadata");
+      return keys[0] || "";
+    }, [data.correlations]);
+    const [corrType, setCorrType] = useState2(defaultCorrType);
+    useEffect(() => {
+      if (defaultCorrType && !Object.keys(data.correlations || {}).includes(corrType)) {
+        setCorrType(defaultCorrType);
+      }
+    }, [defaultCorrType, corrType, data.correlations]);
+    if (!corrType || !data.correlations[corrType]) return null;
+    return /* @__PURE__ */ React.createElement("div", { id: "correlations", className: "space-y-4 animate-fadeIn section" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(PieChart, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Correlations"), data.correlations?.[corrType]?.sampled && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Info2, { size: 12 }), " Sampled estimate (", data.correlations[corrType].sample_size?.toLocaleString(), " rows)"), data.correlations?._metadata?.truncated && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(AlertTriangle2, { size: 12 }), " Matrix truncated to top ", data.correlations._metadata.limit, " variables out of ", data.correlations._metadata.original_count))), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-8" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar" }, Object.keys(data.correlations).filter((type) => type !== "_metadata").map((type) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: type,
+        onClick: () => setCorrType(type),
+        className: `px-4 py-2 text-sm font-medium rounded-md transition-colors ${corrType === type ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`
+      },
+      type
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-center" }, /* @__PURE__ */ React.createElement(CorrelationMatrixComponent, { data: data.correlations[corrType] }))));
   };
 
   // frontend/ydata-like/components/ScatterPlot.jsx
@@ -326,56 +348,91 @@
     )), /* @__PURE__ */ React.createElement("text", { x: width / 2, y: height - 10, textAnchor: "middle", className: "text-xs font-medium fill-gray-500 uppercase tracking-wider" }, xLabel), /* @__PURE__ */ React.createElement("text", { x: 15, y: height / 2, textAnchor: "middle", transform: `rotate(-90, 15, ${height / 2})`, className: "text-xs font-medium fill-gray-500 uppercase tracking-wider" }, yLabel), /* @__PURE__ */ React.createElement("text", { x: padding, y: height - padding + 20, textAnchor: "middle", className: "text-[10px] fill-gray-400 font-mono" }, formatNum(xMin)), /* @__PURE__ */ React.createElement("text", { x: width - padding, y: height - padding + 20, textAnchor: "middle", className: "text-[10px] fill-gray-400 font-mono" }, formatNum(xMax)), /* @__PURE__ */ React.createElement("text", { x: padding - 10, y: height - padding, textAnchor: "end", className: "text-[10px] fill-gray-400 font-mono" }, formatNum(yMin)), /* @__PURE__ */ React.createElement("text", { x: padding - 10, y: padding, textAnchor: "end", className: "text-[10px] fill-gray-400 font-mono" }, formatNum(yMax))));
   };
 
-  // frontend/ydata-like/index.jsx
-  var { useState, useMemo: useMemo2, useEffect } = React;
-  var {
-    AlertTriangle: AlertTriangle2,
-    Info,
-    BarChart2,
-    Hash: Hash2,
-    AlignLeft: AlignLeft2,
-    Grid,
-    ChevronRight,
-    ChevronDown,
-    PieChart,
-    ScatterChart
-  } = LucideReact;
-  var OverviewSection = ({ data }) => {
-    const table = data.table;
-    const types = Object.entries(table.types || {});
-    return /* @__PURE__ */ React.createElement("div", { id: "overview", className: "space-y-2 animate-fadeIn section-top" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(Info, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Overview")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-6" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider" }, "Dataset statistics"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-0 flex-1" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Number of variables", value: formatNum(table.n_var), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Number of observations", value: formatNum(table.n), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Missing cells", value: formatNum(table.n_cells_missing), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Missing cells (%)", value: formatPct(table.p_cells_missing), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Empty cells", value: formatNum(table.n_cells_empty), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Empty cells (%)", value: formatPct(table.p_cells_empty), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variables with missing values", value: formatNum(table.n_vars_with_missing), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variables with empty values", value: formatNum(table.n_vars_with_empty), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variables with all missing values", value: formatNum(table.n_vars_all_missing), compact: true }), table.n_vars_constant !== void 0 && /* @__PURE__ */ React.createElement(StatRow, { label: "Constant variables", value: formatNum(table.n_vars_constant), compact: true }), table.n_duplicates !== void 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(StatRow, { label: "Duplicate rows", value: formatNum(table.n_duplicates), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Duplicate rows (%)", value: formatPct(table.p_duplicates), compact: true })), /* @__PURE__ */ React.createElement(StatRow, { label: "Total size in memory", value: formatBytes(table.memory_size), compact: true }), /* @__PURE__ */ React.createElement(StatRow, { label: "Average record size in memory", value: `${formatNum(table.record_size)} B`, compact: true }))), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-3 flex flex-col lg:col-span-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-2 uppercase tracking-wider" }, "Variable types"), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-0 flex-1" }, types.length > 0 ? types.map(([type, count]) => /* @__PURE__ */ React.createElement(StatRow, { key: type, label: type, value: count, compact: true })) : /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-sm italic" }, "No type data available."))), data.alerts && data.alerts.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 flex flex-col overflow-hidden lg:col-span-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-2 border-b border-gray-200 flex items-center shrink-0" }, /* @__PURE__ */ React.createElement(AlertTriangle2, { size: 16, className: "text-yellow-500 mr-2" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-gray-700 uppercase tracking-wider" }, "Alerts")), /* @__PURE__ */ React.createElement("div", { className: "p-0 overflow-y-auto max-h-[300px] flex-1" }, /* @__PURE__ */ React.createElement("ul", { className: "divide-y divide-gray-100" }, data.alerts.map((alert, idx) => {
-      return /* @__PURE__ */ React.createElement("li", { key: idx, className: "p-2 hover:bg-gray-50 transition-colors flex items-start gap-3 text-xs" }, /* @__PURE__ */ React.createElement("span", { className: `
-                            inline-block px-1.5 py-0.5 text-[10px] rounded border font-medium whitespace-nowrap mt-0.5
-                            ${getAlertColor(alert.alert_type)}
-                          ` }, alert.alert_type.replace(/_/g, " ")), /* @__PURE__ */ React.createElement("span", { className: "text-gray-700" }, /* @__PURE__ */ React.createElement("strong", null, alert.fields.join(", ")), " has a ", alert.alert_type.toLowerCase().replace(/_/g, " "), " condition", alert.value !== void 0 ? ` (${typeof alert.value === "number" && alert.value < 1 ? formatPct(alert.value) : formatNum(alert.value)})` : "", "."));
-    })))) : /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-3 flex items-center justify-center lg:col-span-4 text-gray-400 italic text-sm" }, "No alerts detected.")));
-  };
-  var VariableDetails = ({ variable }) => {
-    const isNumeric = variable.type === "Numeric";
-    const isCategorical = variable.type === "Categorical" || variable.type === "Boolean";
-    return /* @__PURE__ */ React.createElement("div", { className: `mt-6 ${isNumeric ? "border-t border-gray-100 pt-6" : ""} animate-fadeIn` }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-8" }, isNumeric && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Quantile statistics"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Minimum", value: formatNum(variable.min) }), /* @__PURE__ */ React.createElement(StatRow, { label: "5-th percentile", value: formatNum(variable["5%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Q1", value: formatNum(variable["25%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Median", value: formatNum(variable["50%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Q3", value: formatNum(variable["75%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "95-th percentile", value: formatNum(variable["95%"]) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Maximum", value: formatNum(variable.max) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Range", value: formatNum(variable.range) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Interquartile range", value: formatNum(variable.iqr) }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Descriptive statistics"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Standard deviation", value: formatNum(variable.std) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Coefficient of variation", value: formatNum(variable.cv) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Kurtosis", value: formatNum(variable.kurtosis) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Mean", value: formatNum(variable.mean) }), /* @__PURE__ */ React.createElement(StatRow, { label: "MAD", value: formatNum(variable.mad) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Skewness", value: formatNum(variable.skewness) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Variance", value: formatNum(variable.variance) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Monotonicity", value: variable.monotonic_increasing === "Skipped" ? "Skipped" : variable.monotonic_increasing ? "Increasing" : variable.monotonic_decreasing ? "Decreasing" : "None" })))), isCategorical && /* @__PURE__ */ React.createElement(React.Fragment, null, variable.mean_length !== void 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Length (characters)"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, /* @__PURE__ */ React.createElement(StatRow, { label: "Max length", value: formatNum(variable.max_length) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Mean length", value: formatNum(variable.mean_length) }), /* @__PURE__ */ React.createElement(StatRow, { label: "Min length", value: formatNum(variable.min_length) }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider" }, "Frequency Summary"), /* @__PURE__ */ React.createElement("div", { className: "bg-gray-50 p-4 rounded border border-gray-100" }, variable.histogram && variable.histogram.bins.slice(0, 5).map((bin, i) => /* @__PURE__ */ React.createElement(StatRow, { key: i, label: String(bin), value: formatNum(variable.histogram.counts[i]), subValue: `(${(variable.histogram.counts[i] / REPORT_DATA.table.n * 100).toFixed(1)}%)` })), (!variable.histogram || variable.histogram.bins.length === 0) && /* @__PURE__ */ React.createElement("div", { className: "h-24 flex items-center justify-center text-gray-400 text-sm italic" }, "No frequency data available."))))));
-  };
-  var VariableCard = ({ name, variable }) => {
-    const isNumeric = variable.type === "Numeric";
-    const isCategorical = variable.type === "Categorical" || variable.type === "Boolean";
-    const [expanded, setExpanded] = useState(true);
-    const isHighCardinality = variable.type === "Categorical" && variable.p_distinct > 0.5;
-    return /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-4" }, /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(TypeIcon, { type: variable.type }), /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-bold text-gray-800" }, name)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 bg-gray-200 text-gray-700 text-xs rounded-full font-medium" }, variable.logical_type && variable.logical_type !== variable.type ? `${variable.type} (${variable.logical_type})` : variable.type), isHighCardinality && /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium border border-yellow-200" }, "High cardinality"), variable.is_unique && /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium border border-blue-200" }, "Unique"))), /* @__PURE__ */ React.createElement("div", { className: "p-5" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-8" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-x-8 gap-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "col-span-2 mb-3" }, /* @__PURE__ */ React.createElement("h4", { className: "text-sm font-semibold text-gray-700 uppercase tracking-wider" }, "Overview")), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Distinct"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.n_distinct), " ", /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal" }, "(", formatPct(variable.p_distinct), ")")), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Missing"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, /* @__PURE__ */ React.createElement("span", { className: variable.n_missing > 0 ? "text-red-600" : "" }, formatNum(variable.n_missing)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal ml-1" }, "(", formatPct(variable.p_missing), ")")), variable.type === "Categorical" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Empty"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, /* @__PURE__ */ React.createElement("span", { className: variable.n_empty > 0 ? "text-amber-600" : "" }, formatNum(variable.n_empty)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal ml-1" }, "(", formatPct(variable.p_empty), ")"))), isNumeric && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Infinite"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.n_infinite), " ", /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal" }, "(", formatPct(variable.p_infinite), ")")), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Mean"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.mean)), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Minimum"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.min)), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Maximum"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, formatNum(variable.max)), /* @__PURE__ */ React.createElement("div", { className: "text-sm text-gray-600 py-1 border-b border-gray-50" }, "Zeros"), /* @__PURE__ */ React.createElement("div", { className: "text-sm font-medium text-right py-1 border-b border-gray-50" }, /* @__PURE__ */ React.createElement("span", { className: variable.n_zeros > 0 ? "text-yellow-600" : "" }, formatNum(variable.n_zeros)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-xs font-normal ml-1" }, "(", formatPct(variable.p_zeros), ")"))))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center items-center pb-6" }, variable.histogram && /* @__PURE__ */ React.createElement(
-      HistogramChart,
-      {
-        data: variable.histogram,
-        isCategorical
+  // frontend/ydata-like/components/InteractionsSection.jsx
+  var { useState: useState3, useMemo: useMemo3 } = React;
+  var { ScatterChart, AlertTriangle: AlertTriangle3 } = LucideReact;
+  var InteractionsSection = ({ data }) => {
+    if (!data.interactions || Object.keys(data.interactions).length === 0) return null;
+    const columns = Object.keys(data.interactions).filter((k) => k !== "_metadata").sort();
+    const [colX, setColX] = useState3(columns[0]);
+    const [colY, setColY] = useState3(columns[1] || columns[0]);
+    const points = useMemo3(() => {
+      if (data.interactions[colX] && data.interactions[colX][colY]) {
+        return data.interactions[colX][colY];
       }
-    ), (!variable.histogram || variable.histogram.bins.length === 0) && isHighCardinality && /* @__PURE__ */ React.createElement("div", { className: "text-gray-400 text-sm flex flex-col items-center justify-center h-full text-center p-4" }, /* @__PURE__ */ React.createElement(Grid, { size: 32, className: "mb-2 opacity-20" }), "High cardinality variable.", /* @__PURE__ */ React.createElement("br", null), "Too many distinct values to display distribution."))), isNumeric && /* @__PURE__ */ React.createElement("div", { className: "mt-4 flex justify-end" }, /* @__PURE__ */ React.createElement(
+      return [];
+    }, [data.interactions, colX, colY]);
+    return /* @__PURE__ */ React.createElement("div", { id: "interactions", className: "space-y-4 animate-fadeIn section" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(ScatterChart, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Interactions"), data.interactions?._metadata?.is_truncated && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(AlertTriangle3, { size: 12 }), " Top ", data.interactions._metadata.active_columns.length, " most interactive variables shown"))), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-8" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-8" }, /* @__PURE__ */ React.createElement("div", { className: "md:col-span-1 space-y-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2" }, "X-Axis"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1" }, columns.map((col) => /* @__PURE__ */ React.createElement(
       "button",
       {
-        onClick: () => setExpanded(!expanded),
-        className: "flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded"
+        key: col,
+        onClick: () => setColX(col),
+        className: `text-left px-3 py-2 text-sm rounded transition-colors ${colX === col ? "bg-blue-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-50"}`
       },
-      expanded ? "Hide details" : "More details",
-      expanded ? /* @__PURE__ */ React.createElement(ChevronDown, { size: 16 }) : /* @__PURE__ */ React.createElement(ChevronRight, { size: 16 })
-    )), (expanded || !isNumeric) && /* @__PURE__ */ React.createElement(VariableDetails, { variable })));
+      col
+    )))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2" }, "Y-Axis"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1" }, columns.map((col) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: col,
+        onClick: () => setColY(col),
+        className: `text-left px-3 py-2 text-sm rounded transition-colors ${colY === col ? "bg-blue-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-50"}`
+      },
+      col
+    ))))), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-3 flex items-center justify-center min-h-[500px]" }, /* @__PURE__ */ React.createElement(ScatterPlot, { points, xLabel: colX, yLabel: colY })))));
   };
+
+  // frontend/ydata-like/components/NullityMatrix.jsx
+  var { AlertTriangle: AlertTriangle4 } = LucideReact;
+  var NullityMatrix = ({ data, metadata }) => {
+    if (!data || !Array.isArray(data) || data.length === 0) return null;
+    const columns = Object.keys(data[0]);
+    const numRows = data.length;
+    const numCols = columns.length;
+    const values = data.map((row) => columns.map((c) => row[c]));
+    const svgWidth = 1e3;
+    const svgHeight = 400;
+    const colWidth = svgWidth / numCols;
+    const rowHeight = svgHeight / numRows;
+    const rowCompleteness = values.map((row) => row.filter((isMissing) => !isMissing).length);
+    const getBlocks = (cIdx) => {
+      const blocks = [];
+      let inBlock = false;
+      let start = 0;
+      for (let r = 0; r < numRows; r++) {
+        const isPresent = !values[r][cIdx];
+        if (isPresent && !inBlock) {
+          inBlock = true;
+          start = r;
+        } else if (!isPresent && inBlock) {
+          inBlock = false;
+          blocks.push({ start, end: r - 1 });
+        }
+      }
+      if (inBlock) {
+        blocks.push({ start, end: numRows - 1 });
+      }
+      return blocks;
+    };
+    const sparklinePoints = rowCompleteness.map(
+      (count, rIdx) => `${count / numCols * 100},${rIdx * rowHeight + rowHeight / 2}`
+    ).join(" ");
+    const sparkPoly = `0,${rowHeight / 2} ${sparklinePoints} 0,${(numRows - 1) * rowHeight + rowHeight / 2}`;
+    return /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto mt-8 pt-4 border-t border-gray-100" }, /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-medium text-gray-800 mb-2" }, "Matrix"), metadata?.truncated && /* @__PURE__ */ React.createElement("div", { className: "mb-4 text-amber-600 text-xs font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(AlertTriangle4, { size: 12 }), " Matrix truncated to first ", metadata.limit, " columns out of ", metadata.original_count), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-gray-500 mb-6" }, "Visualization of data completeness (first ", numRows, " rows). Gaps indicate missing data."), /* @__PURE__ */ React.createElement("div", { className: "flex gap-4 items-end", style: { minWidth: `${Math.max(800, numCols * 25)}px` } }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 relative" }, /* @__PURE__ */ React.createElement("div", { className: "flex mb-2" }, columns.map((c, i) => /* @__PURE__ */ React.createElement("div", { key: c, style: { width: `${100 / numCols}%` }, className: "flex justify-start h-32 relative overflow-visible" }, /* @__PURE__ */ React.createElement("span", { className: `absolute bottom-1 left-1/2 origin-bottom-left text-[10px] font-mono text-gray-500 whitespace-nowrap ${numCols > 15 ? "-rotate-90" : "-rotate-45"}` }, c)))), /* @__PURE__ */ React.createElement("svg", { viewBox: `0 0 ${svgWidth} ${svgHeight}`, preserveAspectRatio: "none", className: "w-full h-[500px] bg-gray-50 border border-gray-200 shadow-inner rounded-sm" }, columns.map((_, cIdx) => /* @__PURE__ */ React.createElement("g", { key: cIdx, transform: `translate(${cIdx * colWidth}, 0)` }, /* @__PURE__ */ React.createElement("line", { x1: colWidth / 2, y1: "0", x2: colWidth / 2, y2: svgHeight, stroke: "#e5e7eb", strokeWidth: "0.5", strokeDasharray: "4 4" }), getBlocks(cIdx).map((block, i) => /* @__PURE__ */ React.createElement(
+      "rect",
+      {
+        key: i,
+        x: colWidth * 0.05,
+        y: block.start * rowHeight,
+        width: colWidth * 0.9,
+        height: (block.end - block.start + 1) * rowHeight,
+        fill: "#475569",
+        className: "transition-all hover:fill-blue-500"
+      }
+    )))))), /* @__PURE__ */ React.createElement("div", { className: "w-20 h-[500px] relative flex flex-col items-center" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 font-mono text-center absolute -top-8 w-full" }, "Data", /* @__PURE__ */ React.createElement("br", null), "Completeness"), /* @__PURE__ */ React.createElement("svg", { viewBox: `0 0 100 ${svgHeight}`, preserveAspectRatio: "none", className: "w-full h-full border-r border-t border-b border-gray-200 bg-gray-50 rounded-r-sm" }, /* @__PURE__ */ React.createElement("polygon", { points: sparkPoly, fill: "rgba(59, 130, 246, 0.15)" }), /* @__PURE__ */ React.createElement("polyline", { points: sparklinePoints, fill: "none", stroke: "#3b82f6", strokeWidth: "1.5" })), /* @__PURE__ */ React.createElement("div", { className: "absolute top-2 right-2 text-xs font-mono text-gray-400" }, numCols), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2 right-2 text-xs font-mono text-gray-400" }, "0"))));
+  };
+
+  // frontend/ydata-like/components/MissingValuesSection.jsx
+  var { AlertTriangle: AlertTriangle5 } = LucideReact;
   var MissingValuesSection = ({ data }) => {
     const missingBar = data.missing?.bar?.matrix || data.missing?.bar || null;
     if (!data.missing || Object.keys(data.missing).length === 0) {
@@ -390,7 +447,7 @@
         return { name, present, missing: missingCount, percent: present / total * 100 };
       });
     }
-    return /* @__PURE__ */ React.createElement("div", { id: "missing", className: "space-y-4 animate-fadeIn section" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(AlertTriangle2, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Missing values")), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-8" }, missingData.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-12" }, /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-medium text-gray-800 mb-6" }, "Count"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 w-full max-w-4xl" }, missingData.map((d, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "flex items-center gap-4 text-sm group" }, /* @__PURE__ */ React.createElement("div", { className: "w-48 text-gray-600 text-right truncate font-mono font-medium", title: d.name }, d.name), /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-gray-100 h-6 rounded-sm overflow-hidden flex border border-gray-200 shadow-inner group-hover:border-gray-300 transition-colors" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { id: "missing", className: "space-y-4 animate-fadeIn section" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(AlertTriangle5, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Missing values")), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-8" }, missingData.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-12" }, /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-medium text-gray-800 mb-6" }, "Count"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 w-full max-w-4xl" }, missingData.map((d, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "flex items-center gap-4 text-sm group" }, /* @__PURE__ */ React.createElement("div", { className: "w-48 text-gray-600 text-right truncate font-mono font-medium", title: d.name }, d.name), /* @__PURE__ */ React.createElement("div", { className: "flex-1 bg-gray-100 h-6 rounded-sm overflow-hidden flex border border-gray-200 shadow-inner group-hover:border-gray-300 transition-colors" }, /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "h-full bg-slate-700 group-hover:bg-slate-800 transition-colors",
@@ -409,31 +466,11 @@
         data: data.missing.matrix.matrix.matrix,
         metadata: data.missing.matrix.matrix._metadata
       }
-    ), data.missing?.heatmap?.matrix?.matrix && data.missing.heatmap.matrix.matrix.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mt-8 pt-8 border-t border-gray-100" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col mb-10" }, /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-medium text-gray-800" }, "Heatmap"), data.missing.heatmap.matrix._metadata?.truncated && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1 mt-1" }, /* @__PURE__ */ React.createElement(AlertTriangle2, { size: 12 }), " Truncated to top ", data.missing.heatmap.matrix._metadata.limit, " variables with most missing values")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-center" }, /* @__PURE__ */ React.createElement(CorrelationMatrixComponent, { data: data.missing.heatmap.matrix })))));
+    ), data.missing?.heatmap?.matrix?.matrix && data.missing.heatmap.matrix.matrix.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mt-8 pt-8 border-t border-gray-100" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col mb-10" }, /* @__PURE__ */ React.createElement("h3", { className: "text-lg font-medium text-gray-800" }, "Heatmap"), data.missing.heatmap.matrix._metadata?.truncated && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1 mt-1" }, /* @__PURE__ */ React.createElement(AlertTriangle5, { size: 12 }), " Truncated to top ", data.missing.heatmap.matrix._metadata.limit, " variables with most missing values")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-center" }, /* @__PURE__ */ React.createElement(CorrelationMatrixComponent, { data: data.missing.heatmap.matrix })))));
   };
-  var CorrelationsSection = ({ data }) => {
-    if (!data.correlations || Object.keys(data.correlations).length === 0) return null;
-    const defaultCorrType = useMemo2(() => {
-      const keys = Object.keys(data.correlations).filter((k) => k !== "_metadata");
-      return keys[0] || "";
-    }, [data.correlations]);
-    const [corrType, setCorrType] = useState(defaultCorrType);
-    useEffect(() => {
-      if (defaultCorrType && !Object.keys(data.correlations || {}).includes(corrType)) {
-        setCorrType(defaultCorrType);
-      }
-    }, [defaultCorrType, corrType, data.correlations]);
-    if (!corrType || !data.correlations[corrType]) return null;
-    return /* @__PURE__ */ React.createElement("div", { id: "correlations", className: "space-y-4 animate-fadeIn section" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(PieChart, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Correlations"), data.correlations?.[corrType]?.sampled && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(Info, { size: 12 }), " Sampled estimate (", data.correlations[corrType].sample_size?.toLocaleString(), " rows)"), data.correlations?._metadata?.truncated && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(AlertTriangle2, { size: 12 }), " Matrix truncated to top ", data.correlations._metadata.limit, " variables out of ", data.correlations._metadata.original_count))), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-8" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-center gap-2 mb-8 border-b border-gray-100 pb-4 overflow-x-auto no-scrollbar" }, Object.keys(data.correlations).filter((type) => type !== "_metadata").map((type) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: type,
-        onClick: () => setCorrType(type),
-        className: `px-4 py-2 text-sm font-medium rounded-md transition-colors ${corrType === type ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`
-      },
-      type
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-center" }, /* @__PURE__ */ React.createElement(CorrelationMatrixComponent, { data: data.correlations[corrType] }))));
-  };
+
+  // frontend/ydata-like/components/SampleSection.jsx
+  var { AlignLeft: AlignLeft2 } = LucideReact;
   var SampleSection = ({ data }) => {
     const sampleData = data.sample?.head || data.sample;
     if (!sampleData || Array.isArray(sampleData) && sampleData.length === 0) return null;
@@ -459,54 +496,29 @@
       return /* @__PURE__ */ React.createElement("td", { key: col, className: `py-2.5 px-4 text-sm border-r border-gray-100 last:border-r-0 font-mono ${isNull ? "text-red-400 italic" : "text-gray-600"}` }, isNull ? "Null" : String(val));
     }))))))));
   };
-  var InteractionsSection = ({ data }) => {
-    if (!data.interactions || Object.keys(data.interactions).length === 0) return null;
-    const columns = Object.keys(data.interactions).filter((k) => k !== "_metadata").sort();
-    const [colX, setColX] = useState(columns[0]);
-    const [colY, setColY] = useState(columns[1] || columns[0]);
-    const points = useMemo2(() => {
-      if (data.interactions[colX] && data.interactions[colX][colY]) {
-        return data.interactions[colX][colY];
-      }
-      return [];
-    }, [data.interactions, colX, colY]);
-    return /* @__PURE__ */ React.createElement("div", { id: "interactions", className: "space-y-4 animate-fadeIn section" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(ScatterChart, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Interactions"), data.interactions?._metadata?.is_truncated && /* @__PURE__ */ React.createElement("span", { className: "text-xs text-amber-600 font-medium flex items-center gap-1" }, /* @__PURE__ */ React.createElement(AlertTriangle2, { size: 12 }), " Top ", data.interactions._metadata.active_columns.length, " most interactive variables shown"))), /* @__PURE__ */ React.createElement("div", { className: "bg-white rounded-md shadow-sm border border-gray-200 p-8" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-8" }, /* @__PURE__ */ React.createElement("div", { className: "md:col-span-1 space-y-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2" }, "X-Axis"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1" }, columns.map((col) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: col,
-        onClick: () => setColX(col),
-        className: `text-left px-3 py-2 text-sm rounded transition-colors ${colX === col ? "bg-blue-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-50"}`
-      },
-      col
-    )))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2" }, "Y-Axis"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 max-h-64 overflow-y-auto custom-scrollbar border border-gray-100 rounded-sm p-1" }, columns.map((col) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: col,
-        onClick: () => setColY(col),
-        className: `text-left px-3 py-2 text-sm rounded transition-colors ${colY === col ? "bg-blue-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-50"}`
-      },
-      col
-    ))))), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-3 flex items-center justify-center min-h-[500px]" }, /* @__PURE__ */ React.createElement(ScatterPlot, { points, xLabel: colX, yLabel: colY })))));
-  };
+
+  // frontend/ydata-like/App.jsx
+  var { useState: useState4 } = React;
+  var { AlertTriangle: AlertTriangle6, Info: Info3, Hash: Hash2, PieChart: PieChart2, ScatterChart: ScatterChart2, AlignLeft: AlignLeft3, BarChart2 } = LucideReact;
   function App() {
-    const [imgError, setImgError] = useState(false);
+    const [imgError, setImgError] = useState4(false);
     if (!REPORT_DATA || !REPORT_DATA.analysis || !REPORT_DATA.table || !REPORT_DATA.variables) {
-      return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen bg-gray-100 flex items-center justify-center p-8" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-md shadow border border-red-200 text-center max-w-md" }, /* @__PURE__ */ React.createElement(AlertTriangle2, { className: "text-red-500 mx-auto mb-4", size: 48 }), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-bold text-gray-800 mb-2" }, "Invalid Payload"), /* @__PURE__ */ React.createElement("p", { className: "text-gray-600 text-sm" }, "The provided JSON payload does not match the expected ", /* @__PURE__ */ React.createElement("code", null, "ibis-profiling"), " specification.")));
+      return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen bg-gray-100 flex items-center justify-center p-8" }, /* @__PURE__ */ React.createElement("div", { className: "bg-white p-6 rounded-md shadow border border-red-200 text-center max-w-md" }, /* @__PURE__ */ React.createElement(AlertTriangle6, { className: "text-red-500 mx-auto mb-4", size: 48 }), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-bold text-gray-800 mb-2" }, "Invalid Payload"), /* @__PURE__ */ React.createElement("p", { className: "text-gray-600 text-sm" }, "The provided JSON payload does not match the expected ", /* @__PURE__ */ React.createElement("code", null, "ibis-profiling"), " specification.")));
     }
     const navItems = [
-      { id: "overview", label: "Overview", icon: /* @__PURE__ */ React.createElement(Info, { size: 16 }) },
+      { id: "overview", label: "Overview", icon: /* @__PURE__ */ React.createElement(Info3, { size: 16 }) },
       { id: "variables", label: "Variables", icon: /* @__PURE__ */ React.createElement(Hash2, { size: 16 }) }
     ];
     if (REPORT_DATA.correlations && Object.keys(REPORT_DATA.correlations).length > 0) {
-      navItems.push({ id: "correlations", label: "Correlations", icon: /* @__PURE__ */ React.createElement(PieChart, { size: 16 }) });
+      navItems.push({ id: "correlations", label: "Correlations", icon: /* @__PURE__ */ React.createElement(PieChart2, { size: 16 }) });
     }
     if (REPORT_DATA.interactions && Object.keys(REPORT_DATA.interactions).length > 0) {
-      navItems.push({ id: "interactions", label: "Interactions", icon: /* @__PURE__ */ React.createElement(ScatterChart, { size: 16 }) });
+      navItems.push({ id: "interactions", label: "Interactions", icon: /* @__PURE__ */ React.createElement(ScatterChart2, { size: 16 }) });
     }
     if (REPORT_DATA.missing && Object.keys(REPORT_DATA.missing).length > 0) {
-      navItems.push({ id: "missing", label: "Missing values", icon: /* @__PURE__ */ React.createElement(AlertTriangle2, { size: 16 }) });
+      navItems.push({ id: "missing", label: "Missing values", icon: /* @__PURE__ */ React.createElement(AlertTriangle6, { size: 16 }) });
     }
-    navItems.push({ id: "sample", label: "Sample", icon: /* @__PURE__ */ React.createElement(AlignLeft2, { size: 16 }) });
+    navItems.push({ id: "sample", label: "Sample", icon: /* @__PURE__ */ React.createElement(AlignLeft3, { size: 16 }) });
     return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen bg-gray-100 font-sans text-gray-800 selection:bg-blue-200 pb-12" }, /* @__PURE__ */ React.createElement("header", { className: "bg-slate-800 text-white shadow-md sticky top-0 z-50" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between h-14" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, imgError ? /* @__PURE__ */ React.createElement("div", { className: "bg-blue-500 text-white p-1.5 rounded-md" }, /* @__PURE__ */ React.createElement(BarChart2, { size: 20 })) : /* @__PURE__ */ React.createElement(
       "img",
       {
@@ -526,6 +538,8 @@
       item.label
     )))))), /* @__PURE__ */ React.createElement("main", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8" }, /* @__PURE__ */ React.createElement(OverviewSection, { data: REPORT_DATA }), /* @__PURE__ */ React.createElement("div", { id: "variables", className: "space-y-4 section" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-4" }, /* @__PURE__ */ React.createElement(Hash2, { size: 24, className: "text-slate-600" }), /* @__PURE__ */ React.createElement("h2", { className: "text-2xl font-bold text-gray-800" }, "Variables")), /* @__PURE__ */ React.createElement("div", { className: "animate-fadeIn" }, Object.entries(REPORT_DATA.variables).map(([colName, variableData]) => /* @__PURE__ */ React.createElement(VariableCard, { key: colName, name: colName, variable: variableData })))), /* @__PURE__ */ React.createElement(CorrelationsSection, { data: REPORT_DATA }), /* @__PURE__ */ React.createElement(InteractionsSection, { data: REPORT_DATA }), /* @__PURE__ */ React.createElement(MissingValuesSection, { data: REPORT_DATA }), /* @__PURE__ */ React.createElement(SampleSection, { data: REPORT_DATA })), /* @__PURE__ */ React.createElement("footer", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center text-sm text-gray-500 mt-8 border-t border-gray-200 pt-6" }, /* @__PURE__ */ React.createElement("span", null, "Report generated via Ibis Profiling"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs" }, REPORT_DATA.package?.version || "ibis-profiling")));
   }
+
+  // frontend/ydata-like/index.jsx
   var root = ReactDOM.createRoot(document.getElementById("root"));
   root.render(/* @__PURE__ */ React.createElement(App, null));
 })();
