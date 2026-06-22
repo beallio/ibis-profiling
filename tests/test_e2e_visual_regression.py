@@ -140,6 +140,16 @@ def _navigate_to_view(page, theme: str, view: str):
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(
+    bool(os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS")),
+    reason=(
+        "Pixel screenshots are environment-specific (font packages / anti-aliasing differ between "
+        "machines), so these baselines are LOCAL-authoritative and run during development. CI "
+        "enforces the environment-independent oracles instead: the DOM snapshot "
+        "(tests/test_e2e_frontend_snapshot.py, which catches any SVG-attribute/class/structure "
+        "change) and the e2e tests."
+    ),
+)
 @pytest.mark.parametrize("theme", ("default", "ydata-like"))
 def test_report_matches_visual_baselines(browser, visual_reports, theme):
     context = browser.new_context(
@@ -157,6 +167,11 @@ def test_report_matches_visual_baselines(browser, visual_reports, theme):
             )
         )
         page.wait_for_selector("#root", state="visible")
+        # Settle rendering to avoid load-dependent screenshot flakiness: wait for charts to exist,
+        # web fonts to finish loading (they materially affect text rendering), then a short pause.
+        page.wait_for_selector("svg", state="visible", timeout=30000)
+        page.evaluate("() => document.fonts.ready")
+        page.wait_for_timeout(400)
 
         _navigate_to_view(page, theme, "variables")
         _assert_or_update_baseline(
