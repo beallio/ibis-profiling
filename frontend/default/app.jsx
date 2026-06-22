@@ -775,7 +775,7 @@
                     <Clock size={14} />
                     <span className="text-xs">Job Duration</span>
                   </div>
-                  <div className={`text-sm font-mono ${theme.textSecondary}`}>
+                  <div data-visual-volatile="" className={`text-sm font-mono ${theme.textSecondary}`}>
                     {reportData.analysis.duration !== undefined ? (
                       reportData.analysis.duration > 1000 
                         ? `${(reportData.analysis.duration / 1000).toFixed(2)} s` 
@@ -794,7 +794,7 @@
             <header className={`sticky top-0 ${theme.bgHeader} backdrop-blur-xl border-b ${theme.border} z-10 px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4`}>
               <div>
                 <h2 className={`text-xl font-bold ${theme.textPrimary}`}>{reportData.analysis.title}</h2>
-                <p className={`text-xs ${theme.textSub} font-mono`}>Analysis run {new Date(reportData.analysis.date_start).toLocaleString()}</p>
+                <p data-visual-volatile="" className={`text-xs ${theme.textSub} font-mono`}>Analysis run {new Date(reportData.analysis.date_start).toLocaleString()}</p>
               </div>
               <div className="relative w-full md:w-80">
                 <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${theme.textSub} pointer-events-none`} size={16} />

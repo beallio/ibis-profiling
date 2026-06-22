@@ -153,7 +153,11 @@ def test_report_matches_visual_baselines(browser, visual_reports, theme):
         page.wait_for_selector("#root", state="visible")
 
         _navigate_to_view(page, theme, "variables")
-        _assert_or_update_baseline(theme, "full-page", page.screenshot(full_page=True))
+        _assert_or_update_baseline(
+            theme,
+            "full-page",
+            page.screenshot(full_page=True, mask=[page.locator("[data-visual-volatile]")]),
+        )
 
         for view in VIEWS:
             target = _navigate_to_view(page, theme, view)
