@@ -40,17 +40,40 @@ def transform_jsx(esbuild: Path, app_path: Path) -> str:
     return result.stdout
 
 
+def bundle_jsx(esbuild: Path, entrypoint: Path) -> str:
+    result = subprocess.run(
+        [
+            str(esbuild),
+            str(entrypoint),
+            "--bundle",
+            "--format=iife",
+            "--jsx=transform",
+            "--jsx-factory=React.createElement",
+            "--jsx-fragment=React.Fragment",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout
+
+
 def build_template(template_path: Path, esbuild: Path) -> None:
     theme = template_path.name.removesuffix(".src.html")
-    app_path = FRONTEND_DIR / theme / "app.jsx"
+    theme_dir = FRONTEND_DIR / theme
+    index_path = theme_dir / "index.jsx"
+    app_path = theme_dir / "app.jsx"
     source_html = template_path.read_text(encoding="utf-8")
 
     if source_html.count(APP_BUNDLE_MARKER) != 1:
         raise ValueError(f"{template_path} must contain exactly one {APP_BUNDLE_MARKER}")
-    if not app_path.is_file():
+    if index_path.is_file():
+        compiled_js = bundle_jsx(esbuild, index_path)
+    elif app_path.is_file():
+        compiled_js = transform_jsx(esbuild, app_path)
+    else:
         raise FileNotFoundError(f"missing frontend application source: {app_path}")
 
-    compiled_js = transform_jsx(esbuild, app_path)
     application_script = (
         f'<script nonce="{{{{NONCE}}}}" type="text/javascript">{compiled_js}</script>'
     )

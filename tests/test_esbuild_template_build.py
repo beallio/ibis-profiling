@@ -16,8 +16,13 @@ THEMES = ("default", "ydata-like")
 
 
 def test_template_sources_use_extracted_app_bundles():
-    for theme in THEMES:
-        app_source = (FRONTEND_DIR / theme / "app.jsx").read_text()
+    entrypoints = {
+        "default": FRONTEND_DIR / "default" / "index.jsx",
+        "ydata-like": FRONTEND_DIR / "ydata-like" / "app.jsx",
+    }
+
+    for theme, entrypoint in entrypoints.items():
+        app_source = entrypoint.read_text()
         template_source = (TEMPLATE_DIR / f"{theme}.src.html").read_text()
 
         assert app_source.strip()
@@ -49,3 +54,67 @@ def test_template_builder_transforms_jsx_with_vendored_esbuild(tmp_path):
     compiled = build_templates.transform_jsx(esbuild, app_path)
 
     assert 'React.createElement("main", null, "Report")' in compiled
+
+
+def test_template_builder_bundles_module_entrypoint(monkeypatch, tmp_path):
+    frontend_dir = tmp_path / "frontend"
+    theme_dir = frontend_dir / "default"
+    theme_dir.mkdir(parents=True)
+    index_path = theme_dir / "index.jsx"
+    index_path.write_text(
+        'import { label } from "./constants.js";\nconst view = <main>{label}</main>;\n'
+    )
+    (theme_dir / "constants.js").write_text('export const label = "Report";\n')
+
+    template_path = tmp_path / "default.src.html"
+    template_path.write_text("<body><!-- {{APP_BUNDLE}} --></body>")
+    calls = []
+
+    monkeypatch.setattr(build_templates, "FRONTEND_DIR", frontend_dir)
+    monkeypatch.setattr(
+        build_templates,
+        "bundle_jsx",
+        lambda esbuild, entrypoint: calls.append((esbuild, entrypoint)) or "bundled();\n",
+    )
+    monkeypatch.setattr(
+        build_templates,
+        "transform_jsx",
+        lambda *_args: pytest.fail("module entrypoint must use the bundle path"),
+    )
+
+    esbuild = tmp_path / "esbuild"
+    build_templates.build_template(template_path, esbuild)
+
+    assert calls == [(esbuild, index_path)]
+    assert "bundled();" in (tmp_path / "default.html").read_text()
+
+
+def test_template_builder_falls_back_to_single_file_transform(monkeypatch, tmp_path):
+    frontend_dir = tmp_path / "frontend"
+    theme_dir = frontend_dir / "ydata-like"
+    theme_dir.mkdir(parents=True)
+    app_path = theme_dir / "app.jsx"
+    app_path.write_text("const view = <main>Report</main>;\n")
+
+    template_path = tmp_path / "ydata-like.src.html"
+    template_path.write_text("<body><!-- {{APP_BUNDLE}} --></body>")
+    calls = []
+
+    monkeypatch.setattr(build_templates, "FRONTEND_DIR", frontend_dir)
+    monkeypatch.setattr(
+        build_templates,
+        "bundle_jsx",
+        lambda *_args: pytest.fail("single-file source must use the transform fallback"),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        build_templates,
+        "transform_jsx",
+        lambda esbuild, source: calls.append((esbuild, source)) or "transformed();\n",
+    )
+
+    esbuild = tmp_path / "esbuild"
+    build_templates.build_template(template_path, esbuild)
+
+    assert calls == [(esbuild, app_path)]
+    assert "transformed();" in (tmp_path / "ydata-like.html").read_text()
