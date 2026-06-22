@@ -155,6 +155,9 @@
     Unsupported: "Other"
   };
 
+  // frontend/default/theme.js
+  var ThemeContext = React.createContext();
+
   // frontend/default/data.js
   var REPORT_DATA = { analysis: {}, table: { types: {} }, variables: {}, alerts: [] };
   try {
@@ -164,9 +167,6 @@
   } catch (e) {
     console.error("Error decoding report data:", e);
   }
-
-  // frontend/default/theme.js
-  var ThemeContext = React.createContext();
 
   // frontend/default/helpers.js
   var parseMatrixData = (data) => {
@@ -444,8 +444,8 @@
     return /* @__PURE__ */ React.createElement("div", { className: `${theme.bgCard} border ${theme.border} p-5 rounded-2xl shadow-xl hover:shadow-${color}-900/10 transition-shadow` }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-start mb-3" }, /* @__PURE__ */ React.createElement("span", { className: `${theme.textMuted} text-sm font-medium` }, title), /* @__PURE__ */ React.createElement("div", { className: `p-2 rounded-lg bg-${color}-500/10 text-${color}-400` }, /* @__PURE__ */ React.createElement(Icon, { size: 18 }))), /* @__PURE__ */ React.createElement("div", { className: `text-2xl font-mono font-bold ${theme.textPrimary}` }, value), sub && /* @__PURE__ */ React.createElement("div", { className: `text-xs ${theme.textSub} mt-1` }, sub));
   };
 
-  // frontend/default/index.jsx
-  var { useState, useMemo: useMemo2, useEffect, createContext, useContext: useContext11 } = React;
+  // frontend/default/AppContent.jsx
+  var { useState, useMemo: useMemo2, useEffect, useContext: useContext11 } = React;
   var {
     BarChart3,
     AlertTriangle: AlertTriangle2,
@@ -458,20 +458,14 @@
     LayoutDashboard,
     PieChart,
     ChevronRight,
-    MapPin,
     ShieldCheck,
     TrendingUp,
     Percent,
-    Fingerprint: Fingerprint2,
-    Lock: Lock2,
-    Copy: Copy2,
     FileWarning: FileWarning2,
     TextSelect,
     X,
     Layers,
-    Sun: Sun2,
-    Moon: Moon2,
-    Contrast: Contrast2
+    Sun: Sun2
   } = LucideReact;
   function AppContent() {
     const { theme, setTheme } = useContext11(ThemeContext);
@@ -822,22 +816,27 @@
       );
     })));
   }
+
+  // frontend/default/App.jsx
+  var { useState: useState2, useEffect: useEffect2 } = React;
   function App() {
     const getInitialTheme = () => {
       const saved = localStorage.getItem("ibis-profiler-theme");
       return saved && THEMES[saved] ? THEMES[saved] : THEMES.dark;
     };
-    const [theme, setThemeState] = useState(getInitialTheme);
+    const [theme, setThemeState] = useState2(getInitialTheme);
     const setTheme = (t) => {
       setThemeState(t);
       localStorage.setItem("ibis-profiler-theme", t.id);
     };
-    useEffect(() => {
+    useEffect2(() => {
       document.body.className = theme.bgMain;
       document.documentElement.setAttribute("data-theme", theme.id);
     }, [theme]);
     return /* @__PURE__ */ React.createElement(ThemeContext.Provider, { value: { theme, setTheme } }, /* @__PURE__ */ React.createElement(AppContent, null));
   }
+
+  // frontend/default/index.jsx
   var root = ReactDOM.createRoot(document.getElementById("root"));
   root.render(/* @__PURE__ */ React.createElement(App, null));
 })();
