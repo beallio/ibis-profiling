@@ -34,10 +34,17 @@ def test_template_sources_use_extracted_app_bundles():
 def test_ydata_frontend_uses_foundation_modules():
     ydata_frontend = FRONTEND_DIR / "ydata-like"
     index_source = (ydata_frontend / "index.jsx").read_text()
+    app_source = (ydata_frontend / "App.jsx").read_text()
 
     assert not (ydata_frontend / "app.jsx").exists()
-    assert 'import { REPORT_DATA } from "./data.js";' in index_source
-    assert 'from "./helpers.js";' in index_source
+    assert index_source.strip() == (
+        'import { App } from "./App.jsx";\n\n'
+        "const root = ReactDOM.createRoot(document.getElementById('root'));\n"
+        "root.render(<App />);"
+    )
+
+    assert "export function App()" in app_source
+    assert 'import { REPORT_DATA } from "./data.js";' in app_source
 
     component_names = (
         "TypeIcon",
@@ -51,9 +58,9 @@ def test_ydata_frontend_uses_foundation_modules():
         component_path = ydata_frontend / "components" / f"{component_name}.jsx"
         component_source = component_path.read_text()
 
-        assert f'from "./components/{component_name}.jsx";' in index_source
         assert f"export const {component_name}" in component_source
         assert f"const {component_name}" not in index_source
+        assert f"const {component_name}" not in app_source
         assert 'from "react"' not in component_source
 
     for section_name in (
@@ -65,9 +72,14 @@ def test_ydata_frontend_uses_foundation_modules():
         "SampleSection",
         "InteractionsSection",
     ):
-        assert f"const {section_name}" in index_source
+        section_path = ydata_frontend / "components" / f"{section_name}.jsx"
+        section_source = section_path.read_text()
 
-    assert "function App()" in index_source
+        assert f"export const {section_name}" in section_source
+        assert f"const {section_name}" not in index_source
+        assert 'from "react"' not in section_source
+
+    assert "function App()" not in index_source
 
 
 def test_default_frontend_uses_modular_app_shell():
