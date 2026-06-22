@@ -79,28 +79,36 @@ def _diff(base, cur):
     return out
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--update-baseline", action="store_true", help="overwrite the baseline")
-    args = ap.parse_args()
-
+def run_check() -> list[str]:
+    """Profile the regression dataset and return deterministic baseline differences."""
     cur = _profile_normalized()
-
-    if args.update_baseline:
-        with open(BASELINE, "w") as f:
-            json.dump(cur, f, sort_keys=True, indent=2)
-        print(f"baseline updated: {BASELINE}")
-        return 0
-
-    if not os.path.exists(BASELINE):
-        print(f"no baseline at {BASELINE}; run with --update-baseline first", file=sys.stderr)
-        return 2
 
     with open(BASELINE) as f:
         base = json.load(f)
     cur = json.loads(json.dumps(cur, sort_keys=True))
 
-    diffs = _diff(base, cur)
+    return _diff(base, cur)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--update-baseline", action="store_true", help="overwrite the baseline")
+    args = ap.parse_args()
+
+    if args.update_baseline:
+        cur = _profile_normalized()
+        with open(BASELINE, "w") as f:
+            json.dump(cur, f, sort_keys=True, indent=2)
+        print(f"baseline updated: {BASELINE}")
+        return 0
+
+    try:
+        diffs = run_check()
+    except FileNotFoundError:
+        if os.path.exists(BASELINE):
+            raise
+        print(f"no baseline at {BASELINE}; run with --update-baseline first", file=sys.stderr)
+        return 2
     print(f"regression gate: {len(diffs)} differences on the deterministic surface")
     for d in diffs[:40]:
         print("  ", d)

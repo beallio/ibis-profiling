@@ -71,6 +71,9 @@ addopts = "--cov=src --cov-report=term"
 cache_dir = "/tmp/ibis-profiling/.pytest_cache"
 testpaths = ["tests"]
 pythonpath = ["src", "."]
+markers = [
+    "slow: marks tests that exercise slow profiling or large datasets",
+]
 
 [tool.coverage.run]
 data_file = "/tmp/ibis-profiling/.coverage"
