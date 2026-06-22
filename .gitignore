@@ -16,8 +16,12 @@ logs/
 *.log
 .temp/
 .tmp/
+*.tmp
 *.duckdb
 *.duckdb.wal
 
 .gemini/
 gha-creds-*.json
+
+# orchestration engine: machine/trial-only config override
+orchestration.conf.local

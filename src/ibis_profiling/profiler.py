@@ -12,7 +12,6 @@ from .engine import ExecutionEngine
 from .report import ProfileReport as InternalProfileReport
 from .memory import MemoryManager
 from typing import Callable, cast, Generator, Any
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 
 
@@ -32,54 +31,73 @@ class Profiler:
         max_interaction_pairs: int = 10,
         correlations_sampling_threshold: int = 1_000_000,
         correlations_sample_size: int = 1_000_000,
+        sample_seed: int = 42,
         correlations_max_columns: int = 15,
         missing_heatmap_max_columns: int = 15,
         missing_matrix_max_columns: int = 50,
         monotonicity_threshold: int = 100_000,
         duplicates_threshold: int = 50_000_000,
-        n_unique_threshold: int | None = None,
+        n_unique_threshold: int | None = 50_000_000,
         inference_sample_size: int | None = 10_000,
         monotonicity_order_by: str | None = None,
-        parallel: bool = False,
-        pool_size: int = 4,
         use_sketches: bool = False,
         global_batch_size: int | None = None,
     ):
         self.table = table
-        self.minimal = minimal
-        self.title = title
         self.on_progress = on_progress
-        self.compute_correlations = not minimal if correlations is None else correlations
-        self.compute_monotonicity = not minimal if monotonicity is None else monotonicity
-        self.explicit_monotonicity = monotonicity is True
-        self.compute_duplicates = not minimal if compute_duplicates is None else compute_duplicates
-        self.explicit_duplicates = compute_duplicates is True
-        self.cardinality_threshold = cardinality_threshold
-        self.max_interaction_pairs = max_interaction_pairs
-        self.correlations_sampling_threshold = correlations_sampling_threshold
-        self.correlations_sample_size = correlations_sample_size
-        # Enforce minimum of 2 columns for correlations
-        self.correlations_max_columns = max(2, correlations_max_columns)
-        self.missing_heatmap_max_columns = max(2, missing_heatmap_max_columns)
-        self.missing_matrix_max_columns = max(2, missing_matrix_max_columns)
-        self.monotonicity_threshold = monotonicity_threshold
-        self.duplicates_threshold = duplicates_threshold
-        self.monotonicity_order_by = monotonicity_order_by
-        self.parallel = parallel
-        self.pool_size = pool_size
-        self.use_sketches = use_sketches
 
-        # 1. Memory and Batching Heuristics
-        # Note: We execute count() early to inform heuristics.
-        # For remote backends, this is fast.
         n_rows = MemoryManager.to_int(self.table.count().execute())
         n_cols = len(self.table.columns)
 
-        # Dynamic Threshold Logic: max(1M, 10% of total rows)
-        if n_unique_threshold is None:
-            self.n_unique_threshold = max(1_000_000, int(0.1 * n_rows))
-        else:
-            self.n_unique_threshold = n_unique_threshold
+        from .config import ProfileConfig
+
+        self.config = ProfileConfig.resolve(
+            n_rows=n_rows,
+            n_cols=n_cols,
+            minimal=minimal,
+            title=title,
+            correlations=correlations,
+            monotonicity=monotonicity,
+            compute_duplicates=compute_duplicates,
+            cardinality_threshold=cardinality_threshold,
+            max_interaction_pairs=max_interaction_pairs,
+            correlations_sampling_threshold=correlations_sampling_threshold,
+            correlations_sample_size=correlations_sample_size,
+            sample_seed=sample_seed,
+            correlations_max_columns=correlations_max_columns,
+            missing_heatmap_max_columns=missing_heatmap_max_columns,
+            missing_matrix_max_columns=missing_matrix_max_columns,
+            monotonicity_threshold=monotonicity_threshold,
+            duplicates_threshold=duplicates_threshold,
+            n_unique_threshold=n_unique_threshold,
+            inference_sample_size=inference_sample_size,
+            monotonicity_order_by=monotonicity_order_by,
+            use_sketches=use_sketches,
+            global_batch_size=global_batch_size,
+        )
+
+        self.minimal = self.config.minimal
+        self.title = self.config.title
+        self.compute_correlations = self.config.compute_correlations
+        self.compute_monotonicity = self.config.compute_monotonicity
+        self.explicit_monotonicity = self.config.explicit_monotonicity
+        self.compute_duplicates = self.config.compute_duplicates
+        self.explicit_duplicates = self.config.explicit_duplicates
+        self.cardinality_threshold = self.config.cardinality_threshold
+        self.max_interaction_pairs = self.config.max_interaction_pairs
+        self.correlations_sampling_threshold = self.config.correlations_sampling_threshold
+        self.correlations_sample_size = self.config.correlations_sample_size
+        self.sample_seed = self.config.sample_seed
+        self.correlations_max_columns = self.config.correlations_max_columns
+        self.missing_heatmap_max_columns = self.config.missing_heatmap_max_columns
+        self.missing_matrix_max_columns = self.config.missing_matrix_max_columns
+        self.monotonicity_threshold = self.config.monotonicity_threshold
+        self.duplicates_threshold = self.config.duplicates_threshold
+        self.n_unique_threshold = self.config.n_unique_threshold
+        self.monotonicity_order_by = self.config.monotonicity_order_by
+        self.use_sketches = self.config.use_sketches
+        self.global_batch_size = self.config.global_batch_size
+        self.validation_warnings = list(self.config.validation_warnings)
 
         self.start_time = datetime.now()
         self.analysis = {
@@ -87,16 +105,11 @@ class Profiler:
         }
         self.inspector = DatasetInspector(
             table,
-            minimal=minimal,
+            minimal=self.minimal,
             n_unique_threshold=self.n_unique_threshold,
             inference_sample_size=inference_sample_size,
             row_count=n_rows,
         )
-
-        if global_batch_size is None:
-            self.global_batch_size = MemoryManager.calculate_batch_size(n_rows, n_cols)
-        else:
-            self.global_batch_size = global_batch_size
 
         try:
             con = self.table.get_backend()
@@ -107,30 +120,13 @@ class Profiler:
         self.planner = QueryPlanner(
             table,
             registry,
-            use_sketches=use_sketches,
+            use_sketches=self.use_sketches,
             n_unique_threshold=self.n_unique_threshold,
             global_batch_size=self.global_batch_size,
         )
         self.engine = ExecutionEngine()
-        self.executor = None
 
         self.col_types: dict[str, Any] = self.inspector.get_column_types()
-        self.validation_warnings = []
-
-        # 2. Parameter Validation
-        if self.correlations_sampling_threshold <= 0:
-            self.correlations_sampling_threshold = 1_000_000
-            self.validation_warnings.append(
-                "Invalid correlations_sampling_threshold provided (must be > 0). "
-                "Resetting to default (1,000,000)."
-            )
-
-        if self.correlations_sample_size <= 0:
-            self.correlations_sample_size = 1_000_000
-            self.validation_warnings.append(
-                "Invalid correlations_sample_size provided (must be > 0). "
-                "Resetting to default (1,000,000)."
-            )
 
     def _update_progress(self, inc: int, label: str | None = None):
         if self.on_progress:
@@ -143,196 +139,152 @@ class Profiler:
         duration = (datetime.now() - start).total_seconds() * 1000
         self.performance[name] = duration
 
-    def _check_parallel_safety(self) -> str | None:
-        """
-        Checks if the current backend is safe for parallel execution on a shared connection.
-        Returns the backend name if unsafe, None if safe.
-        """
-        # Ibis backends that are known to be safe for concurrent queries on one connection.
-        # Most backends are NOT thread-safe on a single shared connection.
-        # For now, we default to sequential for all backends to ensure stability.
-        ALLOWLIST_BACKENDS = set()
-
-        try:
-            con = self.table.get_backend()
-            if con and hasattr(con, "name"):
-                backend_name = str(con.name).lower()
-                if backend_name in ALLOWLIST_BACKENDS:
-                    return None
-                return backend_name
-        except Exception:
-            # If we can't determine, assume it's unsafe (conservative)
-            return "unknown"
-        return "unknown"
-
     def run(self) -> InternalProfileReport:
         """Executes all phases of profiling."""
         self.performance = {}
-        try:
-            with self._timer("Infrastructure"):
-                # 1. Parallel Safety Guard: Many backends are not thread-safe for concurrent queries.
-                unsafe_backend = self._check_parallel_safety() if self.parallel else None
-                if unsafe_backend:
-                    self.parallel = False
+        with self._timer("Infrastructure"):
+            pass
 
-                if self.parallel:
-                    self.executor = ThreadPoolExecutor(max_workers=self.pool_size)
+        # Start at 0
+        self._update_progress(0, "Analyzing dataset...")
 
-            # Start at 0
-            self._update_progress(0, "Analyzing dataset...")
+        # 2. Global Aggregates (20%)
+        with self._timer("Global Aggregates"):
+            self._update_progress(20 if not self.minimal else 30, "Executing global aggregates...")
+            global_plans = self.planner.build_global_aggregation()
 
-            # 2. Global Aggregates (20%)
-            with self._timer("Global Aggregates"):
-                self._update_progress(
-                    20 if not self.minimal else 30, "Executing global aggregates..."
+            if len(global_plans) > 1:
+                logging.warning(
+                    f"Table is too wide. Splitting global aggregates into {len(global_plans)} batches "
+                    f"to improve reliability."
                 )
-                global_plans = self.planner.build_global_aggregation()
 
-                if len(global_plans) > 1:
-                    logging.warning(
-                        f"Table is too wide. Splitting global aggregates into {len(global_plans)} batches "
-                        f"to improve reliability."
-                    )
+            batch_results = []
+            for plan in global_plans:
+                batch_results.append(self.engine.execute(plan))
 
-                batch_results = []
-                for plan in global_plans:
-                    batch_results.append(self.engine.execute(plan))
+            if not batch_results:
+                # Handle empty case (no columns or metrics)
+                raw_results = pl.DataFrame()
+            else:
+                raw_results = batch_results[0]
+                for next_res in batch_results[1:]:
+                    # Drop columns that are already in raw_results (e.g. _dataset__row_count)
+                    duplicates = [c for c in next_res.columns if c in raw_results.columns]
+                    if duplicates:
+                        next_res = next_res.drop(duplicates)
+                    raw_results = pl.concat([raw_results, next_res], how="horizontal")
 
-                if not batch_results:
-                    # Handle empty case (no columns or metrics)
-                    raw_results = pl.DataFrame()
-                else:
-                    raw_results = batch_results[0]
-                    for next_res in batch_results[1:]:
-                        # Drop columns that are already in raw_results (e.g. _dataset__row_count)
-                        duplicates = [c for c in next_res.columns if c in raw_results.columns]
-                        if duplicates:
-                            next_res = next_res.drop(duplicates)
-                        raw_results = pl.concat([raw_results, next_res], how="horizontal")
+        # 3. Metadata & Initial Report (10%)
+        with self._timer("Metadata Analysis"):
+            self._update_progress(10, "Metadata analysis...")
+            row_count = raw_results["_dataset__row_count"][0] if not raw_results.is_empty() else 0
+            mem_size = self.engine.get_storage_size(self.table)
+            if mem_size is None:
+                mem_size = self.inspector.estimate_memory_size(row_count)
 
-            # 3. Metadata & Initial Report (10%)
-            with self._timer("Metadata Analysis"):
-                self._update_progress(10, "Metadata analysis...")
-                row_count = (
-                    raw_results["_dataset__row_count"][0] if not raw_results.is_empty() else 0
-                )
-                mem_size = self.engine.get_storage_size(self.table)
-                if mem_size is None:
-                    mem_size = self.inspector.estimate_memory_size(row_count)
+            self.col_types["_dataset"] = {
+                "memory_size": mem_size,
+                "record_size": mem_size / row_count if row_count > 0 else 0,
+            }
 
-                self.col_types["_dataset"] = {
-                    "memory_size": mem_size,
-                    "record_size": mem_size / row_count if row_count > 0 else 0,
-                }
+            # Logical Type Inference
+            logical_types = self.inspector.get_logical_types()
 
-                # Logical Type Inference
-                logical_types = self.inspector.get_logical_types()
+            report = InternalProfileReport(
+                raw_results,
+                self.col_types,
+                title=self.title,
+                analysis_metadata=self.analysis,
+                logical_types=logical_types,
+            )
+            report.analysis["date_start"] = self.start_time.isoformat()
+            report.analysis["performance"] = self.performance
 
-                report = InternalProfileReport(
-                    raw_results,
-                    self.col_types,
-                    title=self.title,
-                    analysis_metadata=self.analysis,
-                    logical_types=logical_types,
-                )
-                report.analysis["date_start"] = self.start_time.isoformat()
-                report.analysis["performance"] = self.performance
+            # Add validation warnings
+            if self.validation_warnings:
+                report.analysis.setdefault("warnings", []).extend(self.validation_warnings)
 
-                # Add validation warnings
-                if self.validation_warnings:
-                    report.analysis.setdefault("warnings", []).extend(self.validation_warnings)
+        # 3. Reclassification & Static Analysis (10%)
+        with self._timer("Reclassification"):
+            self._update_progress(5, "Reclassifying variables...")
+            self._reclassify(report)
 
-                if unsafe_backend:
+        with self._timer("Static Analysis"):
+            self._update_progress(5, "Static analysis...")
+            for col_name in report.variables:
+                if col_name != "_dataset":
+                    report.variables[col_name]["hashable"] = self.inspector.is_hashable(col_name)
+
+        # 4. Duplicates (if not minimal) (10%)
+        with self._timer("Duplicates"):
+            if self.compute_duplicates:
+                n_total = report.table.get("n", 0)
+                n_total_int = int(n_total) if isinstance(n_total, (int, float)) else 0
+
+                if n_total_int > self.duplicates_threshold and not self.explicit_duplicates:
+                    self._update_progress(10, "Skipping duplicate check for large dataset...")
                     report.analysis.setdefault("warnings", []).append(
-                        f"Parallel mode disabled for {unsafe_backend} backend due to thread-safety "
-                        "concerns. Execution will proceed sequentially."
+                        f"Skipped duplicate check for large dataset ({n_total_int:,} rows). "
+                        f"Threshold: {self.duplicates_threshold:,}. Set compute_duplicates=True to force."
                     )
-
-            # 3. Reclassification & Static Analysis (10%)
-            with self._timer("Reclassification"):
-                self._update_progress(5, "Reclassifying variables...")
-                self._reclassify(report)
-
-            with self._timer("Static Analysis"):
-                self._update_progress(5, "Static analysis...")
-                for col_name in report.variables:
-                    if col_name != "_dataset":
-                        report.variables[col_name]["hashable"] = self.inspector.is_hashable(
-                            col_name
-                        )
-
-            # 4. Duplicates (if not minimal) (10%)
-            with self._timer("Duplicates"):
-                if self.compute_duplicates:
-                    n_total = report.table.get("n", 0)
-                    n_total_int = int(n_total) if isinstance(n_total, (int, float)) else 0
-
-                    if n_total_int > self.duplicates_threshold and not self.explicit_duplicates:
-                        self._update_progress(10, "Skipping duplicate check for large dataset...")
-                        report.analysis.setdefault("warnings", []).append(
-                            f"Skipped duplicate check for large dataset ({n_total_int:,} rows). "
-                            f"Threshold: {self.duplicates_threshold:,}. Set compute_duplicates=True to force."
-                        )
-                        report.table["n_distinct_rows"] = "Skipped"
-                        report.table["n_duplicates"] = "Skipped"
-                        report.table["p_duplicates"] = "Skipped"
-                    else:
-                        self._update_progress(10, "Checking for duplicates...")
-                        n_distinct_rows = self.table.distinct().count().execute()
-                        report.table["n_distinct_rows"] = n_distinct_rows
-                        if isinstance(n_total, (int, float)):
-                            report.table["n_duplicates"] = n_total - n_distinct_rows
-                            report.table["p_duplicates"] = (
-                                (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
-                            )
+                    report.table["n_distinct_rows"] = "Skipped"
+                    report.table["n_duplicates"] = "Skipped"
+                    report.table["p_duplicates"] = "Skipped"
                 else:
-                    if not self.minimal:
-                        self._update_progress(10, "Skipping duplicate check...")
-                        report.analysis.setdefault("warnings", []).append(
-                            "Skipped duplicate check as requested."
+                    self._update_progress(10, "Checking for duplicates...")
+                    n_distinct_rows = self.table.distinct().count().execute()
+                    report.table["n_distinct_rows"] = n_distinct_rows
+                    if isinstance(n_total, (int, float)):
+                        report.table["n_duplicates"] = n_total - n_distinct_rows
+                        report.table["p_duplicates"] = (
+                            (n_total - n_distinct_rows) / n_total if n_total > 0 else 0
                         )
-                    else:
-                        pass
+            else:
+                if not self.minimal:
+                    self._update_progress(10, "Skipping duplicate check...")
+                    report.analysis.setdefault("warnings", []).append(
+                        "Skipped duplicate check as requested."
+                    )
+                else:
+                    pass
 
-            # 5. Advanced Moments & Histograms (20%)
-            with self._timer("Advanced Pass"):
-                self._run_advanced_pass(report)
+        # 5. Advanced Moments & Histograms (20%)
+        with self._timer("Advanced Pass"):
+            self._run_advanced_pass(report)
 
-            # 6. Complex Metrics (15%)
-            with self._timer("Complex Pass"):
-                self._run_complex_pass(report)
+        # 6. Complex Metrics (15%)
+        with self._timer("Complex Pass"):
+            self._run_complex_pass(report)
 
-            # 7. Correlations (5%)
-            with self._timer("Correlations"):
-                if self.compute_correlations:
-                    self._run_correlations(report)
-                elif not self.minimal:
-                    self._update_progress(5)
+        # 7. Correlations (5%)
+        with self._timer("Correlations"):
+            if self.compute_correlations:
+                self._run_correlations(report)
+            elif not self.minimal:
+                self._update_progress(5)
 
-            # 8. Monotonicity (5%)
-            with self._timer("Monotonicity"):
-                if self.compute_monotonicity:
-                    self._run_monotonicity(report)
-                elif not self.minimal:
-                    self._update_progress(5)
+        # 8. Monotonicity (5%)
+        with self._timer("Monotonicity"):
+            if self.compute_monotonicity:
+                self._run_monotonicity(report)
+            elif not self.minimal:
+                self._update_progress(5)
 
-            # 9. Samples & Missing Matrix (5%)
-            with self._timer("Final Pass"):
-                self._run_final_pass(report)
+        # 9. Samples & Missing Matrix (5%)
+        with self._timer("Final Pass"):
+            self._run_final_pass(report)
 
-            # 10. Finalize (recalculate derived metrics and alerts)
-            with self._timer("Finalize"):
-                report.finalize()
+        # 10. Finalize (recalculate derived metrics and alerts)
+        with self._timer("Finalize"):
+            report.finalize()
 
-            end_time = datetime.now()
-            report.analysis["date_end"] = end_time.isoformat()
-            report.analysis["duration"] = (end_time - self.start_time).total_seconds() * 1000
+        end_time = datetime.now()
+        report.analysis["date_end"] = end_time.isoformat()
+        report.analysis["duration"] = (end_time - self.start_time).total_seconds() * 1000
 
-            self._update_progress(0, "Report complete.")
-            return report
-        finally:
-            if self.executor:
-                self.executor.shutdown(wait=True)
+        self._update_progress(0, "Report complete.")
+        return report
 
     def _reclassify(self, report: InternalProfileReport):
         for col_name, stats in report.variables.items():
@@ -473,11 +425,7 @@ class Profiler:
             except Exception as exc:
                 return col_name, None, v_min, v_max, nbins, exc
 
-        if self.parallel and self.executor and histogram_plans:
-            futures = [self.executor.submit(run_hist, p) for p in histogram_plans]
-            results = [f.result() for f in as_completed(futures)]
-        else:
-            results = [run_hist(p) for p in histogram_plans]
+        results = [run_hist(p) for p in histogram_plans]
 
         for col_name, res, v_min, v_max, nbins, exc in results:
             self._update_progress(int(hist_inc), f"Processing histogram for {col_name}...")
@@ -578,7 +526,7 @@ class Profiler:
             # If no batched metrics, move the 5% to the next section
             self._update_progress(0, "Skipping batched metrics...")
 
-        # 2. Execute Table metrics in parallel if executor is present
+        # 2. Execute Table metrics sequentially
         # Total complex pass is 15%. If batched was 5, we have 10 left.
         # If batched was 0, we have 15 left.
         total_remaining = 10 if value_aggs else 15
@@ -595,11 +543,7 @@ class Profiler:
             except Exception as exc:
                 return col_name, metric_name, None, exc
 
-        if self.parallel and self.executor and table_plans:
-            futures = [self.executor.submit(run_table_plan, p) for p in table_plans]
-            results = [f.result() for f in as_completed(futures)]
-        else:
-            results = [run_table_plan(p) for p in table_plans]
+        results = [run_table_plan(p) for p in table_plans]
 
         processed_inc = 0
         for i, (col_name, metric_name, val, exc) in enumerate(results):
@@ -640,6 +584,7 @@ class Profiler:
                 row_count=cast(int | None, report.table.get("n")),
                 sampling_threshold=self.correlations_sampling_threshold,
                 sample_size=self.correlations_sample_size,
+                sample_seed=self.config.sample_seed,
                 max_columns=self.correlations_max_columns,
             )
             meta = res.get("_metadata", {})
@@ -758,6 +703,7 @@ class Profiler:
                 self.table,
                 report.variables,
                 row_count=n_total,
+                sample_seed=self.config.sample_seed,
                 max_interaction_pairs=self.max_interaction_pairs,
                 correlations=report.correlations,
             )
@@ -777,16 +723,15 @@ def profile(
     max_interaction_pairs: int = 10,
     correlations_sampling_threshold: int = 1_000_000,
     correlations_sample_size: int = 1_000_000,
+    sample_seed: int = 42,
     correlations_max_columns: int = 15,
     missing_heatmap_max_columns: int = 15,
     missing_matrix_max_columns: int = 50,
     monotonicity_threshold: int = 100_000,
     duplicates_threshold: int = 50_000_000,
-    n_unique_threshold: int | None = None,
+    n_unique_threshold: int | None = 50_000_000,
     inference_sample_size: int | None = 10_000,
     monotonicity_order_by: str | None = None,
-    parallel: bool = False,
-    pool_size: int = 4,
     use_sketches: bool = False,
     global_batch_size: int | None = None,
 ) -> InternalProfileReport:
@@ -803,6 +748,7 @@ def profile(
         max_interaction_pairs=max_interaction_pairs,
         correlations_sampling_threshold=correlations_sampling_threshold,
         correlations_sample_size=correlations_sample_size,
+        sample_seed=sample_seed,
         correlations_max_columns=correlations_max_columns,
         missing_heatmap_max_columns=missing_heatmap_max_columns,
         missing_matrix_max_columns=missing_matrix_max_columns,
@@ -811,8 +757,6 @@ def profile(
         n_unique_threshold=n_unique_threshold,
         inference_sample_size=inference_sample_size,
         monotonicity_order_by=monotonicity_order_by,
-        parallel=parallel,
-        pool_size=pool_size,
         use_sketches=use_sketches,
         global_batch_size=global_batch_size,
     )

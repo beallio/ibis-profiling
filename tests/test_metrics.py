@@ -1,7 +1,7 @@
 import ibis
 import pandas as pd
 import ibis.expr.datatypes as dt
-from ibis_profiling.metrics import registry, Metric, MetricCategory
+from ibis_profiling.metrics import registry, Metric, MetricCategory, MetricRegistry
 
 
 def test_metric_supports():
@@ -13,11 +13,12 @@ def test_metric_supports():
 
 
 def test_registry_registration():
+    test_registry = MetricRegistry()
     m = Metric("test", MetricCategory.COLUMN, None, lambda col: col.count())
-    registry.register(m)
+    test_registry.register(m)
 
-    assert "test" in registry.metrics
-    assert registry.metrics["test"] == m
+    assert "test" in test_registry.metrics
+    assert test_registry.metrics["test"] == m
 
 
 def test_n_unique_metric_robustness():

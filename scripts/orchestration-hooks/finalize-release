@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Project release step. Invoked by orchestration/finalize AFTER it has merged the
+# feature branch into the base branch and pushed. Any args passed to `finalize`
+# after the slug are forwarded here (e.g. a release version).
+#
+# This hook is optional. If you delete it, finalize simply skips the release step.
+# Replace the body with this project's real release trigger.
+set -euo pipefail
+
+version="${1:-}"
+
+# Example:
+#   ./scripts/request_dev_release.sh "$version"
+
+echo "TODO: implement project release in scripts/orchestration-hooks/finalize-release (version=${version})" >&2
+exit 1

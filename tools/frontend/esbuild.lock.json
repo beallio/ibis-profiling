@@ -1,0 +1,15 @@
+{
+  "tool": "esbuild",
+  "version": "0.28.0",
+  "platform": "linux-x64",
+  "npm_package": "@esbuild/linux-x64",
+  "source_url": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.28.0.tgz",
+  "tarball_sha256": "e94bf1c7f44197b22cf6a787578eca9af805aa9624104488252de2a765c6a4f0",
+  "tarball_npm_integrity": "sha512-us0dSb9iFxIi8srnpl931Nvs65it/Jd2a2K3qs7fz2WfGPHqzfzZTfec7oxZJRNPXPnNYZtanmRc4AL/JwVzHQ==",
+  "binary_path_in_tarball": "package/bin/esbuild",
+  "binary_sha256": "aafacdf135322bf47c882a4ea4db33d0375583f5b9c3fd2d4e12258e470568be",
+  "install_path": "/tmp/ibis-profiling/bin/esbuild",
+  "published": "2026-04-02",
+  "cooldown_days_required": 30,
+  "rationale": "Vendored, pinned, SHA256-verified build tool. esbuild has zero transitive npm deps. React/ReactDOM/Lucide remain vendored UMD globals (marked esbuild 'external'), so this binary is the entire new supply-chain surface. Update deliberately: bump version, refetch tarball, update BOTH sha256 fields + published date, and confirm the new version satisfies cooldown_days_required (see scripts/check_esbuild_cooldown.py)."
+}

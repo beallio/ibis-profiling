@@ -65,6 +65,118 @@ class ReportEncoder(json.JSONEncoder):
         return res
 
 
+def _derive_variable_metrics(stats: dict, n: int) -> dict:
+    """Return variable statistics with finalized derived metrics."""
+    result = dict(stats)
+
+    m_count = result.get("n_missing", 0)
+    if not isinstance(m_count, (int, float)):
+        m_count = 0
+
+    result["p_missing"] = m_count / n if n > 0 else 0
+
+    n_distinct = result.get("n_distinct")
+    if isinstance(n_distinct, (int, float)):
+        result["p_distinct"] = n_distinct / n if n > 0 else 0
+    else:
+        result["p_distinct"] = n_distinct
+
+    result["count"] = n - m_count
+    result["is_unique"] = (
+        n > 0 and n_distinct == n if isinstance(n_distinct, (int, float)) else False
+    )
+
+    if result.get("type") == "Numeric":
+        if result.get("max") is not None and result.get("min") is not None:
+            result["range"] = result["max"] - result["min"]
+
+        if result.get("75%") is not None and result.get("25%") is not None:
+            result["iqr"] = result["75%"] - result["25%"]
+
+        if result.get("std") is not None and result.get("mean") is not None and result["mean"] != 0:
+            result["cv"] = result["std"] / result["mean"]
+
+        if result.get("n_zeros") is not None:
+            result["p_zeros"] = result["n_zeros"] / n if n > 0 else 0
+
+        if result.get("n_infinite") is not None:
+            result["p_infinite"] = result["n_infinite"] / n if n > 0 else 0
+
+        if result.get("n_negative") is not None:
+            result["p_negative"] = result["n_negative"] / n if n > 0 else 0
+    elif result.get("type") == "Categorical":
+        if result.get("n_empty") is not None:
+            result["p_empty"] = result["n_empty"] / n if n > 0 else 0
+
+        for key in NUMERIC_ONLY_METRICS:
+            result.pop(key, None)
+
+    n_unique = result.get("n_unique")
+    if n_unique is not None:
+        if isinstance(n_unique, (int, float)):
+            result["p_unique"] = n_unique / n if n > 0 else 0
+        else:
+            result["p_unique"] = n_unique
+
+    for key, value in list(result.items()):
+        serialized = serialize_report_value(value)
+        if isinstance(serialized, (str, int, float, bool, list, dict, type(None))):
+            result[key] = serialized
+        else:
+            result[key] = f"__unsupported_type__:{type(value).__name__}:{str(value)}"
+
+    return result
+
+
+def _compute_table_aggregates(variables: dict, n: int) -> dict:
+    """Return table-level aggregates derived from finalized variables."""
+    n_cells_missing = 0
+    n_cells_empty = 0
+    n_vars_constant = 0
+    n_vars_with_missing = 0
+    n_vars_all_missing = 0
+    n_vars_with_empty = 0
+
+    for stats in variables.values():
+        m_count = stats.get("n_missing", 0)
+        if not isinstance(m_count, (int, float)):
+            m_count = 0
+
+        n_cells_missing += m_count
+        if m_count > 0:
+            n_vars_with_missing += 1
+        if m_count == n and n > 0:
+            n_vars_all_missing += 1
+
+        n_distinct = stats.get("n_distinct")
+        if isinstance(n_distinct, (int, float)) and n_distinct == 1:
+            n_vars_constant += 1
+
+        e_count = stats.get("n_empty", 0)
+        if isinstance(e_count, (int, float)) and e_count > 0:
+            n_cells_empty += e_count
+            n_vars_with_empty += 1
+
+    n_var = len(variables)
+    if n > 0 and n_var > 0:
+        p_cells_missing = n_cells_missing / (n * n_var)
+        p_cells_empty = n_cells_empty / (n * n_var)
+    else:
+        p_cells_missing = 0
+        p_cells_empty = 0
+
+    return {
+        "n_cells_missing": n_cells_missing,
+        "n_cells_empty": n_cells_empty,
+        "n_vars_constant": n_vars_constant,
+        "n_vars_with_missing": n_vars_with_missing,
+        "n_vars_all_missing": n_vars_all_missing,
+        "n_vars_with_empty": n_vars_with_empty,
+        "p_cells_missing": p_cells_missing,
+        "p_cells_empty": p_cells_empty,
+    }
+
+
 class ProfileReport:
     """Canonical Report Model that assembles data from specialized engines."""
 
@@ -84,7 +196,7 @@ class ProfileReport:
 
         # Core Model Sections
         self.table = {}
-        self.variables = {}
+        self.variables: Any = {}
         self.correlations = {}
         self.interactions = {}
         self.missing = {}
@@ -187,118 +299,84 @@ class ProfileReport:
 
         n = cast(int, self.table["n"])
 
-        # Reset table counters for idempotency
-        self.table["n_cells_missing"] = 0
-        self.table["n_cells_empty"] = 0
-        self.table["n_vars_with_missing"] = 0
-        self.table["n_vars_with_empty"] = 0
-        self.table["n_vars_all_missing"] = 0
-        self.table["n_vars_constant"] = 0
-
-        n_cells_missing = 0
-        n_cells_empty = 0
-
-        # Post-process variables (normalization & derived metrics)
-        for col, stats in self.variables.items():
-            m_count = stats.get("n_missing", 0)
-            if not isinstance(m_count, (int, float)):
-                m_count = 0
-
-            stats["p_missing"] = m_count / n if n > 0 else 0
-
-            n_distinct = stats.get("n_distinct")
-            if isinstance(n_distinct, (int, float)):
-                stats["p_distinct"] = n_distinct / n if n > 0 else 0
-
-                # Constant detection
-                if n_distinct == 1:
-                    self.table["n_vars_constant"] = cast(int, self.table["n_vars_constant"]) + 1
-            else:
-                stats["p_distinct"] = n_distinct  # Likely "Skipped"
-
-            stats["count"] = n - m_count
-
-            if isinstance(n_distinct, (int, float)):
-                stats["is_unique"] = n > 0 and n_distinct == n
-            else:
-                stats["is_unique"] = False
-
-            # Explicitly accumulate into local variable
-            n_cells_missing += m_count
-
-            if m_count > 0:
-                self.table["n_vars_with_missing"] = cast(int, self.table["n_vars_with_missing"]) + 1
-
-            if m_count == n and n > 0:
-                self.table["n_vars_all_missing"] = cast(int, self.table["n_vars_all_missing"]) + 1
-
-            # Empty Strings (Categorical specific but accumulated here)
-            e_count = stats.get("n_empty", 0)
-            if isinstance(e_count, (int, float)) and e_count > 0:
-                n_cells_empty += e_count
-                self.table["n_vars_with_empty"] = cast(int, self.table["n_vars_with_empty"]) + 1
-
-            # Derived Numeric Stats
-            if stats.get("type") == "Numeric":
-                # Range
-                if stats.get("max") is not None and stats.get("min") is not None:
-                    stats["range"] = stats["max"] - stats["min"]
-
-                # IQR
-                if stats.get("75%") is not None and stats.get("25%") is not None:
-                    stats["iqr"] = stats["75%"] - stats["25%"]
-
-                # CV
-                if (
-                    stats.get("std") is not None
-                    and stats.get("mean") is not None
-                    and stats["mean"] != 0
-                ):
-                    stats["cv"] = stats["std"] / stats["mean"]
-
-                # Zeros Percentage
-                if stats.get("n_zeros") is not None:
-                    stats["p_zeros"] = stats["n_zeros"] / n if n > 0 else 0
-
-                # Infinite Percentage
-                if stats.get("n_infinite") is not None:
-                    stats["p_infinite"] = stats["n_infinite"] / n if n > 0 else 0
-
-                # Negative Percentage
-                if stats.get("n_negative") is not None:
-                    stats["p_negative"] = stats["n_negative"] / n if n > 0 else 0
-            elif stats.get("type") == "Categorical":
-                # Empty Percentage
-                if stats.get("n_empty") is not None:
-                    stats["p_empty"] = stats["n_empty"] / n if n > 0 else 0
-
-                for k in NUMERIC_ONLY_METRICS:
-                    stats.pop(k, None)
-
-            # Unique Percentage (Updated after add_metric calls)
-            n_unique = stats.get("n_unique")
-            if n_unique is not None:
-                if isinstance(n_unique, (int, float)):
-                    stats["p_unique"] = n_unique / n if n > 0 else 0
-                else:
-                    stats["p_unique"] = n_unique  # Likely "Skipped"
-
-            # Ensure other stats are serializable
-            for k, v in list(stats.items()):
-                stats[k] = self._to_json_serializable(v)
-
-        self.table["n_cells_missing"] = n_cells_missing
-        self.table["n_cells_empty"] = n_cells_empty
-        n_var = self.table.get("n_var", 0)
-        if isinstance(n_var, int) and n > 0 and n_var > 0:
-            self.table["p_cells_missing"] = n_cells_missing / (n * n_var)
-            self.table["p_cells_empty"] = n_cells_empty / (n * n_var)
-        else:
-            self.table["p_cells_missing"] = 0
+        self.variables = {
+            col: _derive_variable_metrics(stats, n) for col, stats in self.variables.items()
+        }
+        self.table.update(_compute_table_aggregates(self.variables, n))
 
         # Generate Alerts
         self.alerts = AlertEngine.get_alerts(self.table, self.variables)
         self._finalized = True
+
+    _METRIC_HANDLERS = {
+        "top_values": "_metric_top_values",
+        "numeric_histogram": "_metric_numeric_histogram",
+        "length_histogram": "_metric_length_histogram",
+    }
+
+    def _metric_top_values(self, col_name: str, value: Any):
+        # Ibis value_counts() returns [col_name, count_col]
+        # We use positional indexing for robustness
+        keys = list(value.keys())
+        if len(keys) >= 2:
+            label_key = keys[0]
+            count_key = keys[1]
+
+            counts = list(value.get(count_key, []))
+            labels = []
+            for x in value.get(label_key, []):
+                if isinstance(x, (datetime, date)):
+                    labels.append(x.isoformat())
+                elif x == "":
+                    labels.append("(Empty)")
+                else:
+                    labels.append(str(x))
+            self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
+
+    def _metric_numeric_histogram(self, col_name: str, value: Any):
+        # Data is binned: {bin_idx: count, ...} + metadata
+        # We expect value to be a dict: {'counts': {idx: count}, 'min': val, 'max': val, 'nbins': val}
+        counts_dict = value.get("counts", {})
+        v_min = value.get("min", 0)
+        v_max = value.get("max", 0)
+        nbins = value.get("nbins", 20)
+
+        if v_max == v_min:
+            # Constant data
+            self.variables[col_name]["histogram"] = {
+                "bins": [str(v_min)],
+                "counts": [sum(counts_dict.values())],
+            }
+            return
+
+        bin_width = (v_max - v_min) / nbins
+
+        # Reconstruct full range even for empty bins
+        all_counts = []
+        all_labels = []
+        for i in range(nbins):
+            b_start = v_min + (i * bin_width)
+            b_end = v_min + ((i + 1) * bin_width)
+            all_labels.append(f"[{b_start:.2f}, {b_end:.2f}]")
+            all_counts.append(counts_dict.get(i, 0))
+
+        self.variables[col_name]["histogram"] = {"bins": all_labels, "counts": all_counts}
+
+    def _metric_length_histogram(self, col_name: str, value: Any):
+        # Value is a dict with two columns: the length and the count
+        keys = list(value.keys())
+        # First key is length, second is count
+        labels = [str(x) for x in value.get(keys[0], [])]
+        counts = list(value.get(keys[1], []))
+        self.variables[col_name]["length_histogram"] = {"bins": labels, "counts": counts}
+
+    def _metric_extreme_values(self, col_name: str, metric_name: str, value: Any):
+        # Value is a dict like {col_name: [v1, v2, ...]}
+        vals = value.get(col_name, [])
+        self.variables[col_name][metric_name] = [self._to_json_serializable(x) for x in vals]
+
+    def _metric_generic(self, col_name: str, metric_name: str, value: Any):
+        self.variables[col_name][metric_name] = self._to_json_serializable(value)
 
     def add_metric(self, col_name: str, metric_name: str, value: Any):
         """Adds extra data like samples or histograms to the model."""
@@ -310,88 +388,22 @@ class ProfileReport:
                 self.variables[col_name][metric_name] = "Skipped"
                 return
 
-            # Handle complex mapping like histograms
-            if metric_name == "top_values":
-                # Ibis value_counts() returns [col_name, count_col]
-                # We use positional indexing for robustness
-                keys = list(value.keys())
-                if len(keys) >= 2:
-                    label_key = keys[0]
-                    count_key = keys[1]
-
-                    counts = list(value.get(count_key, []))
-                    labels = []
-                    for x in value.get(label_key, []):
-                        if isinstance(x, (datetime, date)):
-                            labels.append(x.isoformat())
-                        elif x == "":
-                            labels.append("(Empty)")
-                        else:
-                            labels.append(str(x))
-                    self.variables[col_name]["histogram"] = {"bins": labels, "counts": counts}
-
-            elif metric_name == "numeric_histogram":
-                # Data is binned: {bin_idx: count, ...} + metadata
-                # We expect value to be a dict: {'counts': {idx: count}, 'min': val, 'max': val, 'nbins': val}
-                counts_dict = value.get("counts", {})
-                v_min = value.get("min", 0)
-                v_max = value.get("max", 0)
-                nbins = value.get("nbins", 20)
-
-                if v_max == v_min:
-                    # Constant data
-                    self.variables[col_name]["histogram"] = {
-                        "bins": [str(v_min)],
-                        "counts": [sum(counts_dict.values())],
-                    }
-                    return
-
-                bin_width = (v_max - v_min) / nbins
-
-                # Reconstruct full range even for empty bins
-                all_counts = []
-                all_labels = []
-                for i in range(nbins):
-                    b_start = v_min + (i * bin_width)
-                    b_end = v_min + ((i + 1) * bin_width)
-                    all_labels.append(f"[{b_start:.2f}, {b_end:.2f}]")
-                    all_counts.append(counts_dict.get(i, 0))
-
-                self.variables[col_name]["histogram"] = {"bins": all_labels, "counts": all_counts}
-
-            elif metric_name == "length_histogram":
-                # Value is a dict with two columns: the length and the count
-                keys = list(value.keys())
-                # First key is length, second is count
-                labels = [str(x) for x in value.get(keys[0], [])]
-                counts = list(value.get(keys[1], []))
-                self.variables[col_name]["length_histogram"] = {"bins": labels, "counts": counts}
+            if metric_name in self._METRIC_HANDLERS:
+                handler_name = self._METRIC_HANDLERS[metric_name]
+                getattr(self, handler_name)(col_name, value)
             elif metric_name.startswith("extreme_values_"):
-                # Value is a dict like {col_name: [v1, v2, ...]}
-                vals = value.get(col_name, [])
-                self.variables[col_name][metric_name] = [
-                    self._to_json_serializable(x) for x in vals
-                ]
+                self._metric_extreme_values(col_name, metric_name, value)
             else:
-                self.variables[col_name][metric_name] = self._to_json_serializable(value)
+                self._metric_generic(col_name, metric_name, value)
 
     def to_dict(self) -> dict:
         self.finalize()
-        from .. import __version__
+        from .models import ReportModel
 
-        pkg_version = __version__
+        d = ReportModel.from_internal(self).to_dict()
+        d["correlations"] = self._format_matrices(d["correlations"])
+        d["missing"] = self._format_matrices(d["missing"])
 
-        d = {
-            "analysis": self.analysis,
-            "table": self.table,
-            "variables": self.variables,
-            "correlations": self._format_matrices(self.correlations),
-            "interactions": self.interactions,
-            "missing": self._format_matrices(self.missing),
-            "alerts": self.alerts,
-            "sample": self.samples,
-            "package": {"name": "ibis-profiling", "version": pkg_version},
-        }
         return self._clean_dict(d)
 
     def _format_matrices(self, obj: Any) -> Any:

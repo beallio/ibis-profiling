@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Project quality gates. Invoked by orchestration/run-quality-gates from the repo root.
+# Exit non-zero to fail the gate. Non-mutating (validates an already-committed tree).
+set -euo pipefail
+
+if [[ ! -x ./run.sh ]]; then
+  echo "run.sh wrapper not found or not executable" >&2
+  exit 1
+fi
+
+echo "==> ruff check"
+./run.sh uv run ruff check .
+
+echo "==> ty check src/"
+./run.sh uv run ty check src/
+
+echo "==> pytest"
+./run.sh uv run pytest
+
+echo "==> profiler regression gate"
+./run.sh uv run python tools/regression/gate.py
+
+echo "✅ quality gates passed"

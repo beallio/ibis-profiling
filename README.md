@@ -172,8 +172,6 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | Parameter | Default | Description |
 | :--- | :--- | :--- |
 | `minimal` | `False` | Enable faster profiling by skipping expensive metrics (correlations, interactions). |
-| `parallel` | `False` | Execute independent backend queries in parallel using a thread pool. (Fallback to sequential if backend is not thread-safe). |
-| `pool_size` | `4` | Number of concurrent worker threads for parallel execution. |
 | `use_sketches` | `False` | Use hyperloglog/sketches for `approx_nunique` when supported by the backend (e.g., DuckDB). Greatly speeds up large cardinality checks. |
 | `max_interaction_pairs` | `10` | Limit pairwise scatter plots to the Top N most interactive numeric variables. |
 | `correlations_sampling_threshold` | `1,000,000` | Row count threshold above which Spearman correlation uses sampling. |
@@ -183,7 +181,7 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | `monotonicity_threshold` | `100,000` | Row count threshold above which monotonicity is skipped by default. |
 | `duplicates_threshold` | `50,000,000` | Row count threshold above which duplicate check is skipped by default. |
 | `n_unique_threshold` | `50,000,000` | Row count threshold above which exact `n_unique` (singleton) calculation is skipped. |
-| `global_batch_size` | `500` | Maximum number of aggregate expressions per backend query. |
+| `global_batch_size` | `dynamic (memory-aware)` | Maximum number of aggregate expressions per backend query. |
 | `compute_duplicates` | `True` | Explicitly enable/disable duplicate row detection. |
 
 #### 🔍 Interaction Pruning & "Interactivity"
@@ -405,6 +403,22 @@ ibis-profiling/
 ├── scripts/              # Performance benchmarks and data generation
 ├── src/ibis_profiling/   # Core engine, metrics, and report templates
 └── tests/                # Comprehensive test suite (TDD-driven)
+```
+
+---
+
+## 🛠 Development Setup
+
+For first-time or after-reboot local development setup, run the bootstrap script to sync dependencies and install Playwright Chromium (required for e2e tests):
+
+```bash
+./scripts/bootstrap.sh
+```
+
+Then, always run commands through the wrapper script:
+
+```bash
+./run.sh uv run pytest
 ```
 
 ---
