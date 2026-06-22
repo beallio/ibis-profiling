@@ -43,6 +43,7 @@ def _normalize(html: str) -> str:
     )
     if __version__:
         normalized = normalized.replace(__version__, "VER")
+    normalized = re.sub(r'\s*data-visual-volatile=""', "", normalized)
     return normalized
 
 
