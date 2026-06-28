@@ -176,6 +176,8 @@ Fine-tune the profiler's performance and behavior using additional parameters in
 | `max_interaction_pairs` | `10` | Limit pairwise scatter plots to the Top N most interactive numeric variables. |
 | `correlations_sampling_threshold` | `1,000,000` | Row count threshold above which Spearman correlation uses sampling. |
 | `correlations_sample_size` | `1,000,000` | Number of rows used when correlation sampling is active. |
+| `sample_seed` | `42` | Random seed used for deterministic sampling in correlations and interactions. |
+| `inference_sample_size` | `10,000` | Number of rows sampled when inferring logical types; set to `None` to inspect all rows. |
 | `correlations` | `True` | Explicitly enable/disable all correlation matrices. |
 | `monotonicity` | `True` | Explicitly enable/disable monotonicity checks. |
 | `monotonicity_threshold` | `100,000` | Row count threshold above which monotonicity is skipped by default. |

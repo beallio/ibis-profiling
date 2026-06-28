@@ -605,7 +605,7 @@ class IbisLogicalTypeSystem:
         else:
             inference_table = table
 
-        all_exprs = {}
+        check_records: list[tuple[str, LogicalTypeDefinition, str, ir.Scalar]] = []
         for col_name in cols:
             col = inference_table[col_name]
             for logical_type in self.types:
@@ -616,40 +616,42 @@ class IbisLogicalTypeSystem:
                 ):
                     continue
                 for key, value in logical_type.get_check_exprs(col).items():
-                    all_exprs[f"{col_name}__{logical_type.name}_{key}"] = value
+                    check_records.append((col_name, logical_type, key, value))
 
         chunk_size = 5
-        results = {}
+        results: dict[str, dict[LogicalTypeDefinition, dict[str, Any]]] = {}
         schema = table.schema()
+        alias_counter = 0
 
         for index in range(0, len(cols), chunk_size):
             chunk_cols = cols[index : index + chunk_size]
-            chunk_exprs = [
-                value.name(key)
-                for key, value in all_exprs.items()
-                if key.split("__")[0] in chunk_cols
-            ]
+            chunk_records = [record for record in check_records if record[0] in chunk_cols]
+            alias_map: dict[str, tuple[str, LogicalTypeDefinition, str]] = {}
+            chunk_exprs = []
+            for col_name, logical_type, check_name, value in chunk_records:
+                alias = f"c{alias_counter}"
+                alias_counter += 1
+                alias_map[alias] = (col_name, logical_type, check_name)
+                chunk_exprs.append(value.name(alias))
             if not chunk_exprs:
                 continue
             try:
                 batch_results = inference_table.aggregate(chunk_exprs).to_pyarrow().to_pydict()
-                for key, value in batch_results.items():
-                    results[key] = value[0]
+                for alias, value in batch_results.items():
+                    col_name, logical_type, check_name = alias_map[alias]
+                    results.setdefault(col_name, {}).setdefault(logical_type, {})[check_name] = (
+                        value[0]
+                    )
             except Exception as error:
                 logging.warning("Logical inference failed for batch %s: %s", chunk_cols, error)
 
         inferred = {}
         for col_name in cols:
             col_inferred = self.get_fallback_type(schema[col_name])
-            col_results_exist = any(key.startswith(f"{col_name}__") for key in results)
-            if col_results_exist:
+            col_results = results.get(col_name, {})
+            if col_results:
                 for logical_type in self.types:
-                    prefix = f"{col_name}__{logical_type.name}_"
-                    type_results = {
-                        key[len(prefix) :]: value
-                        for key, value in results.items()
-                        if key.startswith(prefix)
-                    }
+                    type_results = col_results.get(logical_type, {})
                     if type_results and logical_type.evaluate(type_results):
                         col_inferred = logical_type
                         break
