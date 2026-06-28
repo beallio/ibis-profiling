@@ -165,6 +165,30 @@ def test_boolean_detection():
     assert ts.infer_type(df_true_false, "a") == Boolean
 
 
+def test_delimited_column_name_does_not_drop_logical_type_inference():
+    table = ibis.memtable({"is__active": ["yes", "no", "YES", "NO"] * 10})
+
+    ts = IbisLogicalTypeSystem()
+
+    assert ts.infer_type(table, "is__active") == Boolean
+
+
+def test_delimited_column_name_does_not_contaminate_similar_prefix_column():
+    table = ibis.memtable(
+        {
+            "foo": ["red", "blue", "green", "red", "blue"] * 20,
+            "foo__bar": ["yes", "no", "YES", "NO"] * 25,
+        }
+    )
+
+    ts = IbisLogicalTypeSystem()
+
+    inferred = ts.infer_all_types(table, ["foo", "foo__bar"])
+
+    assert inferred["foo"] == Categorical
+    assert inferred["foo__bar"] == Boolean
+
+
 def test_datetime_detection():
     # ISO Dates
     df_date = ibis.memtable({"a": ["2023-01-01", "2023-12-31"] * 10})
