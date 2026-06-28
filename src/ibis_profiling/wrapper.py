@@ -1,6 +1,20 @@
-import ibis
 from typing import Callable
+import warnings
+
+import ibis
 from .profiler import profile, profile_excel
+
+
+_PROFILE_KWARG_DEFAULTS = {
+    "cardinality_threshold": 20,
+    "max_interaction_pairs": 10,
+    "correlations_sampling_threshold": 1_000_000,
+    "correlations_sample_size": 1_000_000,
+    "sample_seed": 42,
+    "inference_sample_size": 10_000,
+    "use_sketches": False,
+}
+_KNOWN_PROFILE_REPORT_KWARGS = frozenset(_PROFILE_KWARG_DEFAULTS) | {"title"}
 
 
 class ProfileReport:
@@ -42,6 +56,14 @@ class ProfileReport:
         self.global_batch_size = global_batch_size
         self.kwargs = kwargs
 
+        unknown_kwargs = sorted(set(kwargs) - _KNOWN_PROFILE_REPORT_KWARGS)
+        if unknown_kwargs:
+            warnings.warn(
+                "Unknown ProfileReport keyword argument(s) ignored: " + ", ".join(unknown_kwargs),
+                UserWarning,
+                stacklevel=2,
+            )
+
         title = kwargs.get("title", "Ibis Profiling Report")
         self._report = profile(
             table,
@@ -51,7 +73,9 @@ class ProfileReport:
             correlations=correlations,
             monotonicity=monotonicity,
             compute_duplicates=compute_duplicates,
-            cardinality_threshold=kwargs.get("cardinality_threshold", 20),
+            cardinality_threshold=kwargs.get(
+                "cardinality_threshold", _PROFILE_KWARG_DEFAULTS["cardinality_threshold"]
+            ),
             monotonicity_threshold=monotonicity_threshold,
             duplicates_threshold=duplicates_threshold,
             n_unique_threshold=n_unique_threshold,
@@ -59,12 +83,21 @@ class ProfileReport:
             missing_heatmap_max_columns=missing_heatmap_max_columns,
             missing_matrix_max_columns=missing_matrix_max_columns,
             monotonicity_order_by=monotonicity_order_by,
-            max_interaction_pairs=kwargs.get("max_interaction_pairs", 10),
-            correlations_sampling_threshold=kwargs.get(
-                "correlations_sampling_threshold", 1_000_000
+            max_interaction_pairs=kwargs.get(
+                "max_interaction_pairs", _PROFILE_KWARG_DEFAULTS["max_interaction_pairs"]
             ),
-            correlations_sample_size=kwargs.get("correlations_sample_size", 1_000_000),
-            use_sketches=kwargs.get("use_sketches", False),
+            correlations_sampling_threshold=kwargs.get(
+                "correlations_sampling_threshold",
+                _PROFILE_KWARG_DEFAULTS["correlations_sampling_threshold"],
+            ),
+            correlations_sample_size=kwargs.get(
+                "correlations_sample_size", _PROFILE_KWARG_DEFAULTS["correlations_sample_size"]
+            ),
+            sample_seed=kwargs.get("sample_seed", _PROFILE_KWARG_DEFAULTS["sample_seed"]),
+            inference_sample_size=kwargs.get(
+                "inference_sample_size", _PROFILE_KWARG_DEFAULTS["inference_sample_size"]
+            ),
+            use_sketches=kwargs.get("use_sketches", _PROFILE_KWARG_DEFAULTS["use_sketches"]),
             global_batch_size=global_batch_size,
         )
 
